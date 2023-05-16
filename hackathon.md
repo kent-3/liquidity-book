@@ -26,6 +26,8 @@ Manually copy (sorry) information from `contracts.log` to:
 - `/app/src/lib/contracts.ts` - update the Liquidity Book Contracts section
 - `/app/src/lib/tokens.ts` - update token X and Y addresses
 
+A pre-configured front-end will be deployed to https://kent-3.github.io/trader-crow for demonstration.
+
 ### Run the front-end:
 ```
 cd app

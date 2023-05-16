@@ -52,19 +52,19 @@ dotenv.config({ path: '.env' });
 const build = "./tests/wasm/"
 
 // This helps when deploying to Pulsar. It can be shortened to test on secretdev.
-export const sleep = () => new Promise((resolve) => setTimeout(resolve, 5000))
+export const sleep = () => new Promise((resolve) => setTimeout(resolve, 100))
 
 var mnemonic: string;
 var endpoint: string = "http://localhost:1317";
 var chainId: string = "secretdev-1";
 
 // Uncomment to use .env file to deploy to Pulsar:
-mnemonic = process.env.MNEMONIC!;
-endpoint = process.env.LCD_URL!;
-chainId = process.env.CHAIN_ID!;
+// mnemonic = process.env.MNEMONIC!;
+// endpoint = process.env.LCD_URL!;
+// chainId = process.env.CHAIN_ID!;
 
 // Create a write stream to the desired file
-const logStream = fs.createWriteStream('contracts.log', { flags: 'a' });
+const logStream = fs.createWriteStream('localcontracts.log', { flags: 'a' });
 const gasStream = fs.createWriteStream('gas.log', { flags: 'w' });
 
 // Custom logging functions
@@ -423,34 +423,34 @@ async function test_configure_factory(
   await sleep();
 
   // testnet sSCRT
-  await executeAddQuoteAsset(
-    client,
-    contractHashFactory,
-    contractAddressFactory,
-    "9587d60b8e6b078ace12014ceeee089530b9fabcd76535d93666a6c127ad8813",
-    "secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg",
-  );
-  await sleep();
+  // await executeAddQuoteAsset(
+  //   client,
+  //   contractHashFactory,
+  //   contractAddressFactory,
+  //   "9587d60b8e6b078ace12014ceeee089530b9fabcd76535d93666a6c127ad8813",
+  //   "secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg",
+  // );
+  // await sleep();
 
   // testnet stkd-SCRT
-  await executeAddQuoteAsset(
-    client,
-    contractHashFactory,
-    contractAddressFactory,
-    "680fbb3c8f8eb1c920da13d857daaedaa46ab8f9a8e26e892bb18a16985ec29e",
-    "secret10u3rwj0cc2r04lryaxtkucjhvqw63kqzm5jlxw",
-  );
-  await sleep();
+  // await executeAddQuoteAsset(
+  //   client,
+  //   contractHashFactory,
+  //   contractAddressFactory,
+  //   "680fbb3c8f8eb1c920da13d857daaedaa46ab8f9a8e26e892bb18a16985ec29e",
+  //   "secret10u3rwj0cc2r04lryaxtkucjhvqw63kqzm5jlxw",
+  // );
+  // await sleep();
 
   // testnet SILK
-  await executeAddQuoteAsset(
-    client,
-    contractHashFactory,
-    contractAddressFactory,
-    "b6c896d21e46e037a2a1bca1d55af262d7ae4a5a175af055f3939722626b30c3",
-    "secret16xz08fdtkp5m8m6arpfgnehlfl4t86l0p33xg0",
-  );
-  await sleep();
+  // await executeAddQuoteAsset(
+  //   client,
+  //   contractHashFactory,
+  //   contractAddressFactory,
+  //   "b6c896d21e46e037a2a1bca1d55af262d7ae4a5a175af055f3939722626b30c3",
+  //   "secret16xz08fdtkp5m8m6arpfgnehlfl4t86l0p33xg0",
+  // );
+  // await sleep();
 
   await queryPreset(client, contractHashFactory, contractAddressFactory);
 
@@ -460,10 +460,10 @@ async function test_configure_factory(
     client,
     contractHashRouter, 
     contractAddressRouter,
-    '9587d60b8e6b078ace12014ceeee089530b9fabcd76535d93666a6c127ad8813',
-    'secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg',
-    'b6c896d21e46e037a2a1bca1d55af262d7ae4a5a175af055f3939722626b30c3',
-    'secret16xz08fdtkp5m8m6arpfgnehlfl4t86l0p33xg0',
+    tokenX.custom_token.token_code_hash,
+    tokenX.custom_token.contract_addr,
+    tokenY.custom_token.token_code_hash,
+    tokenY.custom_token.contract_addr,
     active_id,
     bin_step,
   )
@@ -484,31 +484,31 @@ async function test_liquidity(
   tokenX: CustomToken,
   tokenY: CustomToken,
 ) {
-  const sSCRT: CustomToken = {
-    custom_token: {
-      contract_addr: "secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg",
-      token_code_hash: "9587d60b8e6b078ace12014ceeee089530b9fabcd76535d93666a6c127ad8813"
-    }
-  }
+  // const sSCRT: CustomToken = {
+  //   custom_token: {
+  //     contract_addr: "secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg",
+  //     token_code_hash: "9587d60b8e6b078ace12014ceeee089530b9fabcd76535d93666a6c127ad8813"
+  //   }
+  // }
 
-  const SILK: CustomToken = {
-    custom_token: {
-      contract_addr: "secret16xz08fdtkp5m8m6arpfgnehlfl4t86l0p33xg0",
-      token_code_hash: "b6c896d21e46e037a2a1bca1d55af262d7ae4a5a175af055f3939722626b30c3"
-    }
-  }
+  // const SILK: CustomToken = {
+  //   custom_token: {
+  //     contract_addr: "secret16xz08fdtkp5m8m6arpfgnehlfl4t86l0p33xg0",
+  //     token_code_hash: "b6c896d21e46e037a2a1bca1d55af262d7ae4a5a175af055f3939722626b30c3"
+  //   }
+  // }
   
   // TODO: a better way to get and keep the lb_pair contract address
-  const { lb_pair_information: { lb_pair: { contract: { address: contractAddressPair } } } } = await queryLBPairInformation(client, contractHashFactory, contractAddressFactory, sSCRT, SILK, 100);
+  const { lb_pair_information: { lb_pair: { contract: { address: contractAddressPair } } } } = await queryLBPairInformation(client, contractHashFactory, contractAddressFactory, tokenX, tokenY, 100);
 
   logToFile(`LB_PAIR_ADDRESS="${contractAddressPair}"`)
 
-  // increase allowance for sSCRT
+  // increase allowance for Token X
   let tx = await client.tx.snip20.increaseAllowance(
     {
       sender: client.address,
-      contract_address: sSCRT.custom_token.contract_addr,
-      code_hash: sSCRT.custom_token.token_code_hash,
+      contract_address: tokenX.custom_token.contract_addr,
+      code_hash: tokenX.custom_token.token_code_hash,
       msg: {
         increase_allowance: {
           spender: contractAddressPair,
@@ -527,17 +527,17 @@ if (tx.code !== 0) {
     );
 };
 
-console.log(`Increase sSCRT Allowance TX used ${tx.gasUsed} gas`);
+console.log(`Increase Token X Allowance TX used ${tx.gasUsed} gas`);
 
 
   await sleep();
 
-  // increase allowance for SILK
+  // increase allowance for Token Y
   let tx2 = await client.tx.snip20.increaseAllowance(
     {
       sender: client.address,
-      contract_address: SILK.custom_token.contract_addr,
-      code_hash: SILK.custom_token.token_code_hash,
+      contract_address: tokenY.custom_token.contract_addr,
+      code_hash: tokenY.custom_token.token_code_hash,
       msg: {
           increase_allowance: {
             spender: contractAddressPair,
@@ -556,20 +556,17 @@ console.log(`Increase sSCRT Allowance TX used ${tx.gasUsed} gas`);
       );
   };
 
-  console.log(`Increase SILK Allowance TX used ${tx2.gasUsed} gas`);
+  console.log(`Increase Token Y Allowance TX used ${tx2.gasUsed} gas`);
 
-  // NOTE: commented out for testing front-end
+  const bin_step = 100;
+  await executeAddLiquidity(client, contractHashPair, contractAddressPair, bin_step, tokenX, tokenY);
+  await sleep();
+  await queryTotalSupply(client, contractHashPair, contractAddressPair)
+    .catch((e) => console.log(e));
+    await sleep();
 
-  // const bin_step = 100;
-  // await executeAddLiquidity(client, contractHashPair, contractAddressPair, bin_step, tokenX, tokenY);
-  // await sleep();
-  // await queryTotalSupply(client, contractHashPair, contractAddressPair)
-  //   .catch((e) => console.log(e));
-  //   await sleep();
-
-  // await executeRemoveLiquidity(client, contractHashPair, contractAddressPair, bin_step, tokenX, tokenY);
-  // await sleep();
-
+  await executeRemoveLiquidity(client, contractHashPair, contractAddressPair, bin_step, tokenX, tokenY);
+  await sleep();
 }
 
 async function test_swaps(
@@ -748,20 +745,20 @@ async function runTestFunction(
     tokenY,
   );
 
-  // await runTestFunction(
-  //   test_swaps,
-  //   client,
-  //   contractHashFactory,
-  //   contractAddressFactory,
-  //   contractHashRouter, 
-  //   contractAddressRouter,
-  //   codeIdPair,
-  //   contractHashPair,
-  //   codeIdToken,
-  //   contractHashToken,
-  //   tokenX,
-  //   tokenY,
-  // );
+  await runTestFunction(
+    test_swaps,
+    client,
+    contractHashFactory,
+    contractAddressFactory,
+    contractHashRouter, 
+    contractAddressRouter,
+    codeIdPair,
+    contractHashPair,
+    codeIdToken,
+    contractHashToken,
+    tokenX,
+    tokenY,
+  );
 
   // await runTestFunction(
   //   test_token_queries,
