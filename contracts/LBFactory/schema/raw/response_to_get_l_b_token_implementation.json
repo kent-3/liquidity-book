@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LBTokenImplementationResponse",
+  "type": "object",
+  "required": [
+    "lb_token_implementation"
+  ],
+  "properties": {
+    "lb_token_implementation": {
+      "$ref": "#/definitions/ContractInstantiationInfo"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "ContractInstantiationInfo": {
+      "description": "Info needed to instantiate a contract.",
+      "type": "object",
+      "required": [
+        "code_hash",
+        "id"
+      ],
+      "properties": {
+        "code_hash": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

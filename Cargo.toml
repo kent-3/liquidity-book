@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "libraries",
+    "interfaces",
+    "contracts/LBFactory",
+    "contracts/LBPair",
+    "contracts/LBQuoter",
+    "contracts/LBToken",
+    "contracts/LBRouter"
+]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
+
+[patch.crates-io]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret" }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

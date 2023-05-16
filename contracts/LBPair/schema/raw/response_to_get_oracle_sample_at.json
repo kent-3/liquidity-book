@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OracleSampleAtResponse",
+  "type": "object",
+  "required": [
+    "cumulative_bin_crossed",
+    "cumulative_id",
+    "cumulative_volatility"
+  ],
+  "properties": {
+    "cumulative_bin_crossed": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "cumulative_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "cumulative_volatility": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false
+}
