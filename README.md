@@ -44,7 +44,7 @@ This repository contains the Liquidity Book contracts, as well as tests and depl
 ## Notice!
 You'll need to grant allowances for testnet sSCRT and SILK to the LBPair contract:
 
-`address`: secret15ev0zs0vypqu63uu2am5q60f2gmtqjdnhqkpt6
+`address`: secret1vdp8lm27h7d906fg0d7g59jnn32sdl7x2m8sea
 
 `code_hash`: aff1a59f3886b7f0a2d20e8ac9ed3628fd11d4b7df2e6a69ebd7cb481b03c70f
 
