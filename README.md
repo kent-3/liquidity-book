@@ -48,6 +48,11 @@ You'll need to grant allowances for testnet sSCRT and SILK to the LBPair contrac
 
 `code_hash`: aff1a59f3886b7f0a2d20e8ac9ed3628fd11d4b7df2e6a69ebd7cb481b03c70f
 
+## Investors Pitch
+[Link](https://drive.google.com/file/d/1o9ItsmxIAFk6MZ9eBJYM_J0UMz-9FfrM/view?usp=sharing)
+
+## Development Description 
+[Link](https://docs.google.com/document/d/1li_wg_TLZPVSEPnrJ33Ig3AxIodgJCG5UK7Fv6NaGYY)
 
 
 ## Misc Notes
