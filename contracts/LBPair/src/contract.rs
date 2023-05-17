@@ -933,22 +933,22 @@ fn _update_bin(
 }
 
 fn total_supply(deps: Deps, id: u32, code_hash: String, address: Addr) -> Result<U256> {
-    // let msg = crate::msg::LbTokenQueryMsg::TotalSupply { id };
+    let msg = crate::msg::LbTokenQueryMsg::TotalSupply { id };
 
-    // let res = deps
-    //     .querier
-    //     .query_wasm_smart::<crate::msg::TotalSupplyResponse>(
-    //         code_hash,
-    //         address.to_string(),
-    //         &(&msg),
-    //     )?;
-    // let mut total_supply_uint256 = Uint256::zero();
-    // if let crate::msg::TotalSupplyResponse { total_supply } = res {
-    //     total_supply_uint256 = total_supply;
-    // }
+    let res = deps
+        .querier
+        .query_wasm_smart::<crate::msg::TotalSupplyResponse>(
+            code_hash,
+            address.to_string(),
+            &(&msg),
+        )?;
+    let mut total_supply_uint256 = Uint256::zero();
+    if let crate::msg::TotalSupplyResponse { total_supply } = res {
+        total_supply_uint256 = total_supply;
+    }
 
-    // Ok(total_supply_uint256.uint256_to_u256())
-    Ok(U256::new(6186945938883118954998384437402923))
+    Ok(total_supply_uint256.uint256_to_u256())
+    // Ok(U256::new(6186945938883118954998384437402923)) // incase of unit-tests
 }
 
 pub fn try_remove_liquidity(
@@ -1096,8 +1096,6 @@ fn burn(
             config.lb_token.code_hash.clone(),
             config.lb_token.address.clone(),
         )?;
-
-        // let total_supply = U256::new(6186945938883118954998384437402923);
 
         let message = _burn(
             &mut deps,
