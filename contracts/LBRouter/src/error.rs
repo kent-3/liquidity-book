@@ -2,6 +2,7 @@
 
 #![allow(unused)] // For beginning only.
 
+use cosmwasm_std::Uint128;
 use libraries::bin_helper::BinError;
 use libraries::fee_helper::FeeError;
 use libraries::math::liquidity_configurations::LiquidityConfigurationsError;
@@ -47,8 +48,8 @@ pub enum LBRouterError {
 
     #[error("Insufficient amount out. Amount out min: {amount_out_min}, Amount out: {amount_out}")]
     InsufficientAmountOut {
-        amount_out_min: u128,
-        amount_out: u128,
+        amount_out_min: Uint128,
+        amount_out: Uint128,
     },
 
     #[error("Max amount in exceeded. Amount in max: {amount_in_max}, Amount in: {amount_in}")]
@@ -95,4 +96,13 @@ pub enum LBRouterError {
 
     #[error(transparent)]
     U256Err(#[from] U256x256MathError),
+
+    #[error("Sent a non-native token. Should use the receive interface in SNIP20.")]
+    NonNativeTokenErr,
+
+    #[error("Pair not found")]
+    PairNotFound,
+
+    #[error("Current no trade in progress")]
+    NoTradeInProgress,
 }

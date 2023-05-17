@@ -1,6 +1,9 @@
-use crate::transfer::HandleMsg;
+use crate::transfer::{self, HandleMsg, QueryAnswer, QueryMsg};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, MessageInfo, StdError, StdResult, Uint128};
+use cosmwasm_std::{
+    to_binary, Addr, BankMsg, Coin, ContractInfo, CosmosMsg, Deps, MessageInfo, QuerierWrapper,
+    QueryRequest, StdError, StdResult, Uint128, WasmMsg, WasmQuery,
+};
 
 #[cw_serde]
 pub enum TokenType {
@@ -138,5 +141,92 @@ impl TokenType {
         } else {
             None
         }
+    }
+}
+
+impl TokenType {
+    pub fn query_balance(
+        &self,
+        deps: Deps,
+        exchange_addr: String,
+        viewing_key: String,
+    ) -> StdResult<Uint128> {
+        match self {
+            TokenType::NativeToken { denom } => {
+                let result = deps.querier.query_balance(exchange_addr, denom)?;
+                Ok(result.amount)
+            }
+            TokenType::CustomToken {
+                contract_addr,
+                token_code_hash,
+            } => balance_query(
+                &deps.querier,
+                deps.api.addr_validate(&exchange_addr)?,
+                viewing_key,
+                &ContractInfo {
+                    address: contract_addr.clone(),
+                    code_hash: token_code_hash.clone(),
+                },
+            ),
+        }
+    }
+
+    pub fn create_send_msg(
+        &self,
+        _sender: String,
+        recipient: String,
+        amount: Uint128,
+    ) -> StdResult<CosmosMsg> {
+        let msg = match self {
+            TokenType::CustomToken {
+                contract_addr,
+                token_code_hash,
+            } => CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: contract_addr.clone().into_string(),
+                code_hash: token_code_hash.to_string(),
+                msg: to_binary(&transfer::HandleMsg::Send {
+                    recipient,
+                    amount,
+                    padding: None,
+                    msg: None,
+                    recipient_code_hash: None,
+                    memo: None,
+                })?,
+                funds: vec![],
+            }),
+            TokenType::NativeToken { denom } => CosmosMsg::Bank(BankMsg::Send {
+                to_address: recipient,
+                amount: vec![Coin {
+                    denom: denom.clone(),
+                    amount,
+                }],
+            }),
+        };
+        Ok(msg)
+    }
+}
+
+/// Returns a StdResult<Uint128> from performing a Balance query
+pub fn balance_query(
+    querier: &QuerierWrapper,
+    address: Addr,
+    key: String,
+    contract: &ContractInfo,
+) -> StdResult<Uint128> {
+    let msg: QueryMsg = QueryMsg::Balance {
+        address: address.to_string(),
+        key,
+    };
+
+    let result: crate::transfer::QueryAnswer =
+        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: contract.address.to_string(),
+            code_hash: contract.code_hash.clone(),
+            msg: to_binary(&msg)?,
+        }))?;
+
+    match result {
+        QueryAnswer::Balance { amount, .. } => Ok(amount),
+        _ => Err(StdError::generic_err("Invalid Balance Response")), //TODO: better error
     }
 }

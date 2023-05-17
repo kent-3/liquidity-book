@@ -49,6 +49,7 @@ impl U256x256Math {
         denominator: U256,
     ) -> Result<U256, U256x256MathError> {
         let (prod0, prod1) = Self::_get_mul_prods(x, y)?;
+
         let result = Self::_get_end_of_div_round_down(x, y, denominator, prod0, prod1)?;
 
         Ok(result)
@@ -124,7 +125,7 @@ impl U256x256Math {
         }
         if prod1 != 0 {
             // Make sure the result is less than 2^256.
-            if prod1 >= 1 << offset {
+            if prod1 >= U256::ONE << offset {
                 return Err(U256x256MathError::MulShiftOverflow);
             }
 
@@ -264,6 +265,7 @@ impl U256x256Math {
 
         let max_256 = U256::ONE << 255;
         let max_256_minus_1 = max_256 - U256::ONE;
+        let product = x.overflowing_mul(y).0;
 
         let mm = x * y % max_256_minus_1;
         let prod0 = x * y % max_256;
@@ -333,7 +335,7 @@ impl U256x256Math {
                 U256::ZERO => {
                     lpotdod = U256::ONE;
                 }
-                _ => lpotdod = (U256::ONE << 255) / lpotdod
+                _ => lpotdod = (U256::ONE << 255) / lpotdod,
             }
 
             // Shift in bits from prod1 into prod0
@@ -360,6 +362,111 @@ impl U256x256Math {
             result = prod0 * inverse;
 
             Ok(result)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ethnum::U256;
+
+    use crate::math::u256x256_math::U256x256Math;
+
+    #[test]
+    fn test_mul_div_round_down() {
+        let x = U256::from(1000u128);
+        let y = U256::from(1000u128);
+        let denominator = U256::from(100u128);
+
+        let res = U256x256Math::mul_div_round_down(x, y, denominator).unwrap();
+        assert_eq!(res, U256::from(10000u128)); // Replace with expected result
+    }
+
+    #[test]
+    fn test_mul_div_round_up() {
+        let x = U256::from(1000u128);
+        let y = U256::from(1000u128);
+        let denominator = U256::from(100u128);
+
+        let res = U256x256Math::mul_div_round_down(x, y, denominator).unwrap();
+        assert_eq!(res, U256::from(10000u128)); // Replace with expected result
+    }
+
+    #[test]
+    fn test_mul_shift_div_round_down() {
+        let x = U256::from(1000u128);
+        let y = U256::from(1000u128);
+        let shift = 10u8;
+
+        let (prod0, prod1) = U256x256Math::_get_mul_prods(x, y).unwrap();
+
+        assert_eq!(prod0, U256::from(1000000u128)); // Replace with expected result
+        assert_eq!(prod1, U256::from(0u128)); // Replace with expected result
+
+        let res = U256x256Math::mul_shift_round_down(x, y, shift).unwrap();
+        assert_eq!(res, U256::from(976u128)); // Replace with expected result
+    }
+
+    #[test]
+    fn test_mul_shift_div_round_up() {
+        let x = U256::from(1000u128);
+        let y = U256::from(1000u128);
+        let shift = 10u8;
+
+        let (prod0, prod1) = U256x256Math::_get_mul_prods(x, y).unwrap();
+
+        assert_eq!(prod0, U256::from(1000000u128)); // Replace with expected result
+        assert_eq!(prod1, U256::from(0u128)); // Replace with expected result
+
+        let res = U256x256Math::mul_shift_round_up(x, y, shift).unwrap();
+        assert_eq!(res, U256::from(977u128)); // Replace with expected result
+    }
+
+    #[test]
+    fn test_shift_div_round_down() {
+        let x = U256::from(1000u128);
+        let shift = 10u8;
+        let denominator = U256::from(100u128);
+
+        let shifted = x << shift;
+        let (prod0, prod1) = U256x256Math::_get_mul_prods(shifted, U256::ONE).unwrap();
+
+        assert_eq!(prod0, U256::from(1024000u128)); // Replace with expected result
+        assert_eq!(prod1, U256::from(0u128)); // Replace with expected result
+
+        if denominator != U256::ZERO {
+            if prod1 != U256::ZERO && denominator <= prod1 {
+                panic!("Overflow error!"); // Simulate vm.expectRevert
+            } else {
+                let res = U256x256Math::shift_div_round_down(x, shift, denominator).unwrap();
+                assert_eq!(res, 10240); // Replace with expected result
+            }
+        } else {
+            panic!("Denominator is zero!"); // Simulate vm.expectRevert
+        }
+    }
+
+    #[test]
+    fn test_shift_div_round_up() {
+        let x = U256::from(1000u128);
+        let shift = 10u8;
+        let denominator = U256::from(100u128);
+
+        let shifted = x << shift;
+        let (prod0, prod1) = U256x256Math::_get_mul_prods(shifted, U256::ONE).unwrap();
+
+        assert_eq!(prod0, U256::from(1024000u128)); // Replace with expected result
+        assert_eq!(prod1, U256::from(0u128)); // Replace with expected result
+
+        if denominator != U256::ZERO {
+            if prod1 != U256::ZERO && denominator <= prod1 {
+                panic!("Overflow error!"); // Simulate vm.expectRevert
+            } else {
+                let res = U256x256Math::shift_div_round_down(x, shift, denominator).unwrap();
+                assert_eq!(res, 10240); // Replace with expected result
+            }
+        } else {
+            panic!("Denominator is zero!"); // Simulate vm.expectRevert
         }
     }
 }

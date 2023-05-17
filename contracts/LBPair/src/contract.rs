@@ -126,8 +126,8 @@ pub fn instantiate(
         reserves: [0u8; 32],
         protocol_fees: [0u8; 32],
         lb_token: ContractInfo {
-            address: Addr::unchecked("tbd".to_string()),
-            code_hash: "tbd".to_string(),
+            address: Addr::unchecked("lb_token".to_string()),
+            code_hash: "lb_token".to_string(),
         },
         viewing_key,
     };
@@ -782,6 +782,7 @@ fn _mint_bins(
             liquidity_configs[i.0].0,
             amounts_received,
         )?;
+
         let (shares, amounts_in, amounts_in_to_bin) = _update_bin(
             deps,
             time,
@@ -852,7 +853,7 @@ fn _update_bin(
         config.lb_token.address,
     )?;
 
-    // let total_supply = U256::new(6186945938883118954998384437402923);
+    // println!("Bin reserves before: {:?}", bin_reserves);
 
     let (shares, amounts_in) = BinHelper::get_shares_and_effective_amounts_in(
         bin_reserves,
@@ -860,7 +861,12 @@ fn _update_bin(
         price,
         total_supply,
     )?;
+
+    // println!("Bin reserves after: {:?}", bin_reserves);
+
     let amounts_in_to_bin = amounts_in;
+
+    println!("Amounts in bin: {:?}", amounts_in_to_bin.decode());
 
     if id == active_id {
         let mut parameters = parameters.update_volatility_parameters(id, time)?;
@@ -942,6 +948,7 @@ fn total_supply(deps: Deps, id: u32, code_hash: String, address: Addr) -> Result
     }
 
     Ok(total_supply_uint256.uint256_to_u256())
+    // Ok(U256::new(6186945938883118954998384437402923)) // incase of unit-tests
 }
 
 pub fn try_remove_liquidity(

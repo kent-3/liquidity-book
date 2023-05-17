@@ -15,6 +15,7 @@ use libraries::tokens::TokenType;
 use libraries::types::{Bytes32, LBPairInformation, LiquidityConfigurations};
 
 use crate::msg::*;
+use crate::operations::swap_tokens_for_exact_tokens;
 use crate::prelude::*;
 use crate::state::*;
 
@@ -22,6 +23,8 @@ use crate::state::*;
 const BLOCK_SIZE: usize = 256;
 pub const SHADE_ROUTER_KEY: &str = "SHADE_ROUTER_KEY";
 pub const MINT_REPLY_ID: u64 = 1u64;
+pub const SWAP_REPLY_ID: u64 = 1u64;
+
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
@@ -34,6 +37,7 @@ pub fn instantiate(
     let mut config = Config {
         factory: msg.factory,
         admins: Vec::new(),
+        viewing_key: SHADE_ROUTER_KEY.to_string(),
     };
 
     if let Some(admins) = msg.admins {
@@ -64,10 +68,34 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             active_id,
             bin_step,
         } => create_lb_pair(deps, env, token_x, token_y, active_id, bin_step),
-        _=> todo!()
-        // ExecuteMsg::AddLiquidity {
-        //     liquidity_parameters,
-        // } => todo!(),
+        ExecuteMsg::SwapTokensForExact {
+            offer,
+            expected_return,
+            path,
+            recipient,
+        } => {
+            if !offer.token.is_native_token() {
+                return Err(Error::NonNativeTokenErr);
+            }
+            offer.assert_sent_native_token_balance(&info)?;
+            let sender = info.sender.clone();
+            let checked_address = match recipient {
+                Some(x) => Some(deps.api.addr_validate(&x)?),
+                None => None,
+            };
+            let response = Response::new();
+            Ok(swap_tokens_for_exact_tokens(
+                deps,
+                env,
+                offer,
+                expected_return,
+                &path,
+                sender,
+                checked_address,
+                response,
+            )?)
+        }
+        _ => todo!(),
     }
 }
 
