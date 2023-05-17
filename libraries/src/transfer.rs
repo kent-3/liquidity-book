@@ -1,5 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_binary, Binary, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{
+    to_binary, Addr, Binary, Coin, ContractInfo, CosmosMsg, QuerierWrapper, QueryRequest,
+    StdResult, Uint128, WasmMsg, WasmQuery,
+};
 
 const BLOCK_SIZE: usize = 256;
 /// SNIP20 token handle messages
@@ -87,4 +90,14 @@ pub fn space_pad(message: &mut Vec<u8>, block_size: usize) -> &mut Vec<u8> {
     message.reserve(missing);
     message.extend(std::iter::repeat(b' ').take(missing));
     message
+}
+
+#[cw_serde]
+pub enum QueryMsg {
+    Balance { address: String, key: String },
+}
+
+#[cw_serde]
+pub enum QueryAnswer {
+    Balance { amount: Uint128 },
 }

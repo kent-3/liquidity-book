@@ -136,6 +136,7 @@ impl BinHelper {
         }
 
         let shares = U256x256Math::mul_div_round_down(user_liquidity, total_supply, bin_liquidity)?;
+
         let effective_liquidity =
             U256x256Math::mul_div_round_up(shares, bin_liquidity, total_supply)?;
 
@@ -174,8 +175,12 @@ impl BinHelper {
     /// * `price` - The price of the bin
     pub fn get_liquidity(amounts: [u8; 32], price: U256) -> U256 {
         let (x, y) = amounts.decode();
+        println!("GET_LIQ X {:?} AND Y,,: {:?}", x, y);
+
         let x = U256::from(x);
         let y = U256::from(y);
+
+        println!("GET_LIQ X {:?} AND Y: {:?}", x, y);
 
         let mut liquidity = U256::ZERO;
 
@@ -183,10 +188,14 @@ impl BinHelper {
             liquidity = price.checked_mul(x).unwrap();
         }
 
+        // println!("Liquidity {:?}", liquidity);
+
         if y > U256::ZERO {
             let shifted_y = y << 128;
             liquidity = liquidity.checked_add(shifted_y).unwrap();
         }
+
+        // println!("Liquidity {:?}", liquidity);
 
         liquidity
     }
@@ -385,9 +394,8 @@ impl BinHelper {
         let balance_y = amount_received_y.u128();
 
         let encoded_balances = Bytes32::encode(balance_x, balance_y);
-        let amounts = encoded_balances.sub(reserves);
 
-        amounts
+        encoded_balances
     }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token X.
@@ -550,5 +558,39 @@ impl BinHelper {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::StdResult;
+    use ethnum::U256;
+
+    use crate::math::packed_u128_math::{Decode, Encode};
+
+    use super::BinHelper;
+
+    #[test]
+    fn test_share() -> StdResult<()> {
+        let bin_reserves = Encode::encode(10000, 10000);
+        let amount_in = Encode::encode(1000, 1000);
+        let price = U256::from(100u128);
+        let total_supply = U256::from(100u128);
+
+        let ((shares, effective_amounts_in)) = BinHelper::get_shares_and_effective_amounts_in(
+            bin_reserves,
+            amount_in,
+            price,
+            total_supply,
+        )
+        .unwrap();
+
+        println!("shares: {:?}", shares);
+        println!(
+            "effective_amounts_in: {:?}",
+            U256::from(effective_amounts_in.decode_y())
+        );
+
+        Ok(())
     }
 }

@@ -129,6 +129,8 @@ pub enum QueryMsg {
     // GetCount returns the current count as a json-encoded number
     #[returns(FactoryResponse)]
     GetFactory {},
+    #[returns(TokensResponse)]
+    GetTokens {},
     #[returns(TokenXResponse)]
     GetTokenX {},
     #[returns(TokenYResponse)]
@@ -173,6 +175,12 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct FactoryResponse {
     pub factory: Addr,
+}
+
+#[cw_serde]
+pub struct TokensResponse {
+    pub token_x: TokenType,
+    pub token_y: TokenType,
 }
 
 #[cw_serde]
