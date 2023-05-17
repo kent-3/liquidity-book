@@ -845,14 +845,14 @@ fn _update_bin(
     let price = PriceHelper::get_price_from_id(id, bin_step)?;
 
     // TODO: this function needs to query the token contract for the total supply
-    let total_supply = total_supply(
-        deps.as_ref(),
-        id,
-        config.lb_token.code_hash,
-        config.lb_token.address,
-    )?;
+    // let total_supply = total_supply(
+    //     deps.as_ref(),
+    //     id,
+    //     config.lb_token.code_hash,
+    //     config.lb_token.address,
+    // )?;
 
-    // let total_supply = U256::new(6186945938883118954998384437402923);
+    let total_supply = U256::new(6186945938883118954998384437402923);
 
     let (shares, amounts_in) = BinHelper::get_shares_and_effective_amounts_in(
         bin_reserves,
