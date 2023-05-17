@@ -41,6 +41,7 @@ pub enum ExecuteMsg {
     },
 }
 
+//LbPair Contract
 #[cw_serde]
 pub struct Hop {
     pub addr: String,
@@ -120,4 +121,12 @@ pub struct SwapOutResponse {
     pub amount_in_left: Uint128,
     pub amount_out: Uint128,
     pub fee: Uint128,
+}
+
+#[cw_serde]
+pub enum ExecuteMsgResponse {
+    SwapResult {
+        amount_in: Uint128,
+        amount_out: Uint128,
+    },
 }
