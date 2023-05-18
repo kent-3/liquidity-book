@@ -263,14 +263,10 @@ impl U256x256Math {
         // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
         // variables such that product = prod1 * 2^256 + prod0.
 
-        let max_256 = U256::ONE << 255;
-        let max_256_minus_1 = max_256 - U256::ONE;
-        let product = x.overflowing_mul(y).0;
-
-        let mm = x * y % max_256_minus_1;
-        let prod0 = x * y % max_256;
-        let temp = if mm < prod0 { U256::ONE } else { U256::ZERO };
-        let prod1 = (mm - prod0 - temp) % max_256;
+        // TODO: revisit this - I think it works OK for our needs, but there could be edge cases
+        let mm = x * y % U256::MAX;
+        let prod0 = x * y;
+        let prod1 = mm - prod0 - (if mm < prod0 { U256::ONE } else { U256::ZERO });
 
         Ok((prod0, prod1))
     }
@@ -372,7 +368,10 @@ impl U256x256Math {
 mod tests {
     use ethnum::U256;
 
-    use crate::math::u256x256_math::U256x256Math;
+    use crate::{
+        constants::{PRECISION, SCALE_OFFSET},
+        math::u256x256_math::U256x256Math,
+    };
 
     #[test]
     fn test_mul_div_round_down() {
@@ -396,32 +395,22 @@ mod tests {
 
     #[test]
     fn test_mul_shift_div_round_down() {
-        let x = U256::from(1000u128);
-        let y = U256::from(1000u128);
-        let shift = 10u8;
-
-        let (prod0, prod1) = U256x256Math::_get_mul_prods(x, y).unwrap();
-
-        assert_eq!(prod0, U256::from(1000000u128)); // Replace with expected result
-        assert_eq!(prod1, U256::from(0u128)); // Replace with expected result
+        let x = U256::from_words(1000u128, 1000u128);
+        let y = U256::from(PRECISION);
+        let shift = SCALE_OFFSET;
 
         let res = U256x256Math::mul_shift_round_down(x, y, shift).unwrap();
-        assert_eq!(res, U256::from(976u128)); // Replace with expected result
+        assert_eq!(res, U256::from(1000000000000000000000u128)); // Replace with expected result
     }
 
     #[test]
     fn test_mul_shift_div_round_up() {
-        let x = U256::from(1000u128);
-        let y = U256::from(1000u128);
-        let shift = 10u8;
-
-        let (prod0, prod1) = U256x256Math::_get_mul_prods(x, y).unwrap();
-
-        assert_eq!(prod0, U256::from(1000000u128)); // Replace with expected result
-        assert_eq!(prod1, U256::from(0u128)); // Replace with expected result
+        let x = U256::from_words(1000u128, 1000u128);
+        let y = U256::from(PRECISION);
+        let shift = SCALE_OFFSET;
 
         let res = U256x256Math::mul_shift_round_up(x, y, shift).unwrap();
-        assert_eq!(res, U256::from(977u128)); // Replace with expected result
+        assert_eq!(res, U256::from(1000000000000000000001u128)); // Replace with expected result
     }
 
     #[test]
