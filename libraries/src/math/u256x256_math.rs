@@ -294,8 +294,8 @@ impl U256x256Math {
         x: U256,
         y: U256,
         denominator: U256,
-        prod0: U256,
-        prod1: U256,
+        mut prod0: U256,
+        mut prod1: U256,
     ) -> Result<U256, U256x256MathError> {
         let result: U256;
 
@@ -315,8 +315,10 @@ impl U256x256Math {
             let remainder = (x * y) % denominator;
 
             // Subtract 256 bit number from 512 bit number.
-            let prod1 = prod1 - remainder.max(prod1);
-            let prod0 = prod0 - remainder;
+            if remainder > prod0 {
+                prod1 -= 1
+            }
+            prod0 -= remainder;
 
             // Factor powers of two out of denominator and compute largest power of two divisor of denominator. Always >= 1
             // See https://cs.stackexchange.com/q/138556/92363
