@@ -573,7 +573,10 @@ impl PackedU128 {
     /// # Panics
     ///
     /// This function will panic if the `multiplier` argument is larger than the constant `BASIS_POINT_MAX`.
-    pub fn scalar_mul_div_basis_point_round_down(x: Bytes32, multiplier: u128) -> Result<Bytes32, StdError> {
+    pub fn scalar_mul_div_basis_point_round_down(
+        x: Bytes32,
+        multiplier: u128,
+    ) -> Result<Bytes32, StdError> {
         if multiplier == 0 {
             return Ok([0u8; 32]);
         }

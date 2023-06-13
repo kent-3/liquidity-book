@@ -306,9 +306,10 @@ fn try_create_lb_pair(
         CosmosMsg::Wasm(WasmMsg::Instantiate {
             code_id: state.lb_pair_implementation.id,
             label: format!(
-                "{}-{}-pair-{}-{}",
+                "{}-{}-{}-pair-{}-{}",
                 token_x.unique_key(),
                 token_y.unique_key(),
+                bin_step,
                 env.contract.address,
                 state.lb_pair_implementation.id
             ),

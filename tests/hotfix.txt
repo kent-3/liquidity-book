@@ -1,0 +1,79 @@
+import { SecretNetworkClient, Wallet } from "secretjs";
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env' });
+
+export const sleep = () => new Promise((resolve) => setTimeout(resolve, 5000))
+
+async function main() {
+  const mnemonic = process.env.MNEMONIC!;
+  const endpoint = process.env.LCD_URL!;
+  const chainId = process.env.CHAIN_ID!;
+
+  let wallet = new Wallet(mnemonic);
+  const accAddress = wallet.address;
+  const client = new SecretNetworkClient({
+    url: endpoint,
+    chainId: chainId,
+    wallet: wallet,
+    walletAddress: accAddress,
+  });
+  console.log(`Initialized client with wallet address: ${accAddress}`);
+
+  // decrease allowance for sSCRT
+  let tx = await client.tx.snip20.decreaseAllowance(
+    {
+      sender: client.address,
+      contract_address: 'secret18vd8fpwxzck93qlwghaj6arh4p7c5n8978vsyg',
+      code_hash: '9587d60b8e6b078ace12014ceeee089530b9fabcd76535d93666a6c127ad8813',
+      msg: {
+        decrease_allowance: {
+          spender: 'secret1pdn37sf2sfmsce9zrlxh3zhm4fa8cly5glrlga',
+          amount: "340282366920938463463374607431768211454",
+        }
+      }
+    },
+    {
+      gasLimit: 200_000,
+    }
+  );
+
+  if (tx.code !== 0) {
+    throw new Error(
+      `Failed with the following error:\n ${tx.rawLog}`
+    );
+  };
+
+  console.log(`decrease sSCRT Allowance TX used ${tx.gasUsed} gas`);
+
+
+  await sleep();
+
+  // decrease allowance for SILK
+  let tx2 = await client.tx.snip20.decreaseAllowance(
+    {
+      sender: client.address,
+      contract_address: 'secret16xz08fdtkp5m8m6arpfgnehlfl4t86l0p33xg0',
+      code_hash: 'b6c896d21e46e037a2a1bca1d55af262d7ae4a5a175af055f3939722626b30c3',
+      msg: {
+        decrease_allowance: {
+          spender: 'secret1pdn37sf2sfmsce9zrlxh3zhm4fa8cly5glrlga',
+          amount: '340282366920938463463374607431768211454',
+        }
+      }
+    },
+    {
+      gasLimit: 200_000,
+    }
+  );
+
+  if (tx2.code !== 0) {
+    throw new Error(
+      `Failed with the following error:\n ${tx2.rawLog}`
+    );
+  };
+
+  console.log(`decrease SILK Allowance TX used ${tx2.gasUsed} gas`);
+}
+
+main();
