@@ -69,3 +69,60 @@ impl PriceHelper {
         U256x256Math::mul_shift_round_down(price128x128, PRECISION.into(), SCALE_OFFSET)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_price_from_id() {
+        let id = 8574931;
+        let bin_step = 1u16;
+        let price = PriceHelper::get_price_from_id(id, bin_step).unwrap();
+
+        assert!(price > U256::ZERO);
+        //42008768657166552252904831246223292524636112144
+        // println!("price {}", price);
+    }
+
+    #[test]
+    fn test_get_id_from_price() {
+        let price = U256::from(100u128);
+        let bin_step = 5u16;
+        let id = PriceHelper::get_id_from_price(price, bin_step).unwrap();
+
+        assert!(id > 0);
+    }
+
+    #[test]
+    fn test_get_base() {
+        let bin_step = 5u16;
+        let base = PriceHelper::get_base(bin_step);
+
+        assert!(base > U256::ZERO);
+    }
+
+    #[test]
+    fn test_get_exponent() {
+        let id = 50u32;
+        let exponent = PriceHelper::get_exponent(id);
+
+        assert!(exponent > I256::ZERO);
+    }
+
+    #[test]
+    fn test_convert_decimal_price_to128x128() {
+        let price = U256::from(100u128);
+        let converted_price = PriceHelper::convert_decimal_price_to128x128(price).unwrap();
+
+        assert!(converted_price > U256::ZERO);
+    }
+
+    #[test]
+    fn test_convert128x128_price_to_decimal() {
+        let price128x128 = U256::from(100u128);
+        let converted_price = PriceHelper::convert128x128_price_to_decimal(price128x128).unwrap();
+
+        assert!(converted_price > U256::ZERO);
+    }
+}
