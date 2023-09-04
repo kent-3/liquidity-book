@@ -1,13 +1,13 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Uint128, Uint256};
 
-use libraries::tokens::TokenType;
+use lb_libraries::tokens::TokenType;
 
 // TODO: I wonder if we should move all the message types to the interface libs?
 // that way there is a single "source of truth" as they say
 
-pub use interfaces::lb_pair::ExecuteMsg;
-pub use interfaces::lb_pair::InstantiateMsg;
+pub use lb_interfaces::lb_pair::ExecuteMsg;
+pub use lb_interfaces::lb_pair::InstantiateMsg;
 
 // #[cw_serde]
 // pub struct InstantiateMsg {

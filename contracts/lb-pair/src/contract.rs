@@ -10,24 +10,24 @@ use cosmwasm_std::{
 
 use ethnum::U256;
 
-use interfaces::lb_pair::{LiquidityParameters, MintResponse, RemoveLiquidity};
-use interfaces::lb_token::InstantiateMsg as LBTokenInstantiateMsg;
-use libraries::bin_helper::BinHelper;
-use libraries::constants::SCALE_OFFSET;
-use libraries::fee_helper::FeeHelper;
-use libraries::math::encoded_sample::EncodedSample;
-use libraries::math::packed_u128_math::{Decode, Encode, PackedMath};
-use libraries::math::sample_math::OracleSample;
-use libraries::math::tree_math::TreeUint24;
-use libraries::math::u24::U24;
-use libraries::math::u256x256_math::U256x256Math;
-use libraries::math::uint256_to_u256::{self, ConvertU256, ConvertUint256};
-use libraries::oracle_helper::{Oracle, OracleError, MAX_SAMPLE_LIFETIME};
-use libraries::pair_parameter_helper::PairParameters;
-use libraries::price_helper::PriceHelper;
-use libraries::tokens::TokenType;
-use libraries::types::{Bytes32, LBPairInformation, LiquidityConfigurations, MintArrays};
-use libraries::viewing_keys::{register_receive, set_viewing_key_msg, ViewingKey};
+use lb_interfaces::lb_pair::{LiquidityParameters, MintResponse, RemoveLiquidity};
+use lb_interfaces::lb_token::InstantiateMsg as LBTokenInstantiateMsg;
+use lb_libraries::bin_helper::BinHelper;
+use lb_libraries::constants::SCALE_OFFSET;
+use lb_libraries::fee_helper::FeeHelper;
+use lb_libraries::math::encoded_sample::EncodedSample;
+use lb_libraries::math::packed_u128_math::{Decode, Encode, PackedMath};
+use lb_libraries::math::sample_math::OracleSample;
+use lb_libraries::math::tree_math::TreeUint24;
+use lb_libraries::math::u24::U24;
+use lb_libraries::math::u256x256_math::U256x256Math;
+use lb_libraries::math::uint256_to_u256::{self, ConvertU256, ConvertUint256};
+use lb_libraries::oracle_helper::{Oracle, OracleError, MAX_SAMPLE_LIFETIME};
+use lb_libraries::pair_parameter_helper::PairParameters;
+use lb_libraries::price_helper::PriceHelper;
+use lb_libraries::tokens::TokenType;
+use lb_libraries::types::{Bytes32, LBPairInformation, LiquidityConfigurations, MintArrays};
+use lb_libraries::viewing_keys::{register_receive, set_viewing_key_msg, ViewingKey};
 
 use crate::msg::*;
 use crate::prelude::*;
@@ -800,7 +800,7 @@ fn _mint_bins(
 
         let amount = shares.u256_to_uint256();
 
-        let msg = interfaces::lb_pair::LbTokenExecuteMsg::Mint {
+        let msg = lb_interfaces::lb_pair::LbTokenExecuteMsg::Mint {
             recipient: to.clone(),
             id,
             amount,
@@ -1175,7 +1175,7 @@ fn _burn(
 ) -> Result<CosmosMsg> {
     // TODO: Implement the burn logic for the provided `id` and `amount`.
     // You might need to call the contract's token burning function or interact with the token's storage directly.
-    let msg = interfaces::lb_pair::LbTokenExecuteMsg::Burn {
+    let msg = lb_interfaces::lb_pair::LbTokenExecuteMsg::Burn {
         owner: from,
         id,
         amount,

@@ -8,8 +8,8 @@ use cosmwasm_std::{
     to_binary, Addr, Coin, ContractInfo, CosmosMsg, DepsMut, Env, Response, StdResult, SubMsg,
     Uint128, WasmMsg,
 };
-use interfaces::lb_pair;
-use libraries::{
+use lb_interfaces::lb_pair;
+use lb_libraries::{
     tokens::TokenType,
     viewing_keys::{register_receive, set_viewing_key_msg},
 };
@@ -102,7 +102,7 @@ fn get_trade_with_callback(
             contract_addr,
             token_code_hash,
         } => {
-            let msg = to_binary(&libraries::transfer::HandleMsg::Send {
+            let msg = to_binary(&lb_libraries::transfer::HandleMsg::Send {
                 recipient: hop.addr.to_string(),
                 amount: token_in.amount,
                 msg: Some(to_binary(&&lb_pair::ExecuteMsg::Swap {

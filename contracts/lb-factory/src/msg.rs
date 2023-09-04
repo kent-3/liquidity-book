@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr};
-pub use interfaces::lb_pair::InstantiateMsg as LBPairInstantiateMsg;
-use libraries::{
+pub use lb_interfaces::lb_pair::InstantiateMsg as LBPairInstantiateMsg;
+use lb_libraries::{
     tokens::TokenType,
     types::{ContractInstantiationInfo},
 };

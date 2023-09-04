@@ -10,8 +10,8 @@ mod tests {
         SystemResult, Uint128, Uint256, WasmQuery,
     };
     use ethnum::U256;
-    use interfaces::lb_pair::{ExecuteMsg, LiquidityParameters, RemoveLiquidity};
-    use libraries::{
+    use lb_interfaces::lb_pair::{ExecuteMsg, LiquidityParameters, RemoveLiquidity};
+    use lb_libraries::{
         tokens::TokenType,
         types::{ContractInstantiationInfo, StaticFeeParameters},
     };
@@ -34,7 +34,7 @@ mod tests {
 
         let mock_message_info = mock_info("", &[]);
 
-        let init_msg = interfaces::lb_pair::InstantiateMsg {
+        let init_msg = lb_interfaces::lb_pair::InstantiateMsg {
             factory: ContractInfo {
                 address: Addr::unchecked("factory_address"),
                 code_hash: "factory_code_hash".to_string(),
@@ -200,7 +200,7 @@ mod tests {
             deps.as_mut(),
             env,
             info,
-            interfaces::lb_pair::ExecuteMsg::RemoveLiquidity {
+            lb_interfaces::lb_pair::ExecuteMsg::RemoveLiquidity {
                 remove_liquidity_params: msg,
             },
         )
@@ -309,7 +309,7 @@ mod tests {
             deps.as_mut(),
             env,
             info.clone(),
-            interfaces::lb_pair::ExecuteMsg::Swap {
+            lb_interfaces::lb_pair::ExecuteMsg::Swap {
                 swap_for_y: true,
                 to: info.sender,
                 amount_received: Uint128::from(9999990000000u128),

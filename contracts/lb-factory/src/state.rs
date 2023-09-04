@@ -3,12 +3,12 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-use libraries::pair_parameter_helper::PairParameters;
-use libraries::tokens::TokenType;
+use lb_libraries::pair_parameter_helper::PairParameters;
+use lb_libraries::tokens::TokenType;
 use secret_toolkit::serialization::Json;
 use secret_toolkit::storage::{Item, Keymap, Keyset};
 
-use libraries::types::{Bytes32, ContractInstantiationInfo};
+use lb_libraries::types::{Bytes32, ContractInstantiationInfo};
 
 use crate::prelude::*;
 use crate::types::{LBPair, LBPairInformation, NextPairKey};

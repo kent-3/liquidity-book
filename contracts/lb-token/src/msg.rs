@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{to_binary, Addr, Coin, CosmosMsg, StdResult, Uint128, Uint256, WasmMsg};
 
-use libraries::transfer::space_pad;
+use lb_libraries::transfer::space_pad;
 
 #[cw_serde]
 pub struct InstantiateMsg {

@@ -7,11 +7,11 @@ use cosmwasm_std::{
 use cosmwasm_std::{ContractInfo, Storage};
 use ethnum::U256;
 
-use libraries::math::encoded_sample::EncodedSample;
-use libraries::pair_parameter_helper::PairParameters;
-use libraries::price_helper::PriceHelper;
-use libraries::tokens::TokenType;
-use libraries::types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters};
+use lb_libraries::math::encoded_sample::EncodedSample;
+use lb_libraries::pair_parameter_helper::PairParameters;
+use lb_libraries::price_helper::PriceHelper;
+use lb_libraries::tokens::TokenType;
+use lb_libraries::types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters};
 
 use crate::msg::*;
 use crate::prelude::*;

@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CanonicalAddr, ContractInfo, Uint128};
 
-use libraries::tokens::TokenType;
+use lb_libraries::tokens::TokenType;
 use secret_toolkit::storage::Item;
 
 use crate::msg::{Hop, TokenAmount};

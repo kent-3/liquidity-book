@@ -1,16 +1,16 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-use libraries::pair_parameter_helper::PairParameters;
-use libraries::viewing_keys::ViewingKey;
+use lb_libraries::pair_parameter_helper::PairParameters;
+use lb_libraries::viewing_keys::ViewingKey;
 use secret_toolkit::serialization::Json;
 use secret_toolkit::storage::{Item, Keymap};
 
-use libraries::math::tree_math::TreeUint24;
-use libraries::oracle_helper::Oracle;
-use libraries::types::Bytes32;
+use lb_libraries::math::tree_math::TreeUint24;
+use lb_libraries::oracle_helper::Oracle;
+use lb_libraries::types::Bytes32;
 
-use libraries::tokens::TokenType;
+use lb_libraries::tokens::TokenType;
 
 pub static CONFIG: Item<State, Json> = Item::new(b"config");
 pub static BIN_MAP: Keymap<u32, Bytes32> = Keymap::new(b"bins");

@@ -3,13 +3,13 @@
 #![allow(unused)] // For beginning only.
 
 use cosmwasm_std::Addr;
-use libraries::bin_helper::BinError;
-use libraries::fee_helper::FeeError;
-use libraries::math::liquidity_configurations::LiquidityConfigurationsError;
-use libraries::math::u128x128_math::U128x128MathError;
-use libraries::math::u256x256_math::U256x256MathError;
-use libraries::oracle_helper::OracleError;
-use libraries::pair_parameter_helper::PairParametersError;
+use lb_libraries::bin_helper::BinError;
+use lb_libraries::fee_helper::FeeError;
+use lb_libraries::math::liquidity_configurations::LiquidityConfigurationsError;
+use lb_libraries::math::u128x128_math::U128x128MathError;
+use lb_libraries::math::u256x256_math::U256x256MathError;
+use lb_libraries::oracle_helper::OracleError;
+use lb_libraries::pair_parameter_helper::PairParametersError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum LBFactoryError {

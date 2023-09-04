@@ -1,5 +1,5 @@
 use cosmwasm_std::{to_binary, ContractInfo, QuerierWrapper, QueryRequest, StdResult, WasmQuery};
-use interfaces::lb_pair::{self, TokensResponse};
+use lb_interfaces::lb_pair::{self, TokensResponse};
 
 pub fn pair_contract_config(
     querier: &QuerierWrapper,

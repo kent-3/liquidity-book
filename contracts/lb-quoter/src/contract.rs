@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 use ethnum::U256;
 
-use libraries::types::Bytes32;
+use lb_libraries::types::Bytes32;
 
 use crate::msg::*;
 use crate::prelude::*;
