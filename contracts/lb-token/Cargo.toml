@@ -1,9 +1,8 @@
 [package]
-name = "lb_token"
+name = "lb-token"
 version = "0.1.0"
 edition = "2021"
 exclude = [
-  # Those files are contract-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
   "hash.txt",
 ]
@@ -13,12 +12,11 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-# for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-libraries={path = "../../libraries"}
+interfaces = { package = "lb-interfaces", path = "../../packages/interfaces" }
+libraries = { package = "lb-libraries", path = "../../packages/libraries" }
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret", features = ["stargate"] }
 cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret" }
 cosmwasm-schema = { version = "1.2" }

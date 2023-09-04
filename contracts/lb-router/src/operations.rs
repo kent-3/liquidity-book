@@ -8,7 +8,7 @@ use cosmwasm_std::{
     to_binary, Addr, Coin, ContractInfo, CosmosMsg, DepsMut, Env, Response, StdResult, SubMsg,
     Uint128, WasmMsg,
 };
-use interfaces::ILBPair;
+use interfaces::lb_pair;
 use libraries::{
     tokens::TokenType,
     viewing_keys::{register_receive, set_viewing_key_msg},
@@ -38,7 +38,7 @@ pub fn swap_tokens_for_exact_tokens(
     )?;
 
     match next_pair_contract {
-        ILBPair::TokensResponse { token_x, token_y } => {
+        lb_pair::TokensResponse { token_x, token_y } => {
             let next_token_in;
             let mut swap_for_y = false;
             if token_x == amount_in.token {
@@ -79,7 +79,7 @@ fn get_trade_with_callback(
 ) -> Result<Response, LBRouterError> {
     match &token_in.token {
         TokenType::NativeToken { denom } => {
-            let msg = to_binary(&ILBPair::ExecuteMsg::Swap {
+            let msg = to_binary(&lb_pair::ExecuteMsg::Swap {
                 swap_for_y,
                 to: env.contract.address,
                 amount_received: token_in.amount,
@@ -105,7 +105,7 @@ fn get_trade_with_callback(
             let msg = to_binary(&libraries::transfer::HandleMsg::Send {
                 recipient: hop.addr.to_string(),
                 amount: token_in.amount,
-                msg: Some(to_binary(&&ILBPair::ExecuteMsg::Swap {
+                msg: Some(to_binary(&&lb_pair::ExecuteMsg::Swap {
                     swap_for_y,
                     to: env.contract.address,
                     amount_received: token_in.amount,
@@ -158,7 +158,7 @@ pub fn next_swap(
             )?;
 
             match next_pair_contract {
-                ILBPair::TokensResponse { token_x, token_y } => {
+                lb_pair::TokensResponse { token_x, token_y } => {
                     info.current_index = info.current_index + 1;
 
                     let mut swap_for_y = false;

@@ -104,7 +104,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 //     match (msg.id, msg.result) {
 //         (MINT_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
 //             Some(x) => {
-//                 let data: interfaces::ILBPair::MintResponse = from_binary(&x)?;
+//                 let data: interfaces::lb_pair::MintResponse = from_binary(&x)?;
 
 //                 let amount_x_added = Uint128::from(data.amounts_received.decode_x());
 //                 let amount_y_added = Uint128::from(data.amounts_received.decode_y());
@@ -141,7 +141,7 @@ pub fn create_lb_pair(
     let config = CONFIG.load(deps.storage)?;
     let factory = config.factory;
 
-    let msg = interfaces::ILBFactory::ExecuteMsg::CreateLBPair {
+    let msg = interfaces::lb_factory::ExecuteMsg::CreateLBPair {
         token_x,
         token_y,
         active_id,
@@ -192,10 +192,10 @@ fn query_id_from_price(
     lb_pair: ContractInfo,
     price: Uint256,
 ) -> Result<IdFromPriceResponse> {
-    let msg = interfaces::ILBPair::QueryMsg::GetIdFromPrice { price };
-    let interfaces::ILBPair::IdFromPriceResponse { id } =
+    let msg = interfaces::lb_pair::QueryMsg::GetIdFromPrice { price };
+    let interfaces::lb_pair::IdFromPriceResponse { id } =
         deps.querier
-            .query_wasm_smart::<interfaces::ILBPair::IdFromPriceResponse>(
+            .query_wasm_smart::<interfaces::lb_pair::IdFromPriceResponse>(
                 lb_pair.code_hash,
                 lb_pair.address.to_string(),
                 &(&msg),
@@ -205,10 +205,10 @@ fn query_id_from_price(
 }
 
 fn query_price_from_id(deps: Deps, lb_pair: ContractInfo, id: u32) -> Result<PriceFromIdResponse> {
-    let msg = interfaces::ILBPair::QueryMsg::GetPriceFromId { id };
-    let interfaces::ILBPair::PriceFromIdResponse { price } =
+    let msg = interfaces::lb_pair::QueryMsg::GetPriceFromId { id };
+    let interfaces::lb_pair::PriceFromIdResponse { price } =
         deps.querier
-            .query_wasm_smart::<interfaces::ILBPair::PriceFromIdResponse>(
+            .query_wasm_smart::<interfaces::lb_pair::PriceFromIdResponse>(
                 lb_pair.code_hash,
                 lb_pair.address.to_string(),
                 &(&msg),
@@ -223,17 +223,17 @@ fn query_swap_in(
     amount_out: Uint128,
     swap_for_y: bool,
 ) -> Result<SwapInResponse> {
-    let msg = interfaces::ILBPair::QueryMsg::GetSwapIn {
+    let msg = interfaces::lb_pair::QueryMsg::GetSwapIn {
         amount_out,
         swap_for_y,
     };
-    let interfaces::ILBPair::SwapInResponse {
+    let interfaces::lb_pair::SwapInResponse {
         amount_in,
         amount_out_left,
         fee,
     } = deps
         .querier
-        .query_wasm_smart::<interfaces::ILBPair::SwapInResponse>(
+        .query_wasm_smart::<interfaces::lb_pair::SwapInResponse>(
             lb_pair.code_hash,
             lb_pair.address.to_string(),
             &(&msg),
@@ -252,17 +252,17 @@ fn query_swap_out(
     amount_in: Uint128,
     swap_for_y: bool,
 ) -> Result<SwapOutResponse> {
-    let msg = interfaces::ILBPair::QueryMsg::GetSwapOut {
+    let msg = interfaces::lb_pair::QueryMsg::GetSwapOut {
         amount_in,
         swap_for_y,
     };
-    let interfaces::ILBPair::SwapOutResponse {
+    let interfaces::lb_pair::SwapOutResponse {
         amount_in_left,
         amount_out,
         fee,
     } = deps
         .querier
-        .query_wasm_smart::<interfaces::ILBPair::SwapOutResponse>(
+        .query_wasm_smart::<interfaces::lb_pair::SwapOutResponse>(
             lb_pair.code_hash,
             lb_pair.address.to_string(),
             &(&msg),

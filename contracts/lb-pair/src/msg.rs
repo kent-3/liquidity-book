@@ -6,8 +6,8 @@ use libraries::tokens::TokenType;
 // TODO: I wonder if we should move all the message types to the interface libs?
 // that way there is a single "source of truth" as they say
 
-pub use interfaces::ILBPair::ExecuteMsg;
-pub use interfaces::ILBPair::InstantiateMsg;
+pub use interfaces::lb_pair::ExecuteMsg;
+pub use interfaces::lb_pair::InstantiateMsg;
 
 // #[cw_serde]
 // pub struct InstantiateMsg {

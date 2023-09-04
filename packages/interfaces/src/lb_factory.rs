@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{to_binary, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
-use libraries::{tokens::TokenType, transfer::space_pad, types::LBPairInformation};
+use lb_libraries::{tokens::TokenType, transfer::space_pad, types::LBPairInformation};
 #[cw_serde]
 pub enum ExecuteMsg {
     #[serde(rename = "create_lb_pair")]

@@ -10,7 +10,8 @@ use cosmwasm_std::{
 
 use ethnum::U256;
 
-use interfaces::ILBPair::{LiquidityParameters, MintResponse, RemoveLiquidity};
+use interfaces::lb_pair::{LiquidityParameters, MintResponse, RemoveLiquidity};
+use interfaces::lb_token::InstantiateMsg as LBTokenInstantiateMsg;
 use libraries::bin_helper::BinHelper;
 use libraries::constants::SCALE_OFFSET;
 use libraries::fee_helper::FeeHelper;
@@ -27,8 +28,6 @@ use libraries::price_helper::PriceHelper;
 use libraries::tokens::TokenType;
 use libraries::types::{Bytes32, LBPairInformation, LiquidityConfigurations, MintArrays};
 use libraries::viewing_keys::{register_receive, set_viewing_key_msg, ViewingKey};
-
-use interfaces::ILBToken::InstantiateMsg as LBTokenInstantiateMsg;
 
 use crate::msg::*;
 use crate::prelude::*;
@@ -801,7 +800,7 @@ fn _mint_bins(
 
         let amount = shares.u256_to_uint256();
 
-        let msg = interfaces::ILBPair::LbTokenExecuteMsg::Mint {
+        let msg = interfaces::lb_pair::LbTokenExecuteMsg::Mint {
             recipient: to.clone(),
             id,
             amount,
@@ -1176,7 +1175,7 @@ fn _burn(
 ) -> Result<CosmosMsg> {
     // TODO: Implement the burn logic for the provided `id` and `amount`.
     // You might need to call the contract's token burning function or interact with the token's storage directly.
-    let msg = interfaces::ILBPair::LbTokenExecuteMsg::Burn {
+    let msg = interfaces::lb_pair::LbTokenExecuteMsg::Burn {
         owner: from,
         id,
         amount,
