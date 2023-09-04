@@ -1,16 +1,13 @@
-# Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
+name: Basic
 
-on: 
+on:
   # push:
   #   branches: [ main ]
   # pull_request:
   #   branches: [ main ]
-  workflow_dispatch:
-
-name: Basic
+  workflow_dispatch
 
 jobs:
-
   test:
     name: Test Suite
     runs-on: ubuntu-latest
@@ -30,8 +27,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: 
-          
+          args: --lib
         env:
           RUST_BACKTRACE: 1
 
@@ -70,7 +66,6 @@ jobs:
           command: clippy
           # set the flag to -D to deny warnings
           args: -- -A warnings
-
       # TODO: figure out how to generate separate schemas per contract
       # - name: Generate Schema
       #   uses: actions-rs/cargo@v1

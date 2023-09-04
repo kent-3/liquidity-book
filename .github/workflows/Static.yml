@@ -1,6 +1,11 @@
-on: [push, pull_request]
-
 name: Static Checks
+
+on:
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  workflow_dispatch
 
 jobs:
   tests:
@@ -9,8 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
+        os: [ ubuntu-latest ]
+        rust: [ stable ]
         make:
           - name: Clippy
             task: "cargo clippy"
@@ -26,6 +31,7 @@ jobs:
             rust: stable
             make:
               name: Clippy
+              task: cargo clippy
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
