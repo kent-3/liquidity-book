@@ -6,6 +6,8 @@ edition = "2021"
 description = "Helper libraries for liquidity book contracts"
 
 [dependencies]
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret"}
+cosmwasm-schema = { version = "1.2" }
 serde = { version = "1.0.188" }
 thiserror = { version = "1.0.48" }
 ethnum = { version = "1.4.0" }

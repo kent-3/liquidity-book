@@ -1,9 +1,0 @@
-[package]
-name = "utils"
-version = "0.1.0"
-authors = ["Kent, Haseeb"]
-edition = "2021"
-
-[dependencies]
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret"}
-cosmwasm-schema = { version = "1.2" }
