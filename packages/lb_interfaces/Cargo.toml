@@ -1,9 +1,9 @@
 [package]
-name = "lb-libraries"
-version = "0.14.0"
+name = "lb-interfaces"
+version = "0.13.4"
 authors = ["Kent, Haseeb"]
 edition = "2021"
-description = "Helper libraries for liquidity book contracts"
+description = "Interfaces for liquidity book contracts"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -13,6 +13,7 @@ default = []
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
+lb-libraries = { path = "../lb_libraries" }
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret", features = [
   "stargate",
 ] }

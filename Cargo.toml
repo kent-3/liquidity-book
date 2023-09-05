@@ -1,12 +1,12 @@
 [workspace]
 members = [
-  "packages/interfaces",
-  "packages/libraries",
-  "contracts/lb-factory",
-  "contracts/lb-pair",
-  "contracts/lb-quoter",
-  "contracts/lb-token",
-  "contracts/lb-router",
+  "packages/lb_interfaces",
+  "packages/lb_libraries",
+  "contracts/lb_factory",
+  "contracts/lb_pair",
+  "contracts/lb_quoter",
+  "contracts/lb_token",
+  "contracts/lb_router",
 ]
 
 [profile.release]
@@ -22,3 +22,5 @@ overflow-checks = true
 
 [patch.crates-io]
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret" }
+
+

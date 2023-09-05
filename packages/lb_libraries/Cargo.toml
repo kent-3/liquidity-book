@@ -1,0 +1,12 @@
+[package]
+name = "lb-libraries"
+version = "0.14.0"
+authors = ["Kent, Haseeb"]
+edition = "2021"
+description = "Helper libraries for liquidity book contracts"
+
+[dependencies]
+serde = { version = "1.0.188" }
+thiserror = { version = "1.0.48" }
+ethnum = { version = "1.4.0" }
+
