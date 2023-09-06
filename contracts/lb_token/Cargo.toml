@@ -2,35 +2,32 @@
 name = "lb-token"
 version = "0.1.0"
 edition = "2021"
-exclude = [
-  "contract.wasm",
-  "hash.txt",
-]
+exclude = ["contract.wasm", "hash.txt"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "schema"
 
 [features]
 default = []
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-lb-interfaces = { path = "../../packages/lb_interfaces" }
-lb-libraries = { path = "../../packages/lb_libraries" }
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret", features = ["stargate"] }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.9-secret" }
-cosmwasm-schema = { version = "1.2" }
-# schemars = { version = "0.8" }
-serde = { version = "1" }
-# serde-json-wasm = { version = "0.5"}
-thiserror = { version = "1" }
-secret-toolkit = { git = "https://github.com/scrtlabs/secret-toolkit", tag = "v0.8.1", default-features = false, features = ["storage"] }
-# cw-storage-plus = { version = "1", default-features = false, features = ["macro"] }
-ethnum = { version = "1" }
+lb-interfaces = { workspace = true }
+lb-libraries = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+cosmwasm-schema = { workspace = true }
+# schemars = { workspace = true }
+serde = { workspace = true }
+# serde-json-wasm = { workspace = true }
+thiserror = { workspace = true }
+secret-toolkit = { workspace = true }
+# cw-storage-plus = { workspace = true }
+ethnum = { workspace = true }
 
 [dev-dependencies]
-anyhow = "1"
-# cw-multi-test = { version = "0.16.0", default-features = false }
-
-[[bin]]
-name = "schema"
+anyhow = { workspace = true }
+# cw-multi-test = { workspace = true }
