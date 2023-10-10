@@ -12,7 +12,7 @@
 //! * 208 - 216: sample lifetime (8 bits)
 //! * 216 - 256: sample creation timestamp (40 bits)
 
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use cosmwasm_std::Timestamp;
 use ethnum::U256;
@@ -160,6 +160,7 @@ impl Oracle {
         let mut sample_last_update = 0u64;
 
         let start_id = oracle_id; // oracleId is 1-based
+
         while low <= high {
             let mid = (low + high) >> 1;
 
@@ -168,12 +169,10 @@ impl Oracle {
             sample = self.samples[&oracle_id];
             sample_last_update = sample.get_sample_last_update();
 
-            if sample_last_update > look_up_timestamp {
-                high = mid - 1;
-            } else if sample_last_update < look_up_timestamp {
-                low = mid + 1;
-            } else {
-                return Ok((sample, sample));
+            match sample_last_update.cmp(&look_up_timestamp) {
+                Ordering::Greater => high = mid - 1,
+                Ordering::Less => low = mid + 1,
+                Ordering::Equal => return Ok((sample, sample)),
             }
         }
 

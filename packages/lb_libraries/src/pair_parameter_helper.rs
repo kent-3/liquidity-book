@@ -337,6 +337,7 @@ impl PairParameters {
     /// * `variable_fee_control` - The variable fee control
     /// * `protocol_share` - The protocol share
     /// * `max_volatility_accumulator` - The max volatility accumulator
+    #[allow(clippy::too_many_arguments)]
     pub fn set_static_fee_parameters(
         self,
         base_factor: u16,

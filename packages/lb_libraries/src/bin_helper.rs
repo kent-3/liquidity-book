@@ -393,8 +393,6 @@ impl BinHelper {
         let balance_x = amount_received_x.u128();
         let balance_y = amount_received_y.u128();
 
-        
-
         Bytes32::encode(balance_x, balance_y)
     }
 
@@ -411,7 +409,7 @@ impl BinHelper {
     ///     * [0 - 128[: amount_x
     ///     * [128 - 256[: empty
     pub fn received_x(amount_received: Uint128) -> Bytes32 {
-        Bytes32::encode_first((amount_received.u128()))
+        Bytes32::encode_first(amount_received.u128())
     }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token Y.
@@ -427,7 +425,7 @@ impl BinHelper {
     ///     * [0 - 128[: empty
     ///     * [128 - 256[: amount_y
     pub fn received_y(amount_received: Uint128) -> Bytes32 {
-        Bytes32::encode_second((amount_received.u128()))
+        Bytes32::encode_second(amount_received.u128())
     }
 
     /// Transfers the encoded amounts to the recipient for both tokens.
@@ -503,10 +501,7 @@ impl BinHelper {
 
                 TokenType::NativeToken { denom } => Some(CosmosMsg::Bank(BankMsg::Send {
                     to_address: recipient.to_string(),
-                    amount: vec![Coin {
-                        denom,
-                        amount,
-                    }],
+                    amount: vec![Coin { denom, amount }],
                 })),
             }
         } else {
@@ -549,10 +544,7 @@ impl BinHelper {
 
                 TokenType::NativeToken { denom } => Some(CosmosMsg::Bank(BankMsg::Send {
                     to_address: recipient.to_string(),
-                    amount: vec![Coin {
-                        denom,
-                        amount,
-                    }],
+                    amount: vec![Coin { denom, amount }],
                 })),
             }
         } else {

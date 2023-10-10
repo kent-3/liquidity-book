@@ -227,6 +227,6 @@ pub fn balance_query(
 
     match result {
         QueryAnswer::Balance { amount, .. } => Ok(amount),
-        _ => Err(StdError::generic_err("Invalid Balance Response")), //TODO: better error
+        // _ => Err(StdError::generic_err("Invalid Balance Response")), //TODO: better error
     }
 }
