@@ -7,9 +7,9 @@ pub fn pair_contract_config(
 ) -> StdResult<TokensResponse> {
     let result: lb_pair::TokensResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: pair_contract_address.address.to_string(),
-        code_hash: pair_contract_address.code_hash.clone(),
+        code_hash: pair_contract_address.code_hash,
         msg: to_binary(&lb_pair::QueryMsg::GetTokens {})?,
     }))?;
 
-    return Ok(result);
+    Ok(result)
 }

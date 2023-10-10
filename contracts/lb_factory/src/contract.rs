@@ -259,13 +259,13 @@ fn try_create_lb_pair(
     // Search the quote assets for the one trying to be added
     if !QUOTE_ASSET_WHITELIST.contains(deps.storage, &token_y) {
         return Err(Error::QuoteAssetNotWhitelisted {
-            quote_asset: token_y.unique_key().clone(),
+            quote_asset: token_y.unique_key(),
         });
     }
 
     if token_x == token_y {
         return Err(Error::IdenticalAddresses {
-            token: token_x.unique_key().clone(),
+            token: token_x.unique_key(),
         });
     }
 
@@ -282,8 +282,8 @@ fn try_create_lb_pair(
         .get(
             deps.storage,
             &(
-                token_a.unique_key().clone(),
-                token_b.unique_key().clone(),
+                token_a.unique_key(),
+                token_b.unique_key(),
                 bin_step,
             ),
         )
@@ -339,9 +339,9 @@ fn try_create_lb_pair(
     ));
 
     ephemeral_storage_w(deps.storage).save(&NextPairKey {
-        token_a: token_a.clone(),
-        token_b: token_b.clone(),
-        bin_step: bin_step,
+        token_a,
+        token_b,
+        bin_step,
         code_hash: state.lb_pair_implementation.code_hash,
     })?;
 
@@ -376,8 +376,8 @@ fn try_set_lb_pair_ignored(
         .get(
             deps.storage,
             &(
-                token_a.unique_key().clone(),
-                token_b.unique_key().clone(),
+                token_a.unique_key(),
+                token_b.unique_key(),
                 bin_step,
             ),
         )
@@ -391,8 +391,8 @@ fn try_set_lb_pair_ignored(
         .is_empty()
     {
         return Err(Error::LBPairDoesNotExist {
-            token_x: token_a.unique_key().clone(),
-            token_y: token_b.unique_key().clone(),
+            token_x: token_a.unique_key(),
+            token_y: token_b.unique_key(),
             bin_step,
         });
     }
@@ -406,8 +406,8 @@ fn try_set_lb_pair_ignored(
     LB_PAIRS_INFO.insert(
         deps.storage,
         &(
-            token_a.unique_key().clone(),
-            token_b.unique_key().clone(),
+            token_a.unique_key(),
+            token_b.unique_key(),
             bin_step,
         ),
         &pair_information,
@@ -581,8 +581,8 @@ fn try_set_fee_parameters_on_pair(
         .get(
             deps.storage,
             &(
-                token_a.unique_key().clone(),
-                token_b.unique_key().clone(),
+                token_a.unique_key(),
+                token_b.unique_key(),
                 bin_step,
             ),
         )
@@ -628,7 +628,7 @@ fn try_set_fee_recipient(
     let old_fee_recipient = state.fee_recipient;
     if old_fee_recipient == fee_recipient {
         return Err(Error::SameFeeRecipient {
-            fee_recipient: old_fee_recipient.clone(),
+            fee_recipient: old_fee_recipient,
         });
     }
 
@@ -696,7 +696,7 @@ fn try_add_quote_asset(
 
     if QUOTE_ASSET_WHITELIST.contains(deps.storage, &quote_asset) {
         return Err(Error::QuoteAssetAlreadyWhitelisted {
-            quote_asset: quote_asset.unique_key().clone(),
+            quote_asset: quote_asset.unique_key(),
         });
     }
 
@@ -722,7 +722,7 @@ fn try_remove_quote_asset(
 
     if !QUOTE_ASSET_WHITELIST.contains(deps.storage, &asset) {
         return Err(Error::QuoteAssetNotWhitelisted {
-            quote_asset: asset.unique_key().clone(),
+            quote_asset: asset.unique_key(),
         });
     }
 
@@ -1105,7 +1105,7 @@ fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
 }
 
 fn _is_preset_open(preset: Bytes32) -> bool {
-    return EncodedSample(preset).decode_bool(_OFFSET_IS_PRESET_OPEN);
+    EncodedSample(preset).decode_bool(_OFFSET_IS_PRESET_OPEN)
 }
 
 /// Returns all the LBPair of a pair of tokens.
@@ -1125,14 +1125,14 @@ fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Res
     let bin_steps: Vec<u16> = AVAILABLE_LB_PAIR_BIN_STEPS
         .get(
             deps.storage,
-            &(token_a.unique_key().clone(), token_b.unique_key().clone()),
+            &(token_a.unique_key(), token_b.unique_key()),
         )
         .ok_or(Error::Generic(
             "This token pair is not in the map".to_string(),
         ))?;
 
     // Not sure if this condition is possible, but just in case.
-    if bin_steps.len() == 0 {
+    if bin_steps.is_empty() {
         return Err(Error::Generic("No available bin_steps".to_string()));
     }
 
@@ -1144,8 +1144,8 @@ fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Res
                 .get(
                     deps.storage,
                     &(
-                        token_a.unique_key().clone(),
-                        token_b.unique_key().clone(),
+                        token_a.unique_key(),
+                        token_b.unique_key(),
                         bin_step,
                     ),
                 )
@@ -1177,17 +1177,17 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 let lb_pair = LBPair {
                     token_x: token_a.clone(),
                     token_y: token_b.clone(),
-                    bin_step: bin_step,
+                    bin_step,
                     contract: ContractInfo {
                         address: contract_address,
-                        code_hash: code_hash,
+                        code_hash,
                     },
                 };
                 LB_PAIRS_INFO.insert(
                     deps.storage,
                     &(
-                        token_a.unique_key().clone(),
-                        token_b.unique_key().clone(),
+                        token_a.unique_key(),
+                        token_b.unique_key(),
                         bin_step,
                     ),
                     &LBPairInformation {
@@ -1205,7 +1205,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
                     .get(
                         deps.storage,
-                        &(token_a.unique_key().clone(), token_b.unique_key().clone()),
+                        &(token_a.unique_key(), token_b.unique_key()),
                     )
                     .unwrap_or(Vec::<u16>::new());
                 bin_step_list.push(bin_step);
@@ -1218,8 +1218,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 ephemeral_storage_w(deps.storage).remove();
                 Ok(Response::default())
             }
-            None => Err(StdError::generic_err(format!("Expecting contract id"))),
+            None => Err(StdError::generic_err("Expecting contract id".to_string())),
         },
-        _ => Err(StdError::generic_err(format!("Unknown reply id"))),
+        _ => Err(StdError::generic_err("Unknown reply id".to_string())),
     }
 }

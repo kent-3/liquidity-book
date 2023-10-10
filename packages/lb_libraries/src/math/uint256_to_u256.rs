@@ -31,8 +31,8 @@ impl ConvertUint256 for Uint256 {
 
     fn uint256_to_u256(&self) -> U256 {
         let (upper, lower) = self.split_uint256();
-        let amount = U256::from_words(upper.u128(), lower.u128());
-        amount
+        
+        U256::from_words(upper.u128(), lower.u128())
     }
 }
 
@@ -53,9 +53,9 @@ impl ConvertU256 for U256 {
         let upper_uint256 = Uint256::from(upper) << 128;
         let lower_uint256 = Uint256::from(lower);
 
-        let amount = upper_uint256 + lower_uint256;
+        
 
-        amount
+        upper_uint256 + lower_uint256
     }
 }
 #[cfg(test)]

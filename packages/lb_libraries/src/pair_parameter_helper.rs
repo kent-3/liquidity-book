@@ -230,7 +230,7 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `bin_step` - The bin step (in basis points)
     pub fn get_base_fee(&self, bin_step: u16) -> u128 {
-        let base_factor = Self::get_base_factor(&self) as u128;
+        let base_factor = Self::get_base_factor(self) as u128;
         base_factor * (bin_step as u128) * 10_000_000_000
     }
 
@@ -241,10 +241,10 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `bin_step` - The bin step (in basis points)
     pub fn get_variable_fee(&self, bin_step: u16) -> u128 {
-        let variable_fee_control = Self::get_variable_fee_control(&self) as u128;
+        let variable_fee_control = Self::get_variable_fee_control(self) as u128;
 
         if variable_fee_control != 0 {
-            let vol_accumulator = Self::get_volatility_accumulator(&self) as u128;
+            let vol_accumulator = Self::get_volatility_accumulator(self) as u128;
             let prod = vol_accumulator * (bin_step as u128);
             (prod * prod * variable_fee_control + 99) / 100
         } else {
@@ -259,8 +259,8 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `bin_step` - The bin step (in basis points)
     pub fn get_total_fee(&self, bin_step: u16) -> u128 {
-        let base_fee = Self::get_base_fee(&self, bin_step);
-        let variable_fee = Self::get_variable_fee(&self, bin_step);
+        let base_fee = Self::get_base_fee(self, bin_step);
+        let variable_fee = Self::get_variable_fee(self, bin_step);
         base_fee + variable_fee
     }
 

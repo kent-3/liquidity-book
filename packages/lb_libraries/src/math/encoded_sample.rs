@@ -40,8 +40,8 @@ impl EncodedSample {
     pub fn decode(&self, mask: U256, offset: u8) -> U256 {
         // TODO: IDK if the from_le_bytes is the appropriate method
         // Comment from Haseeb: This is the most efficient way in my opinion. All other methods are either slow or too complex.
-        let value = (U256::from_le_bytes(self.0) >> offset) & mask;
-        value
+        
+        (U256::from_le_bytes(self.0) >> offset) & mask
     }
 
     pub fn decode_bool(&self, offset: u8) -> bool {

@@ -57,7 +57,7 @@ fn try_swap(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
         QueryMsg::GetFactory {} => {
-            to_binary(&query_creator(deps)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_creator(deps)?).map_err(Error::CwErr)
         }
     }
 }

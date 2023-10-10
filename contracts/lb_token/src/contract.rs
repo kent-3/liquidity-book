@@ -68,7 +68,7 @@ fn try_batch_transfer_from(
     ids: Vec<u32>,
     amounts: Vec<Uint256>,
 ) -> Result<Response> {
-    if ids.len() != amounts.len() || ids.len() == 0 || amounts.len() == 0 {
+    if ids.len() != amounts.len() || ids.is_empty() || amounts.is_empty() {
         return Err(Error::InvalidInput(
             "ids and amounts length must be equal.".to_string(),
         ));
@@ -256,21 +256,21 @@ fn try_burn(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::Name {} => to_binary(&query_name(deps)?).map_err(|err| Error::CwErr(err)),
-        QueryMsg::Symbol {} => to_binary(&query_symbol(deps)?).map_err(|err| Error::CwErr(err)),
-        QueryMsg::Decimals {} => to_binary(&query_decimals(deps)?).map_err(|err| Error::CwErr(err)),
+        QueryMsg::Name {} => to_binary(&query_name(deps)?).map_err(Error::CwErr),
+        QueryMsg::Symbol {} => to_binary(&query_symbol(deps)?).map_err(Error::CwErr),
+        QueryMsg::Decimals {} => to_binary(&query_decimals(deps)?).map_err(Error::CwErr),
         QueryMsg::TotalSupply { id } => {
-            to_binary(&query_total_supply(deps, id)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_total_supply(deps, id)?).map_err(Error::CwErr)
         }
         QueryMsg::BalanceOf { owner, id } => {
-            to_binary(&query_balance_of(deps, owner, id)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_balance_of(deps, owner, id)?).map_err(Error::CwErr)
         }
         QueryMsg::BalanceOfBatch { owners, ids } => {
-            to_binary(&query_balance_of_batch(deps, owners, ids)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_balance_of_batch(deps, owners, ids)?).map_err(Error::CwErr)
         }
         QueryMsg::IsApprovedForAll { owner, spender } => {
             to_binary(&query_is_approved_for_all(deps, owner, spender)?)
-                .map_err(|err| Error::CwErr(err))
+                .map_err(Error::CwErr)
         }
     }
 }

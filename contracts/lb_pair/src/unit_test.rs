@@ -1,21 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    
 
     use cosmwasm_std::{
-        from_binary, from_slice,
+        from_slice,
         testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-        to_binary, Addr, Binary, ContractInfo, ContractInfoResponse, ContractResult, DepsMut,
+        to_binary, Addr, ContractInfo, ContractResult,
         Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, Response, SystemError,
         SystemResult, Uint128, Uint256, WasmQuery,
     };
-    use ethnum::U256;
+    
     use lb_interfaces::lb_pair::{ExecuteMsg, LiquidityParameters, RemoveLiquidity};
     use lb_libraries::{
         tokens::TokenType,
         types::{ContractInstantiationInfo, StaticFeeParameters},
     };
-    use serde::Deserialize;
+    
 
     use crate::{
         contract::{execute, instantiate},
@@ -30,7 +30,7 @@ mod tests {
         //     let mut deps = mock_dependencies();
         let env = mock_env();
 
-        let common_divisor = 10000u64;
+        let _common_divisor = 10000u64;
 
         let mock_message_info = mock_info("", &[]);
 
@@ -80,7 +80,7 @@ mod tests {
     }
     #[test]
     fn test_add_liquidity() {
-        let (init_response, mut deps) = init_helper();
+        let (_init_response, mut deps) = init_helper();
         deps.querier = custom_querier();
 
         let array: Vec<f64> = vec![
@@ -112,8 +112,8 @@ mod tests {
             active_id_desired: 8388608,
             id_slippage: 15,
             delta_ids: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5].into(),
-            distribution_x: distribution_x,
-            distribution_y: distribution_y,
+            distribution_x,
+            distribution_y,
             deadline: 9999999999,
         };
 
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_remove_liquidity() {
-        let (init_response, mut deps) = init_helper();
+        let (_init_response, mut deps) = init_helper();
 
         deps.querier = custom_querier();
 
@@ -173,8 +173,8 @@ mod tests {
             active_id_desired: 8388608,
             id_slippage: 15,
             delta_ids: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5].into(),
-            distribution_x: distribution_x,
-            distribution_y: distribution_y,
+            distribution_x,
+            distribution_y,
             deadline: 9999999999,
         };
 
@@ -209,8 +209,8 @@ mod tests {
 
     pub fn custom_querier() -> MockQuerier {
         let contract_addr = Addr::unchecked("lb_token");
-        let custom_querier: MockQuerier = MockQuerier::new(&[(&contract_addr.as_str(), &[])])
-            .with_custom_handler(|query| {
+        let custom_querier: MockQuerier = MockQuerier::new(&[((contract_addr.as_str()), &[])])
+            .with_custom_handler(|_query| {
                 SystemResult::Ok(cosmwasm_std::ContractResult::Ok(
                     to_binary(&TotalSupplyResponse {
                         total_supply: Uint256::from(6186945938883118954998384437402923u128),
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn test_swap() {
-        let (init_response, mut deps) = init_helper();
+        let (_init_response, mut deps) = init_helper();
 
         let array: Vec<f64> = vec![
             0.181818, 0.181818, 0.181818, 0.181818, 0.181818, 0.090909, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -282,8 +282,8 @@ mod tests {
         let bin_step = 100u16;
 
         let liquidity_parameters = LiquidityParameters {
-            token_x: token_x.clone(),
-            token_y: token_y.clone(),
+            token_x: token_x,
+            token_y: token_y,
             bin_step,
             amount_x: Uint128::from(1000000000000000000u128),
             amount_y: Uint128::from(1000000000000000000u128),
@@ -292,8 +292,8 @@ mod tests {
             active_id_desired: 8388608,
             id_slippage: 15,
             delta_ids: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5].into(),
-            distribution_x: distribution_x,
-            distribution_y: distribution_y,
+            distribution_x,
+            distribution_y,
             deadline: 9999999999,
         };
 

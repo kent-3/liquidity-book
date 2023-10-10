@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Coin, ContractInfo, CosmosMsg, QuerierWrapper, QueryRequest,
-    StdResult, Uint128, WasmMsg, WasmQuery,
+    to_binary, Binary, Coin, CosmosMsg,
+    StdResult, Uint128, WasmMsg,
 };
 
 const BLOCK_SIZE: usize = 256;

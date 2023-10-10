@@ -49,9 +49,9 @@ impl PriceHelper {
 
     /// Calculates the base from the bin step, which is `1 + binStep / BASIS_POINT_MAX`.
     pub fn get_base(bin_step: u16) -> U256 {
-        let base = SCALE + (U256::from(bin_step) << SCALE_OFFSET) / BASIS_POINT_MAX as u128;
+        
 
-        base
+        SCALE + (U256::from(bin_step) << SCALE_OFFSET) / BASIS_POINT_MAX as u128
     }
 
     /// Calculates the exponent from the id, which is `id - REAL_ID_SHIFT`.

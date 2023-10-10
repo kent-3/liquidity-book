@@ -1,5 +1,5 @@
 use crate::{
-    contract::{query, SHADE_ROUTER_KEY, SWAP_REPLY_ID},
+    contract::{SHADE_ROUTER_KEY, SWAP_REPLY_ID},
     error::LBRouterError,
     msg::ExecuteMsgResponse,
     state::{CurrentSwapInfo, CONFIG, EPHEMERAL_STORAGE},
@@ -52,11 +52,11 @@ pub fn swap_tokens_for_exact_tokens(
                 deps.storage,
                 &CurrentSwapInfo {
                     amount: amount_in.clone(),
-                    amount_out_min: amount_out_min,
+                    amount_out_min,
                     path: path.clone(),
                     recipient: recipient.unwrap_or(sender),
                     current_index: 0,
-                    next_token_in: next_token_in,
+                    next_token_in,
                 },
             )?;
 
@@ -103,7 +103,7 @@ fn get_trade_with_callback(
             token_code_hash,
         } => {
             let msg = to_binary(&lb_libraries::transfer::HandleMsg::Send {
-                recipient: hop.addr.to_string(),
+                recipient: hop.addr,
                 amount: token_in.amount,
                 msg: Some(to_binary(&&lb_pair::ExecuteMsg::Swap {
                     swap_for_y,
@@ -126,7 +126,7 @@ fn get_trade_with_callback(
             ));
         }
     };
-    return Ok(response);
+    Ok(response)
 }
 
 /// Execute Next Swap
@@ -159,7 +159,7 @@ pub fn next_swap(
 
             match next_pair_contract {
                 lb_pair::TokensResponse { token_x, token_y } => {
-                    info.current_index = info.current_index + 1;
+                    info.current_index += 1;
 
                     let mut swap_for_y = false;
                     if token_x == amount_in.token {
@@ -214,7 +214,7 @@ pub fn next_swap(
 /// Update Viewing Key
 ///
 ///
-pub fn update_viewing_key(deps: DepsMut, env: Env, viewing_key: String) -> StdResult<Response> {
+pub fn update_viewing_key(deps: DepsMut, _env: Env, viewing_key: String) -> StdResult<Response> {
     let mut config = CONFIG.load(deps.storage)?;
     config.viewing_key = viewing_key;
     CONFIG.save(deps.storage, &config)?;
@@ -264,7 +264,7 @@ fn register_pair_token(
     } = token
     {
         messages.push(set_viewing_key_msg(
-            viewing_key.clone(),
+            viewing_key,
             None,
             &ContractInfo {
                 address: contract_addr.clone(),

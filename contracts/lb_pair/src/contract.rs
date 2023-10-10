@@ -344,7 +344,7 @@ fn try_swap(
         } else {
             let next_id = _get_next_non_empty_bin(&tree, swap_for_y, active_id);
 
-            if next_id == 0 || next_id == (2u32 ^ 24 - 1) {
+            if next_id == 0 || next_id == (2u32 ^ (24 - 1)) {
                 return Err(Error::OutOfLiquidity);
             }
 
@@ -1991,8 +1991,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 response.data = Some(env.contract.address.to_string().as_bytes().into());
                 Ok(response)
             }
-            None => Err(StdError::generic_err(format!("Unknown reply id"))),
+            None => Err(StdError::generic_err("Unknown reply id".to_string())),
         },
-        _ => Err(StdError::generic_err(format!("Unknown reply id"))),
+        _ => Err(StdError::generic_err("Unknown reply id".to_string())),
     }
 }

@@ -78,7 +78,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
                 return Err(Error::NonNativeTokenErr);
             }
             offer.assert_sent_native_token_balance(&info)?;
-            let sender = info.sender.clone();
+            let sender = info.sender;
             let checked_address = match recipient {
                 Some(x) => Some(deps.api.addr_validate(&x)?),
                 None => None,
@@ -157,26 +157,26 @@ pub fn create_lb_pair(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
         QueryMsg::GetFactory {} => {
-            to_binary(&query_factory(deps)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_factory(deps)?).map_err(Error::CwErr)
         }
         QueryMsg::GetIdFromPrice { lb_pair, price } => {
-            to_binary(&query_id_from_price(deps, lb_pair, price)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_id_from_price(deps, lb_pair, price)?).map_err(Error::CwErr)
         }
         QueryMsg::GetPriceFromId { lb_pair, id } => {
-            to_binary(&query_price_from_id(deps, lb_pair, id)?).map_err(|err| Error::CwErr(err))
+            to_binary(&query_price_from_id(deps, lb_pair, id)?).map_err(Error::CwErr)
         }
         QueryMsg::GetSwapIn {
             lb_pair,
             amount_out,
             swap_for_y,
         } => to_binary(&query_swap_in(deps, lb_pair, amount_out, swap_for_y)?)
-            .map_err(|err| Error::CwErr(err)),
+            .map_err(Error::CwErr),
         QueryMsg::GetSwapOut {
             lb_pair,
             amount_in,
             swap_for_y,
         } => to_binary(&query_swap_out(deps, lb_pair, amount_in, swap_for_y)?)
-            .map_err(|err| Error::CwErr(err)),
+            .map_err(Error::CwErr),
     }
 }
 

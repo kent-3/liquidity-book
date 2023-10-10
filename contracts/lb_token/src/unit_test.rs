@@ -297,7 +297,7 @@ mod tests {
         let msg = ExecuteMsg::Mint {
             recipient: Addr::unchecked(recipient),
             id,
-            amount: amount.clone(),
+            amount: amount,
         };
         let res = execute(deps.as_mut(), mock_env(), info, msg);
         assert!(matches!(res.unwrap_err(), Error::Unauthorized));
@@ -307,7 +307,7 @@ mod tests {
         let msg = ExecuteMsg::Mint {
             recipient: Addr::unchecked(recipient),
             id,
-            amount: amount.clone(),
+            amount: amount,
         };
         let res = execute(deps.as_mut(), mock_env(), info, msg)?;
         assert_eq!(res.attributes[0].key, "action");
@@ -341,7 +341,7 @@ mod tests {
         let msg = ExecuteMsg::Mint {
             recipient: Addr::unchecked(owner),
             id,
-            amount: mint_amount.clone(),
+            amount: mint_amount,
         };
         execute(deps.as_mut(), mock_env(), info, msg)?;
 
@@ -350,7 +350,7 @@ mod tests {
         let msg = ExecuteMsg::Burn {
             owner: Addr::unchecked(owner),
             id,
-            amount: burn_amount.clone(),
+            amount: burn_amount,
         };
         let res = execute(deps.as_mut(), mock_env(), info, msg);
         assert!(matches!(res.unwrap_err(), Error::Unauthorized));
@@ -360,7 +360,7 @@ mod tests {
         let msg = ExecuteMsg::Burn {
             owner: Addr::unchecked(owner),
             id,
-            amount: burn_amount.clone(),
+            amount: burn_amount,
         };
         let res = execute(deps.as_mut(), mock_env(), info, msg)?;
         assert_eq!(res.attributes[0].key, "action");
@@ -473,7 +473,7 @@ mod tests {
         .unwrap();
 
         let value: IsApprovedForAllResponse = from_binary(&res).unwrap();
-        assert_eq!(value.is_approved, false);
+        assert!(!value.is_approved);
         Ok(())
     }
 }
