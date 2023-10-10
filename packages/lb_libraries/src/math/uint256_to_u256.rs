@@ -1,3 +1,7 @@
+//! ### Liquidity Book ConvertUint256 Math Library
+//! Author: Haseeb
+//!
+
 use cosmwasm_std::Uint128;
 use cosmwasm_std::Uint256;
 use ethnum::U256;
@@ -31,7 +35,7 @@ impl ConvertUint256 for Uint256 {
 
     fn uint256_to_u256(&self) -> U256 {
         let (upper, lower) = self.split_uint256();
-        
+
         U256::from_words(upper.u128(), lower.u128())
     }
 }
@@ -53,11 +57,10 @@ impl ConvertU256 for U256 {
         let upper_uint256 = Uint256::from(upper) << 128;
         let lower_uint256 = Uint256::from(lower);
 
-        
-
         upper_uint256 + lower_uint256
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
