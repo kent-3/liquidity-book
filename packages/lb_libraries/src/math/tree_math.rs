@@ -1,5 +1,5 @@
 //! ### Liquidity Book Tree Math Library
-//! Author: Kent
+//! Author: Kent and Haseeb
 //!
 //! This module contains functions to interact with a tree of TreeUint24.
 
@@ -252,5 +252,250 @@ impl TreeUint24 {
     /// Returns the found bit, or `U256::MAX` if there is no such bit.
     fn _closest_bit_left(leaves: U256, bit: u8) -> U256 {
         BitMath::closest_bit_left(leaves, bit + 1)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::math::u24::U24;
+
+    use super::*;
+
+    #[test]
+    fn test_contains() {
+        // Initialize your tree
+        let tree = TreeUint24::new();
+
+        // List of IDs to test; you can adjust this as needed
+        let ids: Vec<u32> = vec![1, 2, 3, 4, 5];
+
+        for id in ids {
+            // Check if the tree already contains this ID
+            let contains = tree.contains(id);
+            assert!(!contains);
+        }
+    }
+
+    #[test]
+    fn test_add_to_tree_min() {
+        // Initialize your tree
+        let mut tree: TreeUint24 = TreeUint24::new();
+
+        // List of IDs to test; you can adjust this as needed
+        let ids: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
+
+        for id in ids {
+            let contains = tree.contains(id);
+
+            // Check if the tree already contains this ID
+            assert!(!contains);
+
+            // // Add the ID to the tree and check the return value
+            assert_eq!(tree.add(id), !contains);
+
+            // // Now the tree should contain this ID
+            assert!(tree.contains(id));
+        }
+    }
+
+    #[test]
+    fn test_add_to_tree_max() {
+        // Initialize your tree
+        let mut tree: TreeUint24 = TreeUint24::new();
+
+        let max = U24::MAX;
+
+        // List of IDs to test; you can adjust this as needed
+        let ids: Vec<u32> = vec![max - 1, max - 2, max - 3, max - 4, max - 5, max - 6];
+
+        for id in ids {
+            let contains = tree.contains(id);
+
+            // Check if the tree already contains this ID
+            assert!(!contains);
+
+            // Add the ID to the tree and check the return value
+            assert_eq!(tree.add(id), !contains);
+
+            // Now the tree should contain this ID
+            assert!(tree.contains(id));
+        }
+    }
+
+    #[test]
+    fn test_remove_from_tree() {
+        // Initialize your tree
+        let mut tree = TreeUint24::new();
+
+        // List of IDs to test; you can adjust this as needed
+        let ids: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
+
+        // First add all the ids to the tree
+        for id in &ids {
+            tree.add(*id);
+        }
+
+        // Now let's try removing them
+        for id in ids {
+            // Check if the tree contains this ID
+            let contains = tree.contains(id);
+
+            assert!(tree.contains(id));
+
+            // Remove the ID from the tree and check the return value
+            assert_eq!(tree.remove(id), contains);
+
+            // Now the tree should not contain this ID
+            assert!(!tree.contains(id));
+        }
+    }
+
+    #[test]
+    fn test_remove_to_tree_max() {
+        // Initialize your tree
+        let mut tree: TreeUint24 = TreeUint24::new();
+
+        let max = U24::MAX;
+        let ids: Vec<u32> = vec![max - 1, max - 2, max - 3, max - 4, max - 5, max - 6];
+
+        // First add all the ids to the tree
+        for id in &ids {
+            tree.add(*id);
+        }
+
+        // Now let's try removing them
+        for id in ids {
+            // Check if the tree contains this ID
+            let contains = tree.contains(id);
+
+            assert!(tree.contains(id));
+
+            // Remove the ID from the tree and check the return value
+            assert_eq!(tree.remove(id), contains);
+
+            // Now the tree should not contain this ID
+            assert!(!tree.contains(id));
+        }
+    }
+
+    #[test]
+    fn test_remove_logic_and_search_right() {
+        let mut tree = TreeUint24::new();
+        let id = 3; // You can use other values to test
+
+        tree.add(id);
+        tree.add(id - 1);
+
+        assert_eq!(
+            tree.find_first_right(id),
+            id - 1,
+            "test_remove_logic_and_search_right::1"
+        );
+
+        tree.remove(id - 1);
+        assert_eq!(
+            tree.find_first_right(id),
+            U24::MAX,
+            "test_remove_logic_and_search_right::2"
+        );
+    }
+
+    #[test]
+    fn test_remove_logic_and_search_left() {
+        let mut tree = TreeUint24::new();
+        let id = U24::MAX - 1; // Feel free to test with other values
+
+        tree.add(id);
+        tree.add(id + 1);
+
+        assert_eq!(
+            tree.find_first_left(id),
+            id + 1,
+            "test_remove_logic_and_search_left::1"
+        );
+
+        tree.remove(id + 1);
+        assert_eq!(
+            tree.find_first_left(id),
+            0,
+            "test_remove_logic_and_search_left::2"
+        );
+    }
+
+    #[test]
+    fn test_find_first() {
+        let mut tree = TreeUint24::new();
+
+        tree.add(0);
+        tree.add(1);
+        tree.add(2);
+
+        assert_eq!(tree.find_first_right(2), 1, "test_find_first::1");
+        assert_eq!(tree.find_first_right(1), 0, "test_find_first::2");
+        assert_eq!(tree.find_first_left(0), 1, "test_find_first::3");
+        assert_eq!(tree.find_first_left(1), 2, "test_find_first::4");
+        assert_eq!(tree.find_first_right(0), U24::MAX, "test_find_first::5");
+        assert_eq!(tree.find_first_left(2), 0, "test_find_first::6");
+    }
+
+    #[test]
+    fn test_find_first_far() {
+        let mut tree = TreeUint24::new();
+
+        tree.add(0);
+        tree.add(U24::MAX); // Equivalent to type(uint24).max in Solidity
+
+        assert_eq!(tree.find_first_right(U24::MAX), 0, "test_find_first_far::1");
+
+        assert_eq!(tree.find_first_left(0), U24::MAX, "test_find_first_far::2");
+    }
+
+    #[test]
+    fn test_fuzz_find_first() {
+        let mut tree = TreeUint24::new();
+        let ids = vec![1, 5, 10, 15, 25];
+
+        for &id in &ids {
+            tree.add(id);
+        }
+
+        for &id in &ids {
+            let first_right = tree.find_first_right(id);
+            let first_left = tree.find_first_left(id);
+
+            if first_right != U24::MAX {
+                assert!(tree.contains(first_right), "test_fuzz_find_first::1");
+                assert!(first_right < id, "test_fuzz_find_first::2");
+            }
+
+            if first_left != 0 {
+                assert!(tree.contains(first_left), "test_fuzz_find_first::3");
+                assert!(first_left > id, "test_fuzz_find_first::4");
+            }
+        }
+    }
+
+    #[test]
+    fn test_test() {
+        let mut tree = TreeUint24::new();
+        let id = 8363961;
+
+        tree.add(id + 1);
+        tree.add(id);
+        tree.add(id - 1);
+
+        tree.remove(id);
+
+        assert_eq!(
+            tree.find_first_left(id - 1),
+            id + 1,
+            "test_remove_logic_and_search_right::1"
+        );
+
+        assert_eq!(
+            tree.find_first_right(id + 1),
+            id - 1,
+            "test_remove_logic_and_search_right::2"
+        );
     }
 }
