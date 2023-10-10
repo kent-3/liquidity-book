@@ -55,10 +55,9 @@ impl Encode for Bytes32 {
         let mut z = [0u8; 32];
         let x1_bytes = x1.to_le_bytes();
         let x2_bytes = x2.to_le_bytes();
-        for i in 0..16 {
-            z[i] = x1_bytes[i];
-            z[i + 16] = x2_bytes[i];
-        }
+
+        z[..16].copy_from_slice(&x1_bytes[..16]);
+        z[16..32].copy_from_slice(&x2_bytes[..16]);
 
         z
     }
@@ -97,9 +96,8 @@ impl Encode for Bytes32 {
     fn encode_first(x1: u128) -> Bytes32 {
         let mut z = [0u8; 32];
         let x1_bytes = x1.to_le_bytes();
-        for i in 0..16 {
-            z[i] = x1_bytes[i];
-        }
+        z[..16].copy_from_slice(&x1_bytes[..16]);
+
         z
     }
 
@@ -117,9 +115,8 @@ impl Encode for Bytes32 {
     fn encode_second(x2: u128) -> Bytes32 {
         let mut z = [0u8; 32];
         let x2_bytes = x2.to_le_bytes();
-        for i in 0..16 {
-            z[i + 16] = x2_bytes[i];
-        }
+        z[16..32].copy_from_slice(&x2_bytes[..16]);
+
         z
     }
 }
@@ -135,10 +132,8 @@ impl Decode for Bytes32 {
     fn decode(&self) -> (u128, u128) {
         let mut x1_bytes = [0u8; 16];
         let mut x2_bytes = [0u8; 16];
-        for i in 0..16 {
-            x1_bytes[i] = self[i];
-            x2_bytes[i] = self[i + 16];
-        }
+        x1_bytes[..16].copy_from_slice(&self[..16]);
+        x2_bytes[..16].copy_from_slice(&self[16..32]);
         let x1 = u128::from_le_bytes(x1_bytes);
         let x2 = u128::from_le_bytes(x2_bytes);
 
@@ -169,9 +164,7 @@ impl Decode for Bytes32 {
     /// A `u128` value representing the decoded `x1` value.
     fn decode_x(&self) -> u128 {
         let mut x_bytes = [0u8; 16];
-        for i in 0..16 {
-            x_bytes[i] = self[i];
-        }
+        x_bytes[..16].copy_from_slice(&self[..16]);
         u128::from_le_bytes(x_bytes)
     }
 
@@ -182,9 +175,7 @@ impl Decode for Bytes32 {
     /// A `u128` value representing the decoded `x2` value.
     fn decode_y(&self) -> u128 {
         let mut y_bytes = [0u8; 16];
-        for i in 0..16 {
-            y_bytes[i] = self[i + 16];
-        }
+        y_bytes[..16].copy_from_slice(&self[16..32]);
         u128::from_le_bytes(y_bytes)
     }
 }
@@ -266,7 +257,6 @@ impl PackedMath for Bytes32 {
     /// This function panics if the subtraction underflows.
     fn sub(&self, y: Bytes32) -> Bytes32 {
         let (x1, x2) = self.decode();
-
         let (y1, y2) = y.decode();
 
         let z1 = x1.checked_sub(y1).expect("Subtraction underflowed");
@@ -388,10 +378,6 @@ impl PackedMath for Bytes32 {
 pub struct PackedU128;
 
 impl PackedU128 {
-    pub const fn new() -> Bytes32 {
-        [0u8; 32]
-    }
-
     pub const fn min() -> Bytes32 {
         [0u8; 32]
     }
