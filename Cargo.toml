@@ -35,3 +35,4 @@ secret-toolkit = { version = "0.9", features = ["storage"] }
 ethnum = { version = "1.4" }
 thiserror = { version = "1.0" }
 anyhow = "1.0"
+primitive-types = { version = "0.12.2", default-features = false }
