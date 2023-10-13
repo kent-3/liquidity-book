@@ -23,8 +23,6 @@ pub const MASK_UINT128: U256 = U256::new(0xffffffffffffffffffffffffffffffffu128)
 pub struct EncodedSample(pub Bytes32);
 
 impl EncodedSample {
-    // TODO - find a way to take &mut self and return &mut Self
-    //
     // I think I need to impl Shl, Shr, BitAnd, BitOr, BitXor, and Not for Bytes32.
     // That way I don't have to convert the inputs into U256 to be able to do bit math,
     // and can mutate the value in place.
@@ -32,15 +30,15 @@ impl EncodedSample {
     // TODO - should I inline any of these functions?
 
     /// Internal function to set a value in an encoded bytes32 using a mask and offset
-    pub fn set(self, value: U256, mask: U256, offset: u8) -> Self {
+    pub fn set(&mut self, value: U256, mask: U256, offset: u8) -> &mut Self {
         let mask_shifted = mask << offset;
         let value_shifted = (value & mask) << offset;
-        let new_encoded = (U256::from_le_bytes(self.0) & !mask_shifted) | value_shifted;
-        Self(new_encoded.to_le_bytes())
+        self.0 = ((U256::from_le_bytes(self.0) & !mask_shifted) | value_shifted).to_le_bytes();
+        self
     }
 
     /// Internal function to set a bool in an encoded bytes32 using an offset
-    pub fn set_bool(self, boolean: bool, offset: u8) -> Self {
+    pub fn set_bool(&mut self, boolean: bool, offset: u8) -> &mut Self {
         Self::set(self, U256::from(boolean as u8), MASK_UINT1, offset)
     }
 
@@ -152,7 +150,7 @@ mod tests {
         ];
 
         for test_case in test_cases {
-            let encoded = EncodedSample(test_case.original_value).set(
+            let encoded = *EncodedSample(test_case.original_value).set(
                 test_case.value,
                 test_case.mask,
                 test_case.offset,
@@ -175,7 +173,7 @@ mod tests {
                 .to_le_bytes(),
         );
 
-        let bytes_32 = EncodedSample(Bytes32::from(original_value));
+        let mut bytes_32 = EncodedSample(Bytes32::from(original_value));
         let boolean = false;
         let offset: u8 = 5;
 
@@ -187,7 +185,7 @@ mod tests {
         ));
 
         assert_eq!(
-            result, expected_result,
+            *result, expected_result,
             "The result of set_bool did not match the expected value."
         );
     }

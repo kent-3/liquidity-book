@@ -23,6 +23,6 @@ pub static PRECISION: u128 = 1_000_000_000_000_000_000; // 1e18 coz it's ethereu
 pub static SQUARED_PRECISION: u128 = PRECISION * PRECISION;
 
 pub static MAX_FEE: u128 = 100_000_000_000_000_000; // 10%
-pub static MAX_PROTOCOL_SHARE: u32 = 2_500; // 25% of the fee
+pub static MAX_PROTOCOL_SHARE: u16 = 2_500; // 25% of the fee
 
-pub static BASIS_POINT_MAX: u32 = 10_000;
+pub static BASIS_POINT_MAX: u16 = 10_000;

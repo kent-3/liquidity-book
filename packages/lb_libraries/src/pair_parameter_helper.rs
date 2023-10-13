@@ -270,8 +270,9 @@ impl PairParameters {
     ///
     /// * `parameters` - The encoded pair parameters
     /// * `oracle_id` - The oracle id
-    pub fn set_oracle_id(self, oracle_id: u16) -> PairParameters {
-        PairParameters(self.0.set(oracle_id.into(), MASK_UINT16, OFFSET_ORACLE_ID))
+    pub fn set_oracle_id(&mut self, oracle_id: u16) -> &mut Self {
+        self.0.set(oracle_id.into(), MASK_UINT16, OFFSET_ORACLE_ID);
+        self
     }
 
     /// Set the volatility reference in the encoded pair parameters.
@@ -281,17 +282,14 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `vol_ref` - The volatility reference
     pub fn set_volatility_reference(
-        self,
+        &mut self,
         vol_ref: u32,
-    ) -> Result<PairParameters, PairParametersError> {
+    ) -> Result<&mut Self, PairParametersError> {
         if vol_ref > MASK_UINT20.as_u32() {
             Err(PairParametersError::InvalidParameter)
         } else {
-            Ok(PairParameters(self.0.set(
-                vol_ref.into(),
-                MASK_UINT20,
-                OFFSET_VOL_REF,
-            )))
+            self.0.set(vol_ref.into(), MASK_UINT20, OFFSET_VOL_REF);
+            Ok(self)
         }
     }
 
@@ -302,17 +300,14 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `vol_acc` - The volatility accumulator
     pub fn set_volatility_accumulator(
-        self,
+        &mut self,
         vol_acc: u32,
-    ) -> Result<PairParameters, PairParametersError> {
+    ) -> Result<&mut Self, PairParametersError> {
         if vol_acc > MASK_UINT20.as_u32() {
             Err(PairParametersError::InvalidParameter)
         } else {
-            Ok(PairParameters(self.0.set(
-                vol_acc.into(),
-                MASK_UINT20,
-                OFFSET_VOL_ACC,
-            )))
+            self.0.set(vol_acc.into(), MASK_UINT20, OFFSET_VOL_ACC);
+            Ok(self)
         }
     }
 
@@ -322,8 +317,9 @@ impl PairParameters {
     ///
     /// * `parameters` - The encoded pair parameters
     /// * `active_id` - The active id
-    pub fn set_active_id(self, active_id: u32) -> PairParameters {
-        PairParameters(self.0.set(active_id.into(), MASK_UINT24, OFFSET_ACTIVE_ID))
+    pub fn set_active_id(&mut self, active_id: u32) -> &mut Self {
+        self.0.set(active_id.into(), MASK_UINT24, OFFSET_ACTIVE_ID);
+        self
     }
 
     /// Sets the static fee parameters in the encoded pair parameters.
@@ -339,7 +335,7 @@ impl PairParameters {
     /// * `max_volatility_accumulator` - The max volatility accumulator
     #[allow(clippy::too_many_arguments)]
     pub fn set_static_fee_parameters(
-        self,
+        &mut self,
         base_factor: u16,
         filter_period: u16,
         decay_period: u16,
@@ -347,44 +343,44 @@ impl PairParameters {
         variable_fee_control: u32,
         protocol_share: u16,
         max_volatility_accumulator: u32,
-    ) -> Result<PairParameters, PairParametersError> {
+    ) -> Result<&mut Self, PairParametersError> {
         if (filter_period > decay_period) | (decay_period > MASK_UINT12.as_u16())
-            || reduction_factor > BASIS_POINT_MAX as u16
-            || protocol_share > MAX_PROTOCOL_SHARE as u16
+            || reduction_factor > BASIS_POINT_MAX
+            || protocol_share > MAX_PROTOCOL_SHARE
             || max_volatility_accumulator > MASK_UINT20.as_u32()
         {
             return Err(PairParametersError::InvalidParameter);
         }
 
         let mut new_parameters = EncodedSample([0u8; 32]);
+
         // TODO: all of these needing to be turned into U256 seems like a waste
-        new_parameters = new_parameters.set(base_factor.into(), MASK_UINT16, OFFSET_BASE_FACTOR);
-        new_parameters =
-            new_parameters.set(filter_period.into(), MASK_UINT12, OFFSET_FILTER_PERIOD);
-        new_parameters = new_parameters.set(decay_period.into(), MASK_UINT12, OFFSET_DECAY_PERIOD);
-        new_parameters = new_parameters.set(
+        new_parameters.set(base_factor.into(), MASK_UINT16, OFFSET_BASE_FACTOR);
+        new_parameters.set(filter_period.into(), MASK_UINT12, OFFSET_FILTER_PERIOD);
+        new_parameters.set(decay_period.into(), MASK_UINT12, OFFSET_DECAY_PERIOD);
+        new_parameters.set(
             reduction_factor.into(),
             MASK_UINT14,
             OFFSET_REDUCTION_FACTOR,
         );
-        new_parameters = new_parameters.set(
+        new_parameters.set(
             variable_fee_control.into(),
             MASK_UINT24,
             OFFSET_VAR_FEE_CONTROL,
         );
-        new_parameters =
-            new_parameters.set(protocol_share.into(), MASK_UINT14, OFFSET_PROTOCOL_SHARE);
-        new_parameters = new_parameters.set(
+        new_parameters.set(protocol_share.into(), MASK_UINT14, OFFSET_PROTOCOL_SHARE);
+        new_parameters.set(
             max_volatility_accumulator.into(),
             MASK_UINT20,
             OFFSET_MAX_VOL_ACC,
         );
 
-        Ok(PairParameters(self.0.set(
+        self.0.set(
             U256::from_le_bytes(new_parameters.0),
             MASK_STATIC_PARAMETER.into(),
             0,
-        )))
+        );
+        Ok(self)
     }
 
     /// Updates the index reference in the encoded pair parameters.
@@ -392,9 +388,10 @@ impl PairParameters {
     /// # Arguments
     ///
     /// * `parameters` - The encoded pair parameters
-    pub fn update_id_reference(self) -> PairParameters {
-        let active_id = Self::get_active_id(&self);
-        PairParameters(self.0.set(active_id.into(), MASK_UINT24, OFFSET_ID_REF))
+    pub fn update_id_reference(&mut self) -> &mut Self {
+        let active_id = self.get_active_id();
+        self.0.set(active_id.into(), MASK_UINT24, OFFSET_ID_REF);
+        self
     }
 
     /// Updates the time of last update in the encoded pair parameters.
@@ -403,13 +400,11 @@ impl PairParameters {
     ///
     /// * `parameters` - The encoded pair parameters
     /// * `current_time` - The current timestamp
-    pub fn update_time_of_last_update(self, time: &Timestamp) -> PairParameters {
-        // TODO: make sure the time fits into u40!!
+    pub fn update_time_of_last_update(&mut self, time: &Timestamp) -> &mut Self {
         let current_time = time.seconds();
-        PairParameters(
-            self.0
-                .set(current_time.into(), MASK_UINT40, OFFSET_TIME_LAST_UPDATE),
-        )
+        self.0
+            .set(current_time.into(), MASK_UINT40, OFFSET_TIME_LAST_UPDATE);
+        self
     }
 
     /// Updates the volatility reference in the encoded pair parameters.
@@ -417,14 +412,13 @@ impl PairParameters {
     /// # Arguments
     ///
     /// * `parameters` - The encoded pair parameters
-    pub fn update_volatility_reference(self) -> Result<PairParameters, PairParametersError> {
+    pub fn update_volatility_reference(&mut self) -> Result<&mut Self, PairParametersError> {
         let vol_acc = self.get_volatility_accumulator();
         let reduction_factor = self.get_reduction_factor();
+        let vol_ref = vol_acc * reduction_factor as u32 / BASIS_POINT_MAX as u32;
 
-        // TODO make a uint24() function to wrap this in?
-        let vol_ref = vol_acc * reduction_factor as u32 / BASIS_POINT_MAX;
-
-        self.set_volatility_reference(vol_ref)
+        self.set_volatility_reference(vol_ref)?;
+        Ok(self)
     }
 
     /// Updates the volatility accumulator in the encoded pair parameters.
@@ -434,27 +428,20 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `active_id` - The active id
     pub fn update_volatility_accumulator(
-        self,
+        &mut self,
         active_id: u32,
-    ) -> Result<PairParameters, PairParametersError> {
+    ) -> Result<&mut Self, PairParametersError> {
         let id_reference = self.get_id_reference();
-
-        let delta_id = if active_id > id_reference {
-            active_id - id_reference
-        } else {
-            id_reference - active_id
+        let delta_id = match active_id > id_reference {
+            true => active_id - id_reference,
+            false => id_reference - active_id,
         };
-        let vol_acc = self.get_volatility_reference() + delta_id * BASIS_POINT_MAX;
-
+        let vol_acc = self.get_volatility_reference() + delta_id * BASIS_POINT_MAX as u32;
         let max_vol_acc = self.get_max_volatility_accumulator();
+        let vol_acc = std::cmp::min(vol_acc, max_vol_acc);
 
-        let vol_acc = if vol_acc > max_vol_acc {
-            max_vol_acc
-        } else {
-            vol_acc
-        };
-        // TODO wrap vol_acc in uint24()?
-        self.set_volatility_accumulator(vol_acc)
+        self.set_volatility_accumulator(vol_acc)?;
+        Ok(self)
     }
 
     /// Updates the volatility reference and the volatility accumulator in the encoded pair parameters.
@@ -463,21 +450,22 @@ impl PairParameters {
     ///
     /// * `parameters` - The encoded pair parameters
     pub fn update_references(
-        mut self,
+        &mut self,
         time: &Timestamp,
-    ) -> Result<PairParameters, PairParametersError> {
+    ) -> Result<&mut Self, PairParametersError> {
         let dt = time.seconds() - self.get_time_of_last_update();
 
         if dt >= self.get_filter_period().into() {
-            self = self.update_id_reference();
-            self = if dt < self.get_decay_period().into() {
+            self.update_id_reference();
+            if dt < self.get_decay_period().into() {
                 self.update_volatility_reference()?
             } else {
                 self.set_volatility_reference(0)?
             };
         }
 
-        Ok(self.update_time_of_last_update(time))
+        self.update_time_of_last_update(time);
+        Ok(self)
     }
 
     /// Updates the volatility reference and the volatility accumulator in the encoded pair parameters.
@@ -487,10 +475,10 @@ impl PairParameters {
     /// * `parameters` - The encoded pair parameters
     /// * `active_id` - The active id
     pub fn update_volatility_parameters(
-        self,
+        &mut self,
         active_id: u32,
         time: &Timestamp,
-    ) -> Result<PairParameters, PairParametersError> {
+    ) -> Result<&mut Self, PairParametersError> {
         self.update_references(time)?
             .update_volatility_accumulator(active_id)
     }

@@ -202,7 +202,7 @@ impl Oracle {
     pub fn update(
         &mut self,
         time: &Timestamp,
-        parameters: PairParameters,
+        mut parameters: PairParameters,
         active_id: u32,
     ) -> Result<PairParameters, OracleError> {
         let oracle_id = parameters.get_oracle_id();
@@ -251,9 +251,9 @@ impl Oracle {
 
             self.set_sample(oracle_id, new_sample)?;
 
-            let new_parameters = parameters.set_oracle_id(oracle_id);
+            parameters.set_oracle_id(oracle_id);
 
-            return Ok(new_parameters);
+            return Ok(parameters);
         }
 
         Ok(parameters)

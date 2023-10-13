@@ -50,20 +50,20 @@ impl OracleSample {
         let mut sample = EncodedSample([0u8; 32]);
 
         // TODO: are all these .into() really necessary?
-        sample = sample.set(oracle_length.into(), MASK_UINT16, OFFSET_ORACLE_LENGTH);
-        sample = sample.set(cumulative_id.into(), MASK_UINT64, OFFSET_CUMULATIVE_ID);
-        sample = sample.set(
+        sample.set(oracle_length.into(), MASK_UINT16, OFFSET_ORACLE_LENGTH);
+        sample.set(cumulative_id.into(), MASK_UINT64, OFFSET_CUMULATIVE_ID);
+        sample.set(
             cumulative_volatility.into(),
             MASK_UINT64,
             OFFSET_CUMULATIVE_VOLATILITY,
         );
-        sample = sample.set(
+        sample.set(
             cumulative_bin_crossed.into(),
             MASK_UINT64,
             OFFSET_CUMULATIVE_BIN_CROSSED,
         );
-        sample = sample.set(sample_lifetime.into(), MASK_UINT8, OFFSET_SAMPLE_LIFETIME);
-        sample = sample.set(created_at.into(), MASK_UINT40, OFFSET_SAMPLE_CREATION);
+        sample.set(sample_lifetime.into(), MASK_UINT8, OFFSET_SAMPLE_LIFETIME);
+        sample.set(created_at.into(), MASK_UINT40, OFFSET_SAMPLE_CREATION);
 
         OracleSample(sample)
     }
