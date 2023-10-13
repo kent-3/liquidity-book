@@ -41,6 +41,23 @@ pub fn mulmod(x: U256, y: U256, k: U256) -> U256 {
     u512_to_u256(z)
 }
 
+/// Computes (x + y) % k where the addition is performed with arbitrary precision and does not wrap around at 2^256.
+pub fn addmod(x: U256, y: U256, k: U256) -> U256 {
+    if k == U256::ZERO {
+        return U256::ZERO;
+    }
+
+    if let Some(z) = x.checked_add(y) {
+        return z % k;
+    }
+
+    let x = u256_to_u512(&x);
+    let y = u256_to_u512(&y);
+    let k = u256_to_u512(&k);
+    let z = (x + y) % k;
+    u512_to_u256(z)
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum U256x256MathError {
     #[error("Generic {0}")]
