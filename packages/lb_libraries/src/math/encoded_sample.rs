@@ -23,6 +23,14 @@ pub const MASK_UINT128: U256 = U256::new(0xffffffffffffffffffffffffffffffffu128)
 pub struct EncodedSample(pub Bytes32);
 
 impl EncodedSample {
+    // TODO - find a way to take &mut self and return &mut Self
+    //
+    // I think I need to impl Shl, Shr, BitAnd, BitOr, BitXor, and Not for Bytes32.
+    // That way I don't have to convert the inputs into U256 to be able to do bit math,
+    // and can mutate the value in place.
+    //
+    // TODO - should I inline any of these functions?
+
     /// Internal function to set a value in an encoded bytes32 using a mask and offset
     pub fn set(self, value: U256, mask: U256, offset: u8) -> Self {
         let mask_shifted = mask << offset;
