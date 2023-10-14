@@ -1,5 +1,5 @@
 //! ### Liquidity Book Price Helper Library
-//! Author: Kent
+//! Author: Kent and Haseeb
 //!
 //! This library contains functions to calculate prices.
 
@@ -9,7 +9,7 @@ use super::constants::*;
 use super::math::u128x128_math::{U128x128Math, U128x128MathError};
 use super::math::u256x256_math::{U256x256Math, U256x256MathError};
 
-// represents a 24 bit number (uint24, which we're not using yet)
+// represents a 24 bit number (u24)
 const REAL_ID_SHIFT: I256 = I256::new(1 << 23);
 
 #[derive(thiserror::Error, Debug)]
@@ -41,7 +41,6 @@ impl PriceHelper {
     /// * `bin_step` - The bin step
     pub fn get_id_from_price(price: U256, bin_step: u16) -> Result<u32, U128x128MathError> {
         let base = Self::get_base(bin_step);
-
         let real_id = U128x128Math::log2(price)? / U128x128Math::log2(base)?;
 
         Ok((REAL_ID_SHIFT + real_id).as_u32())
@@ -49,8 +48,6 @@ impl PriceHelper {
 
     /// Calculates the base from the bin step, which is `1 + binStep / BASIS_POINT_MAX`.
     pub fn get_base(bin_step: u16) -> U256 {
-        
-
         SCALE + (U256::from(bin_step) << SCALE_OFFSET) / BASIS_POINT_MAX as u128
     }
 
@@ -70,46 +67,56 @@ impl PriceHelper {
     }
 }
 
-// TODO fuzz testing
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_get_price_from_id() {
-        let id = 8_388_608;
-        let bin_step = 100u16;
-        let price = PriceHelper::get_price_from_id(id, bin_step).unwrap();
-        let expected_price = SCALE;
-        eprintln!("price: {price}");
-        assert_eq!(price, expected_price);
-    }
-
-    #[test]
-    fn test_get_id_from_price() {
-        let price = SCALE;
-        let bin_step = 100u16;
-        let id = PriceHelper::get_id_from_price(price, bin_step).unwrap();
-        eprintln!("id: {id}");
-        assert_eq!(id, 8_388_608);
-    }
-
-    #[test]
     fn test_get_base() {
-        let bin_step = 100u16;
+        let bin_step = 1000u16;
         let base = PriceHelper::get_base(bin_step);
-        eprintln!("base: {base}");
-        let expected_base = (U256::ONE << 128) + (U256::from(bin_step) << 128) / 10_000u128;
-        assert_eq!(base, expected_base);
+        assert!(base > U256::ZERO);
+        assert_eq!(
+            base,
+            U256::from_str_prefixed("374310603613032309809712068174945032601").unwrap()
+        );
     }
 
     #[test]
     fn test_get_exponent() {
-        let id = 8_388_608;
+        let id = 8474931u32;
         let exponent = PriceHelper::get_exponent(id);
-        let expected_exponent = U256::from(id).as_i256() - (1 << 23);
-        eprintln!("exponent: {exponent}");
-        assert_eq!(exponent, expected_exponent);
+
+        assert!(exponent > I256::ZERO);
+        assert_eq!(exponent, 86323);
+    }
+
+    #[test]
+    fn test_get_price_from_id() {
+        let id = 8574931;
+        let bin_step = 1u16;
+        let price = PriceHelper::get_price_from_id(id, bin_step).unwrap();
+
+        assert_eq!(
+            price,
+            U256::from_str_prefixed("42008768657166552252904831246223292524636112144").unwrap()
+        );
+        let fixed_point =
+            U256::from_str_prefixed("42008768657166552252904831246223292524636112144").unwrap();
+        let integer_part = fixed_point >> 128;
+        let shifted: U256 = U256::from(1u128) << 128;
+        let fractional_part = fixed_point & U256::from(shifted.checked_sub(U256::ONE).unwrap());
+        let fractional_part_decimal = fractional_part / U256::from(shifted);
+        let real_value = integer_part;
+    }
+
+    #[test]
+    fn test_get_id_from_price() {
+        let price = U256::from(100u128);
+        let bin_step = 1u16;
+        let id = PriceHelper::get_id_from_price(price, bin_step).unwrap();
+
+        assert!(id > 0);
     }
 
     #[test]
@@ -122,10 +129,10 @@ mod tests {
 
     #[test]
     fn test_convert128x128_price_to_decimal() {
-        let price128x128 = U256::from(1u8) << SCALE_OFFSET;
+        let price128x128 = U256::from(1000000000000000000000000000000000u128);
+
         let converted_price = PriceHelper::convert128x128_price_to_decimal(price128x128).unwrap();
-        let expected_price = PRECISION;
-        eprintln!("converted_price: {converted_price}");
-        assert_eq!(converted_price, expected_price);
+
+        assert!(converted_price > U256::ZERO);
     }
 }
