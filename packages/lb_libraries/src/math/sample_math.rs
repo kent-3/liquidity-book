@@ -24,7 +24,7 @@ pub const OFFSET_SAMPLE_LIFETIME: u8 = 208;
 pub const OFFSET_SAMPLE_CREATION: u8 = 216;
 
 #[cw_serde]
-#[derive(Copy)]
+#[derive(Copy, Default)]
 pub struct OracleSample(pub EncodedSample);
 
 impl OracleSample {

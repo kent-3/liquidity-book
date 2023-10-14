@@ -19,7 +19,7 @@ pub const MASK_UINT64: U256 = U256::new(0xffffffffffffffffu128);
 pub const MASK_UINT128: U256 = U256::new(0xffffffffffffffffffffffffffffffffu128);
 
 #[cw_serde]
-#[derive(Copy)]
+#[derive(Copy, Default)]
 pub struct EncodedSample(pub Bytes32);
 
 impl EncodedSample {
