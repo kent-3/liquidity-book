@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{ContractInfo, CosmosMsg, StdResult};
 
-use crate::transfer::HandleMsg;
+use super::transfer::HandleMsg;
 // use cosmwasm_std::{Binary, Env, MessageInfo};
 // use std::fmt;
 // use subtle::ConstantTimeEq;
@@ -9,7 +9,7 @@ use crate::transfer::HandleMsg;
 // use crate::utils::crypto::{sha_256, Prng};
 
 pub const VIEWING_KEY_SIZE: usize = 32;
-const VIEWING_KEY_PREFIX: &str = "api_key_";
+// const VIEWING_KEY_PREFIX: &str = "api_key_";
 
 #[cw_serde]
 pub struct ViewingKey(pub String);

@@ -9,6 +9,12 @@ description = "Interfaces for liquidity book contracts"
 lb-libraries = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 ethnum = { workspace = true }
+secret-toolkit = { workspace = true }
+shade-protocol = { git = "https://github.com/securesecrets/shade.git", features = [
+  "interface",
+  "snip20",
+] }

@@ -30,7 +30,11 @@ cosmwasm-schema = { version = "1.4" }
 schemars = { version = "0.8.13" }
 serde = { version = "1.0" }
 serde-json-wasm = { version = "1.0" }
-secret-toolkit = { version = "0.9", features = ["storage"] }
+secret-toolkit = { version = "0.9", features = [
+  "storage",
+  "viewing-key",
+  "permit",
+] }
 # cw-storage-plus = { version = "1", default-features = false, features = ["macro"] }
 ethnum = { version = "1.4" }
 thiserror = { version = "1.0" }

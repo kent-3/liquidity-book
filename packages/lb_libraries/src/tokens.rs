@@ -1,9 +1,19 @@
-use crate::transfer::{self, HandleMsg, QueryAnswer, QueryMsg};
+//! ### Liquidity Book token Helper Library
+//! Author: Haseeb
+//!
+
+use super::transfer::{self, HandleMsg, QueryAnswer, QueryMsg};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, ContractInfo, CosmosMsg, Deps, MessageInfo, QuerierWrapper,
     QueryRequest, StdError, StdResult, Uint128, WasmMsg, WasmQuery,
 };
+
+#[cw_serde]
+pub struct SwapTokenAmount {
+    pub token: TokenType,
+    pub amount: Uint128,
+}
 
 #[cw_serde]
 pub enum TokenType {
@@ -218,15 +228,12 @@ pub fn balance_query(
         key,
     };
 
-    let result: crate::transfer::QueryAnswer =
-        querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: contract.address.to_string(),
-            code_hash: contract.code_hash.clone(),
-            msg: to_binary(&msg)?,
-        }))?;
+    let result: QueryAnswer = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: contract.address.to_string(),
+        code_hash: contract.code_hash.clone(),
+        msg: to_binary(&msg)?,
+    }))?;
 
-    match result {
-        QueryAnswer::Balance { amount, .. } => Ok(amount),
-        // _ => Err(StdError::generic_err("Invalid Balance Response")), //TODO: better error
-    }
+    let QueryAnswer::Balance { amount, .. } = result;
+    Ok(amount)
 }
