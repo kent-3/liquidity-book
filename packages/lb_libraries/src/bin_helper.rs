@@ -8,17 +8,15 @@
 use cosmwasm_std::{to_binary, Addr, BankMsg, Coin, CosmosMsg, Uint128, WasmMsg};
 use ethnum::U256;
 
-use crate::math::packed_u128_math::PackedMath;
-use crate::math::u128x128_math::U128x128MathError;
-use crate::tokens::TokenType;
-use crate::transfer::HandleMsg;
-
 use super::constants::{SCALE, SCALE_OFFSET};
 use super::fee_helper::{FeeError, FeeHelper};
-use super::math::packed_u128_math::{Decode, Encode};
+use super::math::packed_u128_math::PackedUint128Math;
+use super::math::u128x128_math::U128x128MathError;
 use super::math::u256x256_math::{U256x256Math, U256x256MathError};
 use super::pair_parameter_helper::{PairParameters, PairParametersError};
 use super::price_helper::PriceHelper;
+use super::tokens::TokenType;
+use super::transfer::HandleMsg;
 use super::types::Bytes32;
 
 // NOTE: not sure if it's worth having a unique type for this
@@ -568,15 +566,13 @@ mod tests {
     use ethnum::U256;
     use std::str::FromStr;
 
-    use crate::math::packed_u128_math::{Decode, Encode};
-
     use super::*;
 
     #[test]
     fn test_zero_total_supply_and_zero_bin_liquidity() -> Result<(), BinError> {
         let total_supply = U256::ZERO;
-        let bin_reserves = Encode::encode(0, 0);
-        let amount_in = Encode::encode(1000, 1000);
+        let bin_reserves = Bytes32::encode(0, 0);
+        let amount_in = Bytes32::encode(1000, 1000);
         let price = U256::from_str("42008768657166552252904831246223292524636112144").unwrap();
 
         let (shares, effective_amounts_in) = BinHelper::get_shares_and_effective_amounts_in(
@@ -598,8 +594,8 @@ mod tests {
     #[test]
     fn test_zero_amount_in() -> Result<(), BinError> {
         let total_supply = U256::from(10000u128);
-        let bin_reserves = Encode::encode(1000, 1000);
-        let amount_in = Encode::encode(0, 0);
+        let bin_reserves = Bytes32::encode(1000, 1000);
+        let amount_in = Bytes32::encode(0, 0);
         let price = U256::from_str("42008768657166552252904831246223292524636112144").unwrap();
 
         let (shares, effective_amounts_in) = BinHelper::get_shares_and_effective_amounts_in(
@@ -618,8 +614,8 @@ mod tests {
     #[test]
     fn test_zero_price() -> Result<(), BinError> {
         let total_supply = U256::from(10000u128);
-        let bin_reserves = Encode::encode(1000, 1000);
-        let amount_in = Encode::encode(1000, 1000);
+        let bin_reserves = Bytes32::encode(1000, 1000);
+        let amount_in = Bytes32::encode(1000, 1000);
         let price = U256::ZERO;
 
         let (shares, effective_amounts_in) = BinHelper::get_shares_and_effective_amounts_in(
@@ -639,7 +635,7 @@ mod tests {
     fn test_liquidity() -> StdResult<()> {
         let mut total_supply = U256::from_str("0").unwrap();
         let max_u256 = U256::MAX;
-        let amount_in = Encode::encode(1000, 1000);
+        let amount_in = Bytes32::encode(1000, 1000);
         let price = U256::from_str("42008768657166552252904831246223292524636112144").unwrap();
 
         let liquidity = BinHelper::get_liquidity(amount_in, price).unwrap();
@@ -666,8 +662,8 @@ mod tests {
         // Perform the same assumptions as in the Solidity test.
         // ... (omitted for brevity)
 
-        let bin_reserves = Encode::encode(reserve_x, reserve_y);
-        let amounts_in = Encode::encode(amount_x_in, amount_y_in);
+        let bin_reserves = Bytes32::encode(reserve_x, reserve_y);
+        let amounts_in = Bytes32::encode(amount_x_in, amount_y_in);
 
         let (shares, effective_amounts_in) = BinHelper::get_shares_and_effective_amounts_in(
             bin_reserves,

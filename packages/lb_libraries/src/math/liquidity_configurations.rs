@@ -8,7 +8,7 @@ use ethnum::U256;
 
 use crate::types::Bytes32;
 
-use super::packed_u128_math::{Decode, Encode};
+use super::packed_u128_math::PackedUint128Math;
 
 pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
 
