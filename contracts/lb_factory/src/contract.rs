@@ -1,26 +1,26 @@
 #![allow(unused)] // For beginning only.
 
-use ::lb_interfaces::{
-    lb_factory::*,
-    lb_pair::ExecuteMsg::{ForceDecay as LbPairForceDecay, SetStaticFeeParameters},
-};
-use ::lb_libraries::{math, pair_parameter_helper, price_helper, tokens, types, viewing_keys};
+use crate::prelude::*;
+use crate::state::*;
+use crate::types::{LBPair, LBPairInformation, NextPairKey};
+use ethnum::U256;
+
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Timestamp, Uint256,
     WasmMsg,
 };
-use ethnum::U256;
-
-use math::encoded_sample::EncodedSample;
-use pair_parameter_helper::PairParameters;
-use price_helper::PriceHelper;
-use tokens::TokenType;
-use types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters};
-
-use crate::prelude::*;
-use crate::state::*;
-use crate::types::{LBPair, LBPairInformation, NextPairKey};
+use lb_interfaces::{
+    lb_factory::*,
+    lb_pair::ExecuteMsg::{ForceDecay as LbPairForceDecay, SetStaticFeeParameters},
+};
+use lb_libraries::{
+    math::encoded_sample::EncodedSample,
+    pair_parameter_helper::PairParameters,
+    price_helper::PriceHelper,
+    tokens::TokenType,
+    types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters},
+};
 
 pub static _OFFSET_IS_PRESET_OPEN: u8 = 255;
 pub static _MIN_BIN_STEP: u8 = 1; // 0.001%
@@ -552,7 +552,7 @@ fn try_remove_preset(
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
-    PRESETS.remove(deps.storage, bin_step);
+    PRESETS.remove(deps.storage, &bin_step);
 
     Ok(Response::default().add_attribute_plaintext("preset removed", bin_step.to_string()))
 }
