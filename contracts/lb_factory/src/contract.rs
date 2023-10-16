@@ -1,26 +1,30 @@
 #![allow(unused)] // For beginning only.
 
-use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Timestamp, Uint256, WasmMsg,
+use ::lb_interfaces::{
+    lb_factory::*,
+    lb_pair::ExecuteMsg::{ForceDecay as LbPairForceDecay, SetStaticFeeParameters},
 };
-use cosmwasm_std::{ContractInfo, Storage};
+use ::lb_libraries::{math, pair_parameter_helper, price_helper, tokens, types, viewing_keys};
+use cosmwasm_std::{
+    entry_point, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Timestamp, Uint256,
+    WasmMsg,
+};
 use ethnum::U256;
 
-use lb_libraries::math::encoded_sample::EncodedSample;
-use lb_libraries::pair_parameter_helper::PairParameters;
-use lb_libraries::price_helper::PriceHelper;
-use lb_libraries::tokens::TokenType;
-use lb_libraries::types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters};
+use math::encoded_sample::EncodedSample;
+use pair_parameter_helper::PairParameters;
+use price_helper::PriceHelper;
+use tokens::TokenType;
+use types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters};
 
-use crate::msg::*;
 use crate::prelude::*;
 use crate::state::*;
 use crate::types::{LBPair, LBPairInformation, NextPairKey};
 
 pub static _OFFSET_IS_PRESET_OPEN: u8 = 255;
 pub static _MIN_BIN_STEP: u8 = 1; // 0.001%
-pub static _MAX_FLASHLOAN_FEE: u8 = 10; // 10%
+pub static _MAX_FLASHLOAN_FEE: u8 = 10 ^ 17; // 10%
 
 pub const INSTANTIATE_REPLY_ID: u64 = 1u64;
 
@@ -52,8 +56,7 @@ pub fn instantiate(
         lb_pair_implementation: ContractInstantiationInfo::default(),
         lb_token_implementation: ContractInstantiationInfo::default(),
     };
-    deps.api
-        .debug(format!("Contract was initialized by {}", info.sender).as_str());
+
     CONFIG.save(deps.storage, &state)?;
 
     // TODO: decide on response output and format
@@ -76,14 +79,24 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             token_y,
             active_id,
             bin_step,
-        } => try_create_lb_pair(deps, env, info, token_x, token_y, active_id, bin_step),
-        ExecuteMsg::SetLBPairIgnored {
+            viewing_key,
+        } => try_create_lb_pair(
+            deps,
+            env,
+            info,
             token_x,
             token_y,
+            active_id,
             bin_step,
-            ignored,
-        } => try_set_lb_pair_ignored(deps, env, info, token_x, token_y, bin_step, ignored),
-        ExecuteMsg::SetPreset {
+            viewing_key,
+        ),
+        // ExecuteMsg::SetLBPairIgnored {
+        //     token_x,
+        //     token_y,
+        //     bin_step,
+        //     ignored,
+        // } => try_set_lb_pair_ignored(deps, env, info, token_x, token_y, bin_step, ignored),
+        ExecuteMsg::SetPairPreset {
             bin_step,
             base_factor,
             filter_period,
@@ -93,7 +106,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             protocol_share,
             max_volatility_accumulator,
             is_open,
-        } => try_set_preset(
+        } => try_set_pair_preset(
             deps,
             env,
             info,
@@ -175,7 +188,7 @@ fn try_set_lb_pair_implementation(
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| {
+    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
         state.lb_pair_implementation = new_lb_pair_implementation;
         Ok(state)
     })?;
@@ -209,7 +222,7 @@ fn try_set_lb_token_implementation(
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| {
+    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
         state.lb_token_implementation = new_lb_token_implementation;
         Ok(state)
     })?;
@@ -237,16 +250,17 @@ fn try_create_lb_pair(
     token_y: TokenType,
     active_id: u32,
     bin_step: u16,
+    viewing_key: String,
 ) -> Result<Response> {
     let state = CONFIG.load(deps.storage)?;
 
-    if !PRESETS.contains(deps.storage, &bin_step) {
+    if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
     let preset = PRESETS
-        .get(deps.storage, &bin_step)
-        .ok_or(Error::BinStepHasNoPreset { bin_step })?;
+        .load(deps.storage, bin_step)
+        .map_err(|_| Error::BinStepHasNoPreset { bin_step })?;
     let is_owner = info.sender == state.owner;
 
     if !_is_preset_open(preset.0 .0) && !is_owner {
@@ -256,38 +270,42 @@ fn try_create_lb_pair(
         });
     }
 
-    // Search the quote assets for the one trying to be added
-    if !QUOTE_ASSET_WHITELIST.contains(deps.storage, &token_y) {
+    if !QUOTE_ASSET_WHITELIST
+        .iter(deps.storage)?
+        .any(|result| match result {
+            Ok(t) => t.eq(&token_y),
+            Err(_) => false, // Handle the error case as needed
+        })
+    {
         return Err(Error::QuoteAssetNotWhitelisted {
-            quote_asset: token_y.unique_key(),
+            quote_asset: token_y.unique_key().clone(),
         });
     }
 
     if token_x == token_y {
         return Err(Error::IdenticalAddresses {
-            token: token_x.unique_key(),
+            token: token_x.unique_key().clone(),
         });
     }
 
     // safety check, making sure that the price can be calculated
     PriceHelper::get_price_from_id(active_id, bin_step);
 
-    // We sort token for storage efficiency, only one input needs to be stored because they are sorted
     let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
 
     // TODO: error if address doesn't exist on chain
     // if (address(tokenA) == address(0)) revert LBFactory__AddressZero();
 
     if LB_PAIRS_INFO
-        .get(
+        .load(
             deps.storage,
-            &(
-                token_a.unique_key(),
-                token_b.unique_key(),
+            (
+                token_a.unique_key().clone(),
+                token_b.unique_key().clone(),
                 bin_step,
             ),
         )
-        .is_some()
+        .is_ok()
     {
         return Err(Error::LBPairAlreadyExists {
             token_x: token_x.unique_key(),
@@ -330,7 +348,11 @@ fn try_create_lb_pair(
                 active_id,
                 lb_token_implementation: state.lb_token_implementation,
                 //TODO add viewing key
-                viewing_key: String::new(),
+                viewing_key,
+                //TODO add pair_name
+                pair_name: String::new(),
+                entropy: String::new(),
+                protocol_fee_recipient: state.fee_recipient,
             })?,
             code_hash: state.lb_pair_implementation.code_hash.clone(),
             funds: vec![],
@@ -339,10 +361,11 @@ fn try_create_lb_pair(
     ));
 
     ephemeral_storage_w(deps.storage).save(&NextPairKey {
-        token_a,
-        token_b,
+        token_a: token_a.clone(),
+        token_b: token_b.clone(),
         bin_step,
         code_hash: state.lb_pair_implementation.code_hash,
+        is_open: is_owner,
     })?;
 
     Ok(Response::new().add_submessages(messages))
@@ -350,75 +373,75 @@ fn try_create_lb_pair(
     // emit LBPairCreated(tokenX, tokenY, binStep, pair, _allLBPairs.length - 1);
 }
 
-/// Sets whether the pair is ignored or not for routing, it will make the pair unusable by the router.
-///
-/// # Arguments
-///
-/// * `token_x` - The address of the first token of the pair.
-/// * `token_y` - The address of the second token of the pair.
-/// * `bin_step` - The bin step in basis point of the pair.
-/// * `ignored` - Whether to ignore (true) or not (false) the pair for routing.
-fn try_set_lb_pair_ignored(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    token_a: TokenType,
-    token_b: TokenType,
-    bin_step: u16,
-    ignored: bool,
-) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+// /// Sets whether the pair is ignored or not for routing, it will make the pair unusable by the router.
+// ///
+// /// # Arguments
+// ///
+// /// * `token_x` - The address of the first token of the pair.
+// /// * `token_y` - The address of the second token of the pair.
+// /// * `bin_step` - The bin step in basis point of the pair.
+// /// * `ignored` - Whether to ignore (true) or not (false) the pair for routing.
+// fn try_set_lb_pair_ignored(
+//     deps: DepsMut,
+//     env: Env,
+//     info: MessageInfo,
+//     token_a: TokenType,
+//     token_b: TokenType,
+//     bin_step: u16,
+//     ignored: bool,
+// ) -> Result<Response> {
+//     let state = CONFIG.load(deps.storage)?;
+//     only_owner(&info.sender, &state.owner)?;
 
-    let (token_a, token_b) = _sort_tokens(token_a, token_b);
+//     let (token_a, token_b) = _sort_tokens(token_a, token_b);
 
-    let mut pair_information = LB_PAIRS_INFO
-        .get(
-            deps.storage,
-            &(
-                token_a.unique_key(),
-                token_b.unique_key(),
-                bin_step,
-            ),
-        )
-        .unwrap();
+//     let mut pair_information = LB_PAIRS_INFO
+//         .load(
+//             deps.storage,
+//             (
+//                 token_a.unique_key().clone(),
+//                 token_b.unique_key().clone(),
+//                 bin_step,
+//             ),
+//         )
+//         .unwrap();
 
-    if pair_information
-        .lb_pair
-        .contract
-        .address
-        .as_str()
-        .is_empty()
-    {
-        return Err(Error::LBPairDoesNotExist {
-            token_x: token_a.unique_key(),
-            token_y: token_b.unique_key(),
-            bin_step,
-        });
-    }
+//     if pair_information
+//         .lb_pair
+//         .contract
+//         .address
+//         .as_str()
+//         .is_empty()
+//     {
+//         return Err(Error::LBPairDoesNotExist {
+//             token_x: token_a.unique_key().clone(),
+//             token_y: token_b.unique_key().clone(),
+//             bin_step,
+//         });
+//     }
 
-    if pair_information.ignored_for_routing == ignored {
-        return Err(Error::LBPairIgnoredIsAlreadyInTheSameState);
-    }
+//     if pair_information.ignored_for_routing == ignored {
+//         return Err(Error::LBPairIgnoredIsAlreadyInTheSameState);
+//     }
 
-    pair_information.ignored_for_routing = ignored;
+//     pair_information.ignored_for_routing = ignored;
 
-    LB_PAIRS_INFO.insert(
-        deps.storage,
-        &(
-            token_a.unique_key(),
-            token_b.unique_key(),
-            bin_step,
-        ),
-        &pair_information,
-    )?;
+//     LB_PAIRS_INFO.save(
+//         deps.storage,
+//         (
+//             token_a.unique_key().clone(),
+//             token_b.unique_key().clone(),
+//             bin_step,
+//         ),
+//         &pair_information,
+//     )?;
 
-    // emit LBPairIgnoredStateChanged(pairInformation.LBPair, ignored);
+//     // emit LBPairIgnoredStateChanged(pairInformation.LBPair, ignored);
 
-    // TODO: be more specific about which pair changed
-    Ok(Response::default()
-        .add_attribute_plaintext("LBPair ignored state changed", format!("{}", ignored)))
-}
+//     // TODO: be more specific about which pair changed
+//     Ok(Response::default()
+//         .add_attribute_plaintext("LBPair ignored state changed", format!("{}", ignored)))
+// }
 
 /// Sets the preset parameters of a bin step
 ///
@@ -433,7 +456,7 @@ fn try_set_lb_pair_ignored(
 /// * `protocol_share` - The share of the fees received by the protocol
 /// * `max_volatility_accumulator` - The max value of the volatility accumulator
 /// * `is_open` - Whether the preset is open or not to be used by users
-fn try_set_preset(
+fn try_set_pair_preset(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -465,22 +488,10 @@ fn try_set_preset(
     )?;
 
     if is_open {
-        preset = PairParameters(preset.0.set_bool(true, _OFFSET_IS_PRESET_OPEN));
+        PairParameters(preset.0.set_bool(true, _OFFSET_IS_PRESET_OPEN));
     }
 
-    PRESETS.insert(deps.storage, &bin_step, &preset)?;
-
-    // TODO: add all this to the response
-    // emit PresetSet(
-    //     binStep,
-    //     baseFactor,
-    //     filterPeriod,
-    //     decayPeriod,
-    //     reductionFactor,
-    //     variableFeeControl,
-    //     protocolShare,
-    //     maxVolatilityAccumulator
-    //     );
+    PRESETS.save(deps.storage, bin_step, &preset)?;
 
     Ok(Response::default().add_attribute_plaintext("set preset", bin_step.to_string()))
 }
@@ -501,19 +512,19 @@ fn try_set_preset_open_state(
     let state = CONFIG.load(deps.storage)?;
     only_owner(&info.sender, &state.owner)?;
 
-    if !PRESETS.contains(deps.storage, &bin_step) {
+    if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
-    let preset = PRESETS.get(deps.storage, &bin_step).unwrap();
+    let preset = PRESETS.load(deps.storage, bin_step).unwrap();
 
     if preset.0.decode_bool(_OFFSET_IS_PRESET_OPEN) == is_open {
         return Err(Error::PresetOpenStateIsAlreadyInTheSameState);
     }
 
-    PRESETS.insert(
+    PRESETS.save(
         deps.storage,
-        &bin_step,
+        bin_step,
         &PairParameters(preset.0.set_bool(is_open, _OFFSET_IS_PRESET_OPEN)),
     )?;
 
@@ -537,9 +548,11 @@ fn try_remove_preset(
     let state = CONFIG.load(deps.storage)?;
     only_owner(&info.sender, &state.owner)?;
 
-    if PRESETS.remove(deps.storage, &bin_step).is_err() {
+    if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
+
+    PRESETS.remove(deps.storage, bin_step);
 
     Ok(Response::default().add_attribute_plaintext("preset removed", bin_step.to_string()))
 }
@@ -578,35 +591,39 @@ fn try_set_fee_parameters_on_pair(
 
     let (token_a, token_b) = _sort_tokens(token_x, token_y);
     let mut lb_pair = LB_PAIRS_INFO
-        .get(
+        .load(
             deps.storage,
-            &(
-                token_a.unique_key(),
-                token_b.unique_key(),
+            (
+                token_a.unique_key().clone(),
+                token_b.unique_key().clone(),
                 bin_step,
             ),
         )
-        .ok_or(Error::LBPairNotCreated {
+        .map_err(|_| Error::LBPairNotCreated {
             token_x: token_a.unique_key(),
             token_y: token_b.unique_key(),
             bin_step,
         })?
         .lb_pair;
 
-    // TODO: this needs to actually send a message to the LBPair contract to change those parameters
-    // lb_pair.setStaticFeeParameters(
-    //     base_factor,
-    //     filter_period,
-    //     decay_period,
-    //     reduction_factor,
-    //     variable_fee_control,
-    //     protocol_share,
-    //     max_volatility_accumulator
-    // );
+    let mut response = Response::new();
 
-    todo!();
+    response = response.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: lb_pair.contract.address.to_string(),
+        code_hash: lb_pair.contract.code_hash,
+        msg: to_binary(&SetStaticFeeParameters {
+            base_factor,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            variable_fee_control,
+            protocol_share,
+            max_volatility_accumulator,
+        })?,
+        funds: vec![],
+    }));
 
-    Ok(Response::default().add_attribute_plaintext("status", "ok"))
+    Ok(response)
 }
 
 /// Function to set the recipient of the fees. This address needs to be able to receive SNIP20s.
@@ -628,11 +645,11 @@ fn try_set_fee_recipient(
     let old_fee_recipient = state.fee_recipient;
     if old_fee_recipient == fee_recipient {
         return Err(Error::SameFeeRecipient {
-            fee_recipient: old_fee_recipient,
+            fee_recipient: old_fee_recipient.clone(),
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| {
+    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
         state.fee_recipient = fee_recipient.clone();
         Ok(state)
     })?;
@@ -670,7 +687,7 @@ fn try_set_flash_loan_fee(
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| {
+    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
         state.flash_loan_fee = flash_loan_fee;
         Ok(state)
     })?;
@@ -694,13 +711,19 @@ fn try_add_quote_asset(
     let state = CONFIG.load(deps.storage)?;
     only_owner(&info.sender, &state.owner)?;
 
-    if QUOTE_ASSET_WHITELIST.contains(deps.storage, &quote_asset) {
+    if QUOTE_ASSET_WHITELIST
+        .iter(deps.storage)?
+        .any(|result| match result {
+            Ok(t) => t.eq(&quote_asset),
+            Err(_) => false, // Handle the error case as needed
+        })
+    {
         return Err(Error::QuoteAssetAlreadyWhitelisted {
-            quote_asset: quote_asset.unique_key(),
+            quote_asset: quote_asset.unique_key().clone(),
         });
     }
 
-    QUOTE_ASSET_WHITELIST.insert(deps.storage, &quote_asset);
+    QUOTE_ASSET_WHITELIST.push(deps.storage, &quote_asset);
 
     Ok(Response::default()
         .add_attribute_plaintext("quote asset added", quote_asset.unique_key().as_str()))
@@ -720,13 +743,27 @@ fn try_remove_quote_asset(
     let state = CONFIG.load(deps.storage)?;
     only_owner(&info.sender, &state.owner)?;
 
-    if !QUOTE_ASSET_WHITELIST.contains(deps.storage, &asset) {
-        return Err(Error::QuoteAssetNotWhitelisted {
-            quote_asset: asset.unique_key(),
+    // Enumerate the iterator and use `find` to locate the asset
+    let found_asset = QUOTE_ASSET_WHITELIST
+        .iter(deps.storage)?
+        .enumerate()
+        .find(|(_, result)| {
+            // Assuming the iterator contains Result, we'll filter only Ok values that match the asset
+            result.as_ref().ok().map_or(false, |t| t.eq(&asset))
         });
-    }
 
-    QUOTE_ASSET_WHITELIST.remove(deps.storage, &asset)?;
+    match found_asset {
+        Some((index, Ok(_))) => {
+            // Asset was found at the given index
+            QUOTE_ASSET_WHITELIST.remove(deps.storage, index.try_into().unwrap())?;
+        }
+        _ => {
+            // Asset was not found
+            return Err(Error::QuoteAssetNotWhitelisted {
+                quote_asset: asset.unique_key().clone(),
+            });
+        }
+    }
 
     Ok(Response::default()
         .add_attribute_plaintext("quote asset removed", asset.unique_key().as_str()))
@@ -738,8 +775,33 @@ fn try_force_decay(deps: DepsMut, env: Env, info: MessageInfo, pair: LBPair) -> 
 
     // TODO: I think this needs to send a message to the LBPair contract to execute the force decay.
     // pair.forceDecay();
+    let (token_a, token_b) = _sort_tokens(pair.token_x, pair.token_y);
+    let mut lb_pair = LB_PAIRS_INFO
+        .load(
+            deps.storage,
+            (
+                token_a.unique_key().clone(),
+                token_b.unique_key().clone(),
+                pair.bin_step,
+            ),
+        )
+        .map_err(|_| Error::LBPairNotCreated {
+            token_x: token_a.unique_key(),
+            token_y: token_b.unique_key(),
+            bin_step: pair.bin_step,
+        })?
+        .lb_pair;
 
-    todo!()
+    let mut response = Response::new();
+
+    response = response.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: lb_pair.contract.address.to_string(),
+        code_hash: lb_pair.contract.code_hash,
+        msg: to_binary(&LbPairForceDecay {})?,
+        funds: vec![],
+    }));
+
+    Ok(response)
 }
 
 fn only_owner(sender: &Addr, owner: &Addr) -> Result<()> {
@@ -764,10 +826,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetQuoteAssetAtIndex { index } => query_quote_asset_at_index(deps, index),
         QueryMsg::IsQuoteAsset { token } => query_is_quote_asset(deps, token),
         QueryMsg::GetLBPairInformation {
-            token_a,
-            token_b,
+            token_x,
+            token_y,
             bin_step,
-        } => query_lb_pair_information(deps, token_a, token_b, bin_step),
+        } => query_lb_pair_information(deps, token_x, token_y, bin_step),
         QueryMsg::GetPreset { bin_step } => query_preset(deps, bin_step),
         QueryMsg::GetAllBinSteps {} => query_all_bin_steps(deps),
         QueryMsg::GetOpenBinSteps {} => query_open_bin_steps(deps),
@@ -905,7 +967,7 @@ fn query_number_of_quote_assets(deps: Deps) -> Result<Binary> {
 /// * `asset` - The address of the quote asset at index `index`.
 // TODO: Unsure if this function is necessary. Not sure how to index the Keyset.
 fn query_quote_asset_at_index(deps: Deps, index: u32) -> Result<Binary> {
-    let asset = todo!();
+    let asset = QUOTE_ASSET_WHITELIST.get_at(deps.storage, index)?;
 
     let response = QuoteAssetAtIndexResponse { asset };
     to_binary(&response).map_err(Error::CwErr)
@@ -917,7 +979,12 @@ fn query_quote_asset_at_index(deps: Deps, index: u32) -> Result<Binary> {
 ///
 /// * `token` - The address of the asset.
 fn query_is_quote_asset(deps: Deps, token: TokenType) -> Result<Binary> {
-    let is_quote = QUOTE_ASSET_WHITELIST.contains(deps.storage, &token);
+    let is_quote = QUOTE_ASSET_WHITELIST
+        .iter(deps.storage)?
+        .any(|result| match result {
+            Ok(t) => t.eq(&token),
+            Err(_) => false,
+        });
 
     let response = IsQuoteAssetResponse { is_quote };
     to_binary(&response).map_err(Error::CwErr)
@@ -967,9 +1034,9 @@ fn _get_lb_pair_information(
 ) -> Result<LBPairInformation> {
     let (token_a, token_b) = _sort_tokens(token_a, token_b);
     let info = LB_PAIRS_INFO
-        .get(
+        .load(
             deps.storage,
-            &(token_a.unique_key(), token_b.unique_key(), bin_step),
+            (token_a.unique_key(), token_b.unique_key(), bin_step),
         )
         .unwrap();
 
@@ -1012,14 +1079,14 @@ fn _sort_tokens(token_a: TokenType, token_b: TokenType) -> (TokenType, TokenType
 /// * `max_volatility_accumulator` - The max volatility accumulator of the preset.
 /// * `is_open` - Whether the preset is open or not.
 fn query_preset(deps: Deps, bin_step: u16) -> Result<Binary> {
-    if !PRESETS.contains(deps.storage, &bin_step) {
+    if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
     // NOTE: each preset is an encoded Bytes32.
     // The EncodedSample wrapper provides methods to decode.
     // The PairParameters wrapper provides methods to decode specific values.
-    let preset = PRESETS.get(deps.storage, &bin_step).unwrap();
+    let preset = PRESETS.load(deps.storage, bin_step).unwrap();
 
     let base_factor = preset.get_base_factor();
     let filter_period = preset.get_filter_period();
@@ -1052,12 +1119,17 @@ fn query_preset(deps: Deps, bin_step: u16) -> Result<Binary> {
 fn query_all_bin_steps(deps: Deps) -> Result<Binary> {
     // NOTE: iterating over the keys of the PRESETS Keymap will return all available bin_steps
     // not too confident with this implementation...
-    let bin_step_with_preset = PRESETS
-        .iter_keys(deps.storage)?
-        // Maps the individual Results to have our custom Error type instead of StdError
-        .map(|result_key| result_key.map_err(Error::CwErr))
-        // I think this works?
-        .collect::<Result<Vec<u16>>>()?;
+
+    let mut bin_step_with_preset = Vec::<u16>::new();
+
+    let iterator = PRESETS
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .into_iter();
+
+    for result in iterator {
+        let (bin_step, preset) = result.map_err(Error::CwErr)?;
+        bin_step_with_preset.push(bin_step)
+    }
 
     let response = AllBinStepsResponse {
         bin_step_with_preset,
@@ -1072,40 +1144,41 @@ fn query_all_bin_steps(deps: Deps) -> Result<Binary> {
 ///
 /// * `open_bin_step` - The list of open bin steps.
 fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
-    // let mut open_bin_steps = Vec::<u16>::new();
-
-    // let iterator = PRESETS.iter(deps.storage)?;
-
-    // for result in iterator {
-    //     let (bin_step, preset) = result.map_err(Error::CwErr)?;
-    //     if _is_preset_open(preset) {
-    //         open_bin_steps.push(bin_step)
-    //     }
-    // }
-
     // this way is harder to ready, but maybe more efficient?
-    let open_bin_steps = PRESETS
-        .iter(deps.storage)?
-        .filter_map(|result| {
-            result
-                .map_err(Error::CwErr)
-                .map(|(bin_step, preset)| {
-                    if _is_preset_open(preset.0 .0) {
-                        Some(bin_step)
-                    } else {
-                        None
-                    }
-                })
-                .transpose()
-        })
-        .collect::<Result<Vec<u16>>>()?;
+    // let open_bin_steps = PRESETS
+    //     .map(|result| {
+    //         result
+    //             .map_err(Error::CwErr)
+    //             .map(|(bin_step, preset)| {
+    //                 if _is_preset_open(preset.0 .0) {
+    //                     Some(bin_step)
+    //                 } else {
+    //                     None
+    //                 }
+    //             })
+    //             .transpose()
+    //     })
+    //     .collect::<Result<Vec<u16>>>()?;
+
+    let mut open_bin_steps = Vec::<u16>::new();
+
+    let iterator = PRESETS
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .into_iter();
+
+    for result in iterator {
+        let (bin_step, preset) = result.map_err(Error::CwErr)?;
+        if _is_preset_open(preset.0 .0) {
+            open_bin_steps.push(bin_step)
+        }
+    }
 
     let response = OpenBinStepsResponse { open_bin_steps };
     to_binary(&response).map_err(Error::CwErr)
 }
 
 fn _is_preset_open(preset: Bytes32) -> bool {
-    EncodedSample(preset).decode_bool(_OFFSET_IS_PRESET_OPEN)
+    return EncodedSample(preset).decode_bool(_OFFSET_IS_PRESET_OPEN);
 }
 
 /// Returns all the LBPair of a pair of tokens.
@@ -1123,16 +1196,14 @@ fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Res
 
     // Create a Vec of available bin steps for this pair
     let bin_steps: Vec<u16> = AVAILABLE_LB_PAIR_BIN_STEPS
-        .get(
+        .load(
             deps.storage,
-            &(token_a.unique_key(), token_b.unique_key()),
+            (token_a.unique_key().clone(), token_b.unique_key().clone()),
         )
-        .ok_or(Error::Generic(
-            "This token pair is not in the map".to_string(),
-        ))?;
+        .map_err(|_| Error::Generic("This token pair is not in the map".to_string()))?;
 
     // Not sure if this condition is possible, but just in case.
-    if bin_steps.is_empty() {
+    if bin_steps.len() == 0 {
         return Err(Error::Generic("No available bin_steps".to_string()));
     }
 
@@ -1141,17 +1212,15 @@ fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Res
         .into_iter()
         .map(|bin_step| {
             LB_PAIRS_INFO
-                .get(
+                .load(
                     deps.storage,
-                    &(
-                        token_a.unique_key(),
-                        token_b.unique_key(),
+                    (
+                        token_a.unique_key().clone(),
+                        token_b.unique_key().clone(),
                         bin_step,
                     ),
                 )
-                .ok_or(Error::Generic(
-                    "Error retrieving LBPairInformation".to_string(),
-                ))
+                .map_err(|_| Error::Generic("Error retrieving LBPairInformation".to_string()))
         })
         .collect();
 
@@ -1183,43 +1252,43 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                         code_hash,
                     },
                 };
-                LB_PAIRS_INFO.insert(
+                LB_PAIRS_INFO.save(
                     deps.storage,
-                    &(
-                        token_a.unique_key(),
-                        token_b.unique_key(),
+                    (
+                        token_a.unique_key().clone(),
+                        token_b.unique_key().clone(),
                         bin_step,
                     ),
                     &LBPairInformation {
                         bin_step: lb_pair_key.bin_step,
                         lb_pair: lb_pair.clone(),
                         // TODO: get 'is_owner' from the create_lb_pair function
-                        created_by_owner: true,
+                        created_by_owner: lb_pair_key.is_open,
                         ignored_for_routing: false,
                     },
                 )?;
 
-                ALL_LB_PAIRS.insert(deps.storage, &lb_pair)?;
+                ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
 
                 // load the different bin_step LBPairs that exist for this pair of tokens, then add the new one
                 let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
-                    .get(
+                    .load(
                         deps.storage,
-                        &(token_a.unique_key(), token_b.unique_key()),
+                        (token_a.unique_key().clone(), token_b.unique_key().clone()),
                     )
                     .unwrap_or(Vec::<u16>::new());
                 bin_step_list.push(bin_step);
-                AVAILABLE_LB_PAIR_BIN_STEPS.insert(
+                AVAILABLE_LB_PAIR_BIN_STEPS.save(
                     deps.storage,
-                    &(token_a.unique_key(), token_b.unique_key()),
+                    (token_a.unique_key(), token_b.unique_key()),
                     &bin_step_list,
                 )?;
 
                 ephemeral_storage_w(deps.storage).remove();
                 Ok(Response::default())
             }
-            None => Err(StdError::generic_err("Expecting contract id".to_string())),
+            None => Err(StdError::generic_err(format!("Expecting contract id"))),
         },
-        _ => Err(StdError::generic_err("Unknown reply id".to_string())),
+        _ => Err(StdError::generic_err(format!("Unknown reply id"))),
     }
 }
