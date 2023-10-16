@@ -1,6 +1,6 @@
 use cosmwasm_schema::write_api;
 
-use lb_factory::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use lb_interfaces::lb_factory::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {

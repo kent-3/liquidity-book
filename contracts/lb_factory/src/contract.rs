@@ -279,13 +279,13 @@ fn try_create_lb_pair(
         })
     {
         return Err(Error::QuoteAssetNotWhitelisted {
-            quote_asset: token_y.unique_key().clone(),
+            quote_asset: token_y.unique_key(),
         });
     }
 
     if token_x == token_y {
         return Err(Error::IdenticalAddresses {
-            token: token_x.unique_key().clone(),
+            token: token_x.unique_key(),
         });
     }
 
@@ -300,11 +300,7 @@ fn try_create_lb_pair(
     if LB_PAIRS_INFO
         .load(
             deps.storage,
-            (
-                token_a.unique_key().clone(),
-                token_b.unique_key().clone(),
-                bin_step,
-            ),
+            (token_a.unique_key(), token_b.unique_key(), bin_step),
         )
         .is_ok()
     {
@@ -362,8 +358,8 @@ fn try_create_lb_pair(
     ));
 
     ephemeral_storage_w(deps.storage).save(&NextPairKey {
-        token_a: token_a.clone(),
-        token_b: token_b.clone(),
+        token_a,
+        token_b,
         bin_step,
         code_hash: state.lb_pair_implementation.code_hash,
         is_open: is_owner,
@@ -457,6 +453,7 @@ fn try_create_lb_pair(
 /// * `protocol_share` - The share of the fees received by the protocol
 /// * `max_volatility_accumulator` - The max value of the volatility accumulator
 /// * `is_open` - Whether the preset is open or not to be used by users
+#[allow(clippy::too_many_arguments)]
 fn try_set_pair_preset(
     deps: DepsMut,
     env: Env,
@@ -572,6 +569,7 @@ fn try_remove_preset(
 /// * `variable_fee_control` - The variable fee control, used to control the variable fee, can be 0 to disable it
 /// * `protocol_share` - The share of the fees received by the protocol
 /// * `max_volatility_accumulator` - The max value of volatility accumulator
+#[allow(clippy::too_many_arguments)]
 fn try_set_fee_parameters_on_pair(
     deps: DepsMut,
     env: Env,
@@ -594,11 +592,7 @@ fn try_set_fee_parameters_on_pair(
     let mut lb_pair = LB_PAIRS_INFO
         .load(
             deps.storage,
-            (
-                token_a.unique_key().clone(),
-                token_b.unique_key().clone(),
-                bin_step,
-            ),
+            (token_a.unique_key(), token_b.unique_key(), bin_step),
         )
         .map_err(|_| Error::LBPairNotCreated {
             token_x: token_a.unique_key(),
@@ -646,7 +640,7 @@ fn try_set_fee_recipient(
     let old_fee_recipient = state.fee_recipient;
     if old_fee_recipient == fee_recipient {
         return Err(Error::SameFeeRecipient {
-            fee_recipient: old_fee_recipient.clone(),
+            fee_recipient: old_fee_recipient,
         });
     }
 
@@ -720,7 +714,7 @@ fn try_add_quote_asset(
         })
     {
         return Err(Error::QuoteAssetAlreadyWhitelisted {
-            quote_asset: quote_asset.unique_key().clone(),
+            quote_asset: quote_asset.unique_key(),
         });
     }
 
@@ -761,7 +755,7 @@ fn try_remove_quote_asset(
         _ => {
             // Asset was not found
             return Err(Error::QuoteAssetNotWhitelisted {
-                quote_asset: asset.unique_key().clone(),
+                quote_asset: asset.unique_key(),
             });
         }
     }
@@ -780,11 +774,7 @@ fn try_force_decay(deps: DepsMut, env: Env, info: MessageInfo, pair: LBPair) -> 
     let mut lb_pair = LB_PAIRS_INFO
         .load(
             deps.storage,
-            (
-                token_a.unique_key().clone(),
-                token_b.unique_key().clone(),
-                pair.bin_step,
-            ),
+            (token_a.unique_key(), token_b.unique_key(), pair.bin_step),
         )
         .map_err(|_| Error::LBPairNotCreated {
             token_x: token_a.unique_key(),
@@ -1123,9 +1113,7 @@ fn query_all_bin_steps(deps: Deps) -> Result<Binary> {
 
     let mut bin_step_with_preset = Vec::<u16>::new();
 
-    let iterator = PRESETS
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .into_iter();
+    let iterator = PRESETS.range(deps.storage, None, None, cosmwasm_std::Order::Ascending);
 
     for result in iterator {
         let (bin_step, preset) = result.map_err(Error::CwErr)?;
@@ -1163,9 +1151,7 @@ fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
 
     let mut open_bin_steps = Vec::<u16>::new();
 
-    let iterator = PRESETS
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .into_iter();
+    let iterator = PRESETS.range(deps.storage, None, None, cosmwasm_std::Order::Ascending);
 
     for result in iterator {
         let (bin_step, preset) = result.map_err(Error::CwErr)?;
@@ -1179,7 +1165,7 @@ fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
 }
 
 fn _is_preset_open(preset: Bytes32) -> bool {
-    return EncodedSample(preset).decode_bool(_OFFSET_IS_PRESET_OPEN);
+    EncodedSample(preset).decode_bool(_OFFSET_IS_PRESET_OPEN)
 }
 
 /// Returns all the LBPair of a pair of tokens.
@@ -1197,14 +1183,11 @@ fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Res
 
     // Create a Vec of available bin steps for this pair
     let bin_steps: Vec<u16> = AVAILABLE_LB_PAIR_BIN_STEPS
-        .load(
-            deps.storage,
-            (token_a.unique_key().clone(), token_b.unique_key().clone()),
-        )
+        .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
         .map_err(|_| Error::Generic("This token pair is not in the map".to_string()))?;
 
     // Not sure if this condition is possible, but just in case.
-    if bin_steps.len() == 0 {
+    if bin_steps.is_empty() {
         return Err(Error::Generic("No available bin_steps".to_string()));
     }
 
@@ -1215,11 +1198,7 @@ fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Res
             LB_PAIRS_INFO
                 .load(
                     deps.storage,
-                    (
-                        token_a.unique_key().clone(),
-                        token_b.unique_key().clone(),
-                        bin_step,
-                    ),
+                    (token_a.unique_key(), token_b.unique_key(), bin_step),
                 )
                 .map_err(|_| Error::Generic("Error retrieving LBPairInformation".to_string()))
         })
@@ -1255,11 +1234,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 };
                 LB_PAIRS_INFO.save(
                     deps.storage,
-                    (
-                        token_a.unique_key().clone(),
-                        token_b.unique_key().clone(),
-                        bin_step,
-                    ),
+                    (token_a.unique_key(), token_b.unique_key(), bin_step),
                     &LBPairInformation {
                         bin_step: lb_pair_key.bin_step,
                         lb_pair: lb_pair.clone(),
@@ -1273,10 +1248,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 
                 // load the different bin_step LBPairs that exist for this pair of tokens, then add the new one
                 let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
-                    .load(
-                        deps.storage,
-                        (token_a.unique_key().clone(), token_b.unique_key().clone()),
-                    )
+                    .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
                     .unwrap_or(Vec::<u16>::new());
                 bin_step_list.push(bin_step);
                 AVAILABLE_LB_PAIR_BIN_STEPS.save(
@@ -1288,8 +1260,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 ephemeral_storage_w(deps.storage).remove();
                 Ok(Response::default())
             }
-            None => Err(StdError::generic_err(format!("Expecting contract id"))),
+            None => Err(StdError::generic_err("Expecting contract id".to_string())),
         },
-        _ => Err(StdError::generic_err(format!("Unknown reply id"))),
+        _ => Err(StdError::generic_err("Unknown reply id".to_string())),
     }
 }
