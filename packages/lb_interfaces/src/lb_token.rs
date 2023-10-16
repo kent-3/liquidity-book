@@ -6,7 +6,6 @@ use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-// TODO - copy the "lb_token" folder from utils/liquidity_book into our libraries folder
 use snip1155::{
     expiration::Expiration,
     metadata::Metadata,
