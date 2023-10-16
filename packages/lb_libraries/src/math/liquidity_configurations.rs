@@ -20,9 +20,9 @@ pub enum LiquidityConfigurationsError {
 
 #[cw_serde]
 pub struct LiquidityConfigurations {
-    distribution_x: u64,
-    distribution_y: u64,
-    id: u32,
+    pub distribution_x: u64,
+    pub distribution_y: u64,
+    pub id: u32,
 }
 
 impl LiquidityConfigurations {

@@ -378,6 +378,10 @@ impl BinHelper {
         Ok((amounts_in_with_fees, amounts_out_of_bin, total_fees))
     }
 
+    // TODO - these next three functions are supposed to query the balance of the contract itself,
+    // then subtract the reserves from that balance to determine the exact amounts of tokens
+    // received
+
     /// Returns the encoded amounts that were transferred to the contract for both tokens.
     ///
     /// # Arguments
@@ -391,11 +395,7 @@ impl BinHelper {
     /// * `amounts` - The amounts, encoded as follows:
     ///     * [0 - 128[: amount_x
     ///     * [128 - 256[: amount_y
-    pub fn received(
-        reserves: Bytes32,
-        amount_received_x: Uint128,
-        amount_received_y: Uint128,
-    ) -> Bytes32 {
+    pub fn received(amount_received_x: Uint128, amount_received_y: Uint128) -> Bytes32 {
         let balance_x = amount_received_x.u128();
         let balance_y = amount_received_y.u128();
 
