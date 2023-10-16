@@ -3,8 +3,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-// use cw_storage_plus::{Map, Item};
-use secret_toolkit::storage::{AppendStore, Item, Keymap as Map};
+use cw_storage_plus::{Item, Map};
+use secret_toolkit::storage::AppendStore;
 
 use lb_libraries::{
     pair_parameter_helper::PairParameters,
@@ -15,7 +15,7 @@ use lb_libraries::{
 use crate::prelude::*;
 use crate::types::{LBPair, LBPairInformation, NextPairKey};
 
-pub static CONFIG: Item<State> = Item::new(b"config");
+pub static CONFIG: Item<State> = Item::new("config");
 pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
 
 // TODO: not sure if this should be a Keyset or a Vec.

@@ -1,14 +1,23 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, ContractInfo, Uint128, Uint256};
-use shade_protocol::{
-    snip20::Snip20ReceiveMsg,
-    utils::{ExecuteCallback, InstantiateCallback, Query},
-};
+use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256};
+use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 
 use lb_libraries::{
     tokens::{SwapTokenAmount, TokenType},
     types::{Bytes32, ContractInstantiationInfo, StaticFeeParameters},
 };
+
+// added this directly to avoid using the "snip20" feature of shade-protocol, which brings in
+// secret-storage-plus as a dependency, which was causing issues.
+#[cw_serde]
+pub struct Snip20ReceiveMsg {
+    pub sender: String,
+    pub from: String,
+    pub amount: Uint128,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+    pub msg: Option<Binary>,
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {

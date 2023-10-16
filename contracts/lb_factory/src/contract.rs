@@ -242,6 +242,7 @@ fn try_set_lb_token_implementation(
 /// # Returns
 ///
 /// * `pair` - The address of the newly created LBPair.
+#[allow(clippy::too_many_arguments)]
 fn try_create_lb_pair(
     deps: DepsMut,
     env: Env,
@@ -477,7 +478,9 @@ fn try_set_pair_preset(
         return Err(Error::BinStepTooLow { bin_step });
     }
 
-    let mut preset = PairParameters(EncodedSample([0u8; 32])).set_static_fee_parameters(
+    let mut preset = PairParameters::default();
+
+    preset.set_static_fee_parameters(
         base_factor,
         filter_period,
         decay_period,
@@ -488,7 +491,7 @@ fn try_set_pair_preset(
     )?;
 
     if is_open {
-        PairParameters(preset.0.set_bool(true, _OFFSET_IS_PRESET_OPEN));
+        preset.0.set_bool(true, _OFFSET_IS_PRESET_OPEN);
     }
 
     PRESETS.save(deps.storage, bin_step, &preset)?;
@@ -516,17 +519,15 @@ fn try_set_preset_open_state(
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
-    let preset = PRESETS.load(deps.storage, bin_step).unwrap();
+    let mut preset = PRESETS.load(deps.storage, bin_step)?;
 
     if preset.0.decode_bool(_OFFSET_IS_PRESET_OPEN) == is_open {
         return Err(Error::PresetOpenStateIsAlreadyInTheSameState);
+    } else {
+        preset.0.set_bool(is_open, _OFFSET_IS_PRESET_OPEN);
     }
 
-    PRESETS.save(
-        deps.storage,
-        bin_step,
-        &PairParameters(preset.0.set_bool(is_open, _OFFSET_IS_PRESET_OPEN)),
-    )?;
+    PRESETS.save(deps.storage, bin_step, &preset)?;
 
     Ok(Response::default().add_attribute_plaintext(
         format!("bin step: {}", bin_step),
@@ -552,7 +553,7 @@ fn try_remove_preset(
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
-    PRESETS.remove(deps.storage, &bin_step);
+    PRESETS.remove(deps.storage, bin_step);
 
     Ok(Response::default().add_attribute_plaintext("preset removed", bin_step.to_string()))
 }
