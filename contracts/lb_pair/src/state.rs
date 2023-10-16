@@ -1,21 +1,22 @@
+#![allow(unused)] // For beginning only.
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
-use lb_libraries::pair_parameter_helper::PairParameters;
-use lb_libraries::viewing_keys::ViewingKey;
-use secret_toolkit::serialization::Json;
-use secret_toolkit::storage::{Item, Keymap};
+use cw_storage_plus::Map;
+use lb_libraries::{
+    math::tree_math::TreeUint24, oracle_helper::Oracle, pair_parameter_helper::PairParameters,
+    tokens::TokenType, types::Bytes32, viewing_keys::ViewingKey,
+};
+use secret_toolkit::{
+    serialization::{Bincode2, Json},
+    storage::{AppendStore, Item},
+};
 
-use lb_libraries::math::tree_math::TreeUint24;
-use lb_libraries::oracle_helper::Oracle;
-use lb_libraries::types::Bytes32;
-
-use lb_libraries::tokens::TokenType;
-
-pub static CONFIG: Item<State, Json> = Item::new(b"config");
-pub static BIN_MAP: Keymap<u32, Bytes32> = Keymap::new(b"bins");
-pub static BIN_TREE: Item<TreeUint24> = Item::new(b"bin_tree");
-pub static ORACLE: Item<Oracle> = Item::new(b"oracle");
+pub static CONFIG: Item<State, Bincode2> = Item::new(b"config");
+pub static BIN_MAP: Map<u32, Bytes32> = Map::new("bins"); //?
+pub static BIN_TREE: Item<TreeUint24, Bincode2> = Item::new(b"bin_tree"); //?
+pub static ORACLE: Item<Oracle, Bincode2> = Item::new(b"oracle"); //?
 pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
 
 #[cw_serde]
@@ -30,6 +31,7 @@ pub struct State {
     pub reserves: Bytes32,
     pub protocol_fees: Bytes32,
     pub lb_token: ContractInfo,
+    pub protocol_fees_recipient: Addr,
 }
 
 pub fn ephemeral_storage_w(storage: &mut dyn Storage) -> Singleton<NextTokenKey> {

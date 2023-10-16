@@ -17,14 +17,20 @@ backtraces = ["cosmwasm-std/backtraces"]
 [dependencies]
 lb-interfaces = { workspace = true }
 lb-libraries = { workspace = true }
+# TODO - snip1155 package should be integrated into lb-interfaces?
+snip1155 = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-storage = { workspace = true }
 cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true }
 serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }
 secret-toolkit = { workspace = true }
 ethnum = { workspace = true }
+cw-storage-plus = { workspace = true }
+# the only thing we're using here is the snip20 interface...
+shade-protocol = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
