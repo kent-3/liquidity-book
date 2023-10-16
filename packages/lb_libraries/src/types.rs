@@ -1,5 +1,5 @@
 //! ### Liquidity Book Type Library
-//! Author: Kent
+//! Author: Kent and Haseeb
 //!
 //! This library contains common types used throughout the project.
 
@@ -8,11 +8,9 @@ use cosmwasm_std::ContractInfo;
 use ethnum::U256;
 
 pub use crate::math::liquidity_configurations::LiquidityConfigurations;
-pub use crate::math::packed_u128_math::PackedU128;
 pub use crate::math::tree_math::TreeUint24;
 use crate::tokens::TokenType;
 
-// TODO (maybe): Implement bit math for this type to avoid converting U256 back and forth
 pub type Bytes32 = [u8; 32];
 
 /// Info needed to instantiate a contract.
@@ -22,6 +20,7 @@ pub struct ContractInstantiationInfo {
     pub id: u64,
     pub code_hash: String,
 }
+
 /// Pair parameters that don't change.
 /// * `base_factor`
 /// * `filter_period`
