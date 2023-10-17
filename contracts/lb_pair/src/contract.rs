@@ -81,7 +81,7 @@ pub fn instantiate(
         TokenType::NativeToken { denom } => denom,
     };
 
-    let instantiate_token_msg = LBTokenInstantiateMsg {
+    let instantiate_token_msg = lb_token::InstantiateMsg {
         has_admin: false,
         admin: None,
         curators: [env.contract.address.clone()].to_vec(),
@@ -405,7 +405,8 @@ fn try_swap(
 
     CONFIG.update(deps.storage, |mut state| {
         state.protocol_fees = protocol_fees;
-        state.pair_parameters.set_active_id(active_id)?;
+        // TODO - map the error to a StdError
+        state.pair_parameters.set_active_id(active_id);
         state.reserves = reserves;
         Ok(state)
     })?;
