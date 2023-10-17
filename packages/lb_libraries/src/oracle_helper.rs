@@ -728,7 +728,7 @@ mod tests {
         let mut parameters = PairParameters(EncodedSample([0u8; 32]));
 
         parameters.set_oracle_id(inputs.oracle_id);
-        parameters.set_active_id(inputs.previous_active_id);
+        parameters.set_active_id(inputs.previous_active_id).unwrap();
         parameters
             .set_volatility_accumulator(inputs.volatility)
             .unwrap();
@@ -823,7 +823,7 @@ mod tests {
         let mut parameters = PairParameters(EncodedSample([0u8; 32]));
 
         parameters.set_oracle_id(inputs.oracle_id);
-        parameters.set_active_id(inputs.previous_active_id);
+        parameters.set_active_id(inputs.previous_active_id).unwrap();
         parameters
             .set_volatility_accumulator(inputs.volatility)
             .unwrap();

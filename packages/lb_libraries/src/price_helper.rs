@@ -105,7 +105,8 @@ mod tests {
             U256::from_str_prefixed("42008768657166552252904831246223292524636112144").unwrap();
         let integer_part = fixed_point >> 128;
         let shifted: U256 = U256::from(1u128) << 128;
-        let fractional_part = fixed_point & U256::from(shifted.checked_sub(U256::ONE).unwrap());
+        let fractional_part = fixed_point & shifted.checked_sub(U256::ONE).unwrap();
+        // TODO - add some assertions for these variables
         let fractional_part_decimal = fractional_part / U256::from(shifted);
         let real_value = integer_part;
     }

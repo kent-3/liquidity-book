@@ -232,7 +232,7 @@ mod tests {
     #[test]
     fn test_get_composition_fee() -> Result<(), FeeError> {
         // Test typical case
-        let amount_with_fees = 1 * MAX_FEE;
+        let amount_with_fees = MAX_FEE;
         let total_fee = MAX_FEE / 10; // 0.1% fee
         let comp_fee = FeeHelper::get_composition_fee(amount_with_fees, total_fee)?;
         assert_eq!(comp_fee, 1010000000000000); // fee should be 1

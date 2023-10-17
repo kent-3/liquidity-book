@@ -475,7 +475,7 @@ impl PairParameters {
             };
         }
 
-        self.update_time_of_last_update(time);
+        self.update_time_of_last_update(time)?;
         Ok(self)
     }
 
