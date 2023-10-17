@@ -8,6 +8,7 @@ members = [
   "contracts/lb_quoter",
   "contracts/lb_token",
   "contracts/lb_router",
+  "contracts/tests",
 ]
 resolver = "2"
 
@@ -64,12 +65,15 @@ default_features = false
 features = ["interface", "snip20", "utils"]
 
 [patch.crates-io]
-# This patch is needed to make secret-toolkit compatible with the github version of secret-cosmwasm-std
+# These patches are needed to make secret-toolkit compatible with the github versions
+# of secret-cosmwasm-std and secret-cosmwasm-storage, because it depend on the crates.io versions.
 secret-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
 secret-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
 
 # These patches are needed to make cw-storage-plus compatible with secret-cosmwasm-std
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
+
+# This one doesn't appear to get used so I commented it out
 # cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
 
 # TODO - patch the oracle to be compatible with the latest version of better-secret-math

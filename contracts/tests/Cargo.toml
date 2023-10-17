@@ -1,0 +1,50 @@
+[package]
+name = "lb-tests"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+[dependencies]
+lb-interfaces = { workspace = true }
+lb-libraries = { workspace = true }
+lb-factory = { path = "../lb_factory" }
+lb-pair = { path = "../lb_pair" }
+lb-token = { path = "../lb_token" }
+# TODO - snip1155 package should be integrated into lb-interfaces?
+# snip1155 = { workspace = true }
+# cosmwasm-std = { workspace = true }
+# cosmwasm-storage = { workspace = true }
+# cosmwasm-schema = { workspace = true }
+# serde = { workspace = true }
+# serde-json-wasm = { workspace = true }
+# thiserror = { workspace = true }
+# secret-toolkit = { workspace = true }
+# ethnum = { workspace = true }
+# cw-storage-plus = { workspace = true }
+shade-protocol = { workspace = true, features = ["query_auth_impl"] }
+# secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", optional = true }
+rand = "0.8"
+
+[dev-dependencies]
+anyhow = "1"
+
+[dev-dependencies.shade-multi-test]
+git = "https://github.com/securesecrets/shade"
+branch = "kent-3/patch1"
+default_features = false
+features = ["snip20", "query_auth"]
+# features = ["lb_pair", "lb_token", "snip20", "lb_factory", "query_auth"]
+
+[dev-dependencies.shadeswap-shared]
+git = "https://github.com/securesecrets/shade"
+branch = "itsHaseebSaeed-LiquidityBook"
+features = []
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+shade-protocol = { workspace = true, features = ["multi-test"] }
+multi-derive = { git = "https://github.com/securesecrets/shade" }
