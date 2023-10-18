@@ -1,0 +1,40 @@
+[package]
+name = "lb-tests"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+[dependencies]
+lb-interfaces = { workspace = true }
+lb-libraries = { workspace = true }
+lb-factory = { path = "../lb_factory" }
+lb-pair = { path = "../lb_pair" }
+lb-token = { path = "../lb_token" }
+
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+shade-protocol = { workspace = true, features = [
+  "snip20",
+  "storage_plus",
+  "multi-test",
+  "query_auth_impl",
+] }
+secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", features = [
+  "iterator",
+] }
+multi-derive = { git = "https://github.com/securesecrets/shade" }
+
+rand = "0.8"
+
+[dependencies.shade-multi-test]
+git = "https://github.com/securesecrets/shade"
+features = ["snip20", "query_auth"]
+branch = "itsHaseebSaeed-LiquidityBook"
+
+[dev-dependencies]
+anyhow = "1"

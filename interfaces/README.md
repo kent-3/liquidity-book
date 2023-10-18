@@ -1,1 +1,0 @@
-# Trader Joe Contract Interface Library

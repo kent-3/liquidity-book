@@ -1,0 +1,11 @@
+[package]
+name = "snip1155"
+version = "0.0.1"
+authors = ["Kent, Haseeb"]
+edition = "2021"
+description = "Interfaces and Types for SNIP1155"
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }

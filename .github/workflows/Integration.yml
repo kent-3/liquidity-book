@@ -5,7 +5,7 @@ on:
   #   branches: [ main ]
   # pull_request:
   #   branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch
 
 jobs:
   tests:
@@ -14,8 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        rust: [1.69.0]
+        os: [ ubuntu-latest ]
+        rust: [ 1.69.0 ]
         make:
           - name: Run integration tests
             task: "npx ts-node tests/integration.ts"
@@ -46,12 +46,12 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: v0.4.2
         run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
+          SCCACHE_FILE="sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl"
+          mkdir -p "$HOME/.local/bin"
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          chmod +x $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          mv -f "$SCCACHE_FILE/sccache" "$HOME/.local/bin/sccache"
+          chmod +x "$HOME/.local/bin/sccache"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Install dependencies
         run: npm --prefix tests/ install
       - name: Install stable toolchain

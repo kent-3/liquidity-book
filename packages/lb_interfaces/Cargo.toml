@@ -1,0 +1,18 @@
+[package]
+name = "lb-interfaces"
+version = "0.0.1"
+authors = ["Kent, Haseeb"]
+edition = "2021"
+description = "Interfaces for liquidity book contracts"
+
+[dependencies]
+lb-libraries = { workspace = true }
+snip1155 = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+ethnum = { workspace = true }
+secret-toolkit = { workspace = true }
+shade-protocol = { workspace = true }

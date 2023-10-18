@@ -1,0 +1,30 @@
+[package]
+name = "lb-quoter"
+version = "0.1.0"
+edition = "2021"
+exclude = ["contract.wasm", "hash.txt"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "schema"
+
+[features]
+default = []
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+lb-interfaces = { workspace = true }
+lb-libraries = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+cosmwasm-schema = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+secret-toolkit = { workspace = true }
+ethnum = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+# cw-multi-test = { workspace = true }

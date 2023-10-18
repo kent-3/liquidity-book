@@ -1,0 +1,14 @@
+[package]
+name = "lb-libraries"
+version = "0.0.1"
+authors = ["Kent, Haseeb"]
+edition = "2021"
+description = "Helper libraries for liquidity book contracts"
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+ethnum = { workspace = true }
+primitive-types = { workspace = true }
