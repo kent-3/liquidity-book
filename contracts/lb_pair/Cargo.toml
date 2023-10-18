@@ -34,4 +34,9 @@ shade-protocol = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
-# cw-multi-test = { workspace = true }
+lb-tests = { path = "../tests" }
+
+[dev-dependencies.shade-multi-test]
+git = "https://github.com/securesecrets/shade"
+features = ["snip20", "query_auth"]
+branch = "itsHaseebSaeed-LiquidityBook"

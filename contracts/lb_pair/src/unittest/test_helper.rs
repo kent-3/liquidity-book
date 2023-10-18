@@ -1,28 +1,24 @@
-use core::result::Result::Ok;
-use std::{any::Any, str::FromStr};
+use std::any::Any;
+use std::str::FromStr;
 
 use cosmwasm_std::{
     Addr, BlockInfo, ContractInfo, StdError, StdResult, Timestamp, Uint128, Uint256,
 };
-use serde::de::Error;
-use shade_multi_test::{
-    interfaces::{
-        lb_pair, snip20,
-        utils::{DeployedContracts, SupportedContracts},
-    },
-    multi::lb_token::LbToken,
+use lb_interfaces::lb_pair::{LiquidityParameters, RemoveLiquidity};
+use lb_libraries::{
+    tokens::TokenType,
+    types::{ContractInstantiationInfo, StaticFeeParameters},
+};
+use lb_tests::interfaces::lb_pair;
+use lb_tests::multi::lb_token::LbToken;
+use shade_multi_test::interfaces::{
+    snip20,
+    utils::{DeployedContracts, SupportedContracts},
 };
 use shade_protocol::{
-    lb_libraries::{
-        tokens::TokenType,
-        types::{ContractInstantiationInfo, StaticFeeParameters},
-    },
-    liquidity_book::lb_pair::{LiquidityParameters, RemoveLiquidity},
     multi_test::App,
     utils::{asset::Contract, cycle::parse_utc_datetime, MultiTestable},
 };
-
-use crate::error;
 
 pub struct Addrs {
     addrs: Vec<Addr>,
@@ -160,6 +156,7 @@ pub fn init_lb_pair() -> Result<(App, Contract, DeployedContracts), anyhow::Erro
         "viewing_key".to_string(),
         String::new(),
         String::new(),
+        Addr::unchecked("protocol fee recipient"),
     )?;
 
     Ok((app, lb_pair, deployed_contracts))
@@ -185,21 +182,13 @@ pub fn liquidity_parameters_helper(
         0.0,
     ];
 
-    let distribution_y: Vec<u64> = array_x
-        .clone()
-        .into_iter()
-        .map(|el| (el * 1e18) as u64)
-        .collect();
+    let distribution_y: Vec<u64> = array_x.into_iter().map(|el| (el * 1e18) as u64).collect();
 
     let array_y: Vec<f64> = vec![
         0.0, 0.0, 0.0, 0.0, 0.0, 0.16666666, 0.16666666, 0.16666666, 0.16666666, 0.16666666,
         0.16666666,
     ];
-    let distribution_x: Vec<u64> = array_y
-        .clone()
-        .into_iter()
-        .map(|el| (el * 1e18) as u64)
-        .collect();
+    let distribution_x: Vec<u64> = array_y.into_iter().map(|el| (el * 1e18) as u64).collect();
 
     let snip20_1 = deployed_contracts
         .get(&SupportedContracts::Snip20("SSCRT".to_string()))
@@ -249,7 +238,7 @@ pub fn remove_liquidity_parameters_helper(
 
     for (id, amount) in &log_shares_array {
         let divided_amount = amount.multiply_ratio(percentage, 100u8); // Assuming Uint256 supports division
-        divided_log_shares_array.push((id.clone(), divided_amount));
+        divided_log_shares_array.push((*id, divided_amount));
     }
 
     // Now divided_log_shares_array contains the divided amounts
@@ -291,7 +280,7 @@ pub fn remove_liquidity_parameters_helper(
 }
 
 pub fn mint_increase_allowance_helper(
-    mut app: &mut App,
+    app: &mut App,
     deployed_contracts: &DeployedContracts,
     addrs: &Addrs,
     lb_pair_contract_info: &Contract,
@@ -299,18 +288,18 @@ pub fn mint_increase_allowance_helper(
     //adding minters and minting
 
     snip20::add_minters_exec(
-        &mut app,
+        app,
         addrs.admin().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SHD",
         vec![addrs.admin().to_string()],
     )?;
 
     // mint token for user1
     snip20::mint_exec(
-        &mut app,
+        app,
         addrs.admin().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SHD",
         &vec![],
         addrs.user1().into_string(),
@@ -318,18 +307,18 @@ pub fn mint_increase_allowance_helper(
     )?;
 
     snip20::add_minters_exec(
-        &mut app,
+        app,
         addrs.admin().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SSCRT",
         vec![addrs.admin().to_string()],
     )?;
 
     // mint token for user1
     snip20::mint_exec(
-        &mut app,
+        app,
         addrs.admin().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SSCRT",
         &vec![],
         addrs.user1().into_string(),
@@ -337,18 +326,18 @@ pub fn mint_increase_allowance_helper(
     )?;
 
     snip20::set_viewing_key_exec(
-        &mut app,
+        app,
         addrs.user1().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SHD",
         "viewing_key".to_owned(),
     )?;
 
     // query balance for token_minted
     let balance = snip20::balance_query(
-        &mut app,
+        app,
         addrs.user1().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SHD",
         "viewing_key".to_owned(),
     )?;
@@ -357,18 +346,18 @@ pub fn mint_increase_allowance_helper(
 
     // setting allowance to snip20's
     snip20::set_allowance_exec(
-        &mut app,
+        app,
         addrs.user1().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SHD",
         lb_pair_contract_info.address.to_string(),
         Uint128::MAX,
         None,
     )?;
     snip20::set_allowance_exec(
-        &mut app,
+        app,
         addrs.user1().as_str(),
-        &deployed_contracts,
+        deployed_contracts,
         "SSCRT",
         lb_pair_contract_info.address.to_string(),
         Uint128::MAX,
@@ -425,7 +414,8 @@ pub fn lp_tokens_tempate_for_100_sscrts() -> StdResult<[(u32, Uint256); 11]> {
             Uint256::from_str("5699786188404173119036181707287221612381479384")?,
         ),
     ];
-    return Ok(log_shares_array);
+
+    Ok(log_shares_array)
 }
 
 pub fn assert_approx_eq_rel(a: u128, b: u128, max_value_delta: u128) {

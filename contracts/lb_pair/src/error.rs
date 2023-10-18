@@ -1,7 +1,5 @@
 //! ### Custom Errors for LB_Pair contract.
 
-#![allow(unused)] // For beginning only.
-
 use cosmwasm_std::Uint128;
 use ethnum::U256;
 use lb_libraries::bin_helper::BinError;

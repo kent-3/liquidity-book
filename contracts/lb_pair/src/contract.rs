@@ -137,12 +137,12 @@ pub fn instantiate(
             token_code_hash,
         } = token
         {
-            register_pair_token(&env, &mut messages, &token, &viewing_key);
+            register_pair_token(&env, &mut messages, token, &viewing_key);
         }
     }
 
     let state = State {
-        creator: info.sender.clone(),
+        creator: info.sender,
         factory: msg.factory,
         token_x: msg.token_x,
         token_y: msg.token_y,
@@ -209,12 +209,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
                 info.sender.clone()
             };
 
-            let swap_for_y: bool;
-            if info.sender == config.token_x.unique_key() {
-                swap_for_y = true;
-            } else {
-                swap_for_y = false;
-            }
+            let swap_for_y: bool = info.sender == config.token_x.unique_key();
 
             try_swap(deps, env, info, swap_for_y, checked_to, offer.amount)
         }
@@ -500,12 +495,13 @@ pub fn add_liquidity_internal(
     liquidity_parameters: &LiquidityParameters,
     mut response: Response,
 ) -> Result<Response> {
-    match_lengths(&liquidity_parameters)?;
-    check_ids_bounds(&liquidity_parameters)?;
+    match_lengths(liquidity_parameters)?;
+    check_ids_bounds(liquidity_parameters)?;
 
     let state = CONFIG.load(deps.storage)?;
 
-    // TODO - add checks that neither distribution is > PRECISION
+    // TODO - we are initializing the vector of empty values, and populating them in a
+    //        loop later. I think this could be refactored.
     let mut liquidity_configs = vec![
         LiquidityConfigurations {
             distribution_x: 0,
@@ -517,11 +513,12 @@ pub fn add_liquidity_internal(
     let mut deposit_ids = Vec::with_capacity(liquidity_parameters.delta_ids.len());
 
     let active_id = state.pair_parameters.get_active_id();
-    check_active_id_slippage(&liquidity_parameters, active_id)?;
+    check_active_id_slippage(liquidity_parameters, active_id)?;
 
     for i in 0..liquidity_configs.len() {
-        let id = calculate_id(&liquidity_parameters, active_id, i)?;
+        let id = calculate_id(liquidity_parameters, active_id, i)?;
         deposit_ids.push(id);
+        // TODO - add checks that neither distribution is > PRECISION
         liquidity_configs[i] = LiquidityConfigurations {
             distribution_x: liquidity_parameters.distribution_x[i],
             distribution_y: liquidity_parameters.distribution_y[i],
@@ -533,7 +530,7 @@ pub fn add_liquidity_internal(
         deps,
         env,
         info.clone(),
-        &config,
+        config,
         info.sender.clone(),
         liquidity_configs,
         info.sender,
@@ -699,7 +696,7 @@ fn mint(
         state.pair_parameters,
         liquidity_configs,
         amounts_received,
-        to.clone(),
+        to,
         &mut mint_arrays,
         &mut messages,
     )?;
@@ -944,12 +941,12 @@ fn _query_total_supply(deps: Deps, id: u32, code_hash: String, address: Addr) ->
     let res = deps.querier.query_wasm_smart::<lb_token::QueryAnswer>(
         code_hash,
         address.to_string(),
-        &(&msg),
+        &msg,
     )?;
-    let mut total_supply_uint256 = Uint256::zero();
-    match res {
-        lb_token::QueryAnswer::IdTotalBalance { amount } => total_supply_uint256 = amount,
-        _ => (),
+
+    let total_supply_uint256 = match res {
+        lb_token::QueryAnswer::IdTotalBalance { amount } => amount,
+        _ => todo!(),
     };
 
     Ok(total_supply_uint256.uint256_to_u256())
@@ -965,12 +962,7 @@ fn query_token_symbol(deps: Deps, code_hash: String, address: Addr) -> Result<St
     )?;
 
     let symbol = match res {
-        snip20::QueryAnswer::TokenInfo {
-            name,
-            symbol,
-            decimals,
-            total_supply,
-        } => (symbol),
+        snip20::QueryAnswer::TokenInfo { symbol, .. } => symbol,
         _ => panic!("{}", format!("Token {} not valid", address)),
     };
 
@@ -1013,9 +1005,9 @@ pub fn try_remove_liquidity(
 
     let (amount_x, amount_y, mut response) = remove_liquidity(
         deps,
-        env.clone(),
+        env,
         info.clone(),
-        info.sender.clone(),
+        info.sender,
         amount_x_min,
         amount_y_min,
         remove_liquidity_params.ids,
@@ -1167,7 +1159,7 @@ fn burn(
 
     config.reserves = config.reserves.sub(amounts_out);
 
-    let raw_msgs = BinHelper::transfer(amounts_out, token_x, token_y, info.sender.clone());
+    let raw_msgs = BinHelper::transfer(amounts_out, token_x, token_y, info.sender);
 
     CONFIG.update(deps.storage, |mut state| -> StdResult<State> {
         state.reserves = state.reserves.sub(amounts_out);
@@ -1363,7 +1355,7 @@ fn receiver_callback(
     amount: Uint128,
     msg: Option<Binary>,
 ) -> Result<Response> {
-    let msg = msg.ok_or_else(|| Error::ReceiverMsgEmpty)?;
+    let msg = msg.ok_or(Error::ReceiverMsgEmpty)?;
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -1395,12 +1387,8 @@ fn receiver_callback(
             {
                 return Err(Error::NoMatchingTokenInPair);
             }
-            let swap_for_y: bool;
-            if info.sender == config.token_x.unique_key() {
-                swap_for_y = true;
-            } else {
-                swap_for_y = false;
-            }
+
+            let swap_for_y: bool = info.sender == config.token_x.unique_key();
 
             response = try_swap(deps, env, info, swap_for_y, checked_to, amount)?;
         }
@@ -1741,7 +1729,7 @@ fn query_oracle_params(deps: Deps) -> Result<Binary> {
             last_updated,
             first_timestamp,
         };
-        return to_binary(&response).map_err(Error::CwErr);
+        to_binary(&response).map_err(Error::CwErr)
     } else {
         // This happens if the oracle hasn't been used yet.
         let response = OracleParametersResponse {
@@ -1751,7 +1739,7 @@ fn query_oracle_params(deps: Deps) -> Result<Binary> {
             last_updated: 0,
             first_timestamp: 0,
         };
-        return to_binary(&response).map_err(Error::CwErr);
+        to_binary(&response).map_err(Error::CwErr)
     }
 }
 
@@ -1799,7 +1787,7 @@ fn query_oracle_sample_at(deps: Deps, env: Env, look_up_timestamp: u64) -> Resul
             cumulative_volatility,
             cumulative_bin_crossed,
         };
-        return to_binary(&response).map_err(Error::CwErr);
+        to_binary(&response).map_err(Error::CwErr)
     } else {
         Err(Error::LastUpdateTimestampGreaterThanLookupTimestamp)
     }
@@ -2044,8 +2032,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 response.data = Some(env.contract.address.to_string().as_bytes().into());
                 Ok(response)
             }
-            None => Err(StdError::generic_err(format!("Unknown reply id"))),
+            None => Err(StdError::generic_err("Unknown reply id")),
         },
-        _ => Err(StdError::generic_err(format!("Unknown reply id"))),
+        _ => Err(StdError::generic_err("Unknown reply id")),
     }
 }
