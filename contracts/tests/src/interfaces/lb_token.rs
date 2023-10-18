@@ -24,7 +24,7 @@ pub fn set_viewing_key(
 }
 
 pub fn query_contract_info(app: &App, info: &ContractInfo) -> StdResult<QueryAnswer> {
-    let res: QueryAnswer = QueryMsg::TokenContractInfo {}.test_query(&info, app)?;
+    let res: QueryAnswer = QueryMsg::TokenContractInfo {}.test_query(info, app)?;
     match res {
         QueryAnswer::TokenContractInfo { .. } => Ok(res),
         _ => Err(StdError::generic_err("Query failed")),
@@ -32,7 +32,7 @@ pub fn query_contract_info(app: &App, info: &ContractInfo) -> StdResult<QueryAns
 }
 
 pub fn query_id_balance(app: &App, info: &ContractInfo, id: String) -> StdResult<QueryAnswer> {
-    let res: QueryAnswer = QueryMsg::IdTotalBalance { id }.test_query(&info, app)?;
+    let res: QueryAnswer = QueryMsg::IdTotalBalance { id }.test_query(info, app)?;
     match res {
         QueryAnswer::IdTotalBalance { .. } => Ok(res),
         _ => Err(StdError::generic_err("Query failed")),
@@ -53,7 +53,7 @@ pub fn query_balance(
         key,
         token_id,
     }
-    .test_query(&info, app)?;
+    .test_query(info, app)?;
     match res {
         QueryAnswer::Balance { amount } => Ok(amount),
         _ => Err(StdError::generic_err("Query failed")),

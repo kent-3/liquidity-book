@@ -109,7 +109,7 @@ pub fn swap_snip_20(
         recipient_code_hash: Some(lb_pair.code_hash.clone()),
         recipient: lb_pair.address.to_string(),
     }
-    .test_exec(&lb_token, app, Addr::unchecked(sender), &[]))
+    .test_exec(lb_token, app, Addr::unchecked(sender), &[]))
     {
         Ok(_) => Ok(()),
         Err(e) => Err(StdError::generic_err(e.root_cause().to_string())),

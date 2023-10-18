@@ -15,23 +15,26 @@ lb-libraries = { workspace = true }
 lb-factory = { path = "../lb_factory" }
 lb-pair = { path = "../lb_pair" }
 lb-token = { path = "../lb_token" }
-shade-protocol = { workspace = true, features = ["query_auth_impl"] }
+
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+shade-protocol = { workspace = true, features = [
+  "snip20",
+  "storage_plus",
+  "multi-test",
+  "query_auth_impl",
+] }
+secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", features = [
+  "iterator",
+] }
+multi-derive = { git = "https://github.com/securesecrets/shade" }
+
 rand = "0.8"
+
+[dependencies.shade-multi-test]
+git = "https://github.com/securesecrets/shade"
+features = ["snip20", "query_auth"]
+branch = "itsHaseebSaeed-LiquidityBook"
 
 [dev-dependencies]
 anyhow = "1"
-
-[dev-dependencies.shade-multi-test]
-git = "https://github.com/securesecrets/shade"
-branch = "kent-3/patch1"
-default_features = false
-features = ["snip20", "query_auth"]
-
-[dev-dependencies.shadeswap-shared]
-git = "https://github.com/securesecrets/shade"
-branch = "itsHaseebSaeed-LiquidityBook"
-features = []
-
-[target.'cfg(not(target_arch="wasm32"))'.dependencies]
-shade-protocol = { workspace = true, features = ["multi-test"] }
-multi-derive = { git = "https://github.com/securesecrets/shade" }

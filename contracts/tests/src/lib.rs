@@ -1,3 +1,6 @@
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::identity_op)]
+
 #[cfg(test)]
 pub mod multitests;
 

@@ -1,20 +1,12 @@
-use std::str::FromStr;
-
-use crate::multitests::test_helper::{
-    extract_contract_info, generate_random, token_type_generator, DEFAULT_BASE_FACTOR,
-    DEFAULT_BIN_STEP, DEFAULT_DECAY_PERIOD, DEFAULT_FILTER_PERIOD,
-    DEFAULT_MAX_VOLATILITY_ACCUMULATOR, DEFAULT_PROTOCOL_SHARE, DEFAULT_REDUCTION_FACTOR,
-    DEFAULT_VARIABLE_FEE_CONTROL, SHADE, SSCRT,
-};
-
-use super::test_helper::{assert_approx_eq_abs, assert_approx_eq_rel, init_addrs, setup, ID_ONE};
 use anyhow::Ok;
 use cosmwasm_std::{ContractInfo, Uint128, Uint256};
-use shade_multi_test::interfaces::{lb_factory, lb_pair, utils::DeployedContracts};
-use shade_protocol::{
-    lb_libraries::{math::u24::U24, oracle_helper::MAX_SAMPLE_LIFETIME, types::LBPairInformation},
-    multi_test::App,
-};
+use lb_libraries::{math::u24::U24, oracle_helper::MAX_SAMPLE_LIFETIME, types::LBPairInformation};
+use shade_multi_test::interfaces::utils::DeployedContracts;
+use shade_protocol::multi_test::App;
+use std::str::FromStr;
+
+use crate::interfaces::{lb_factory, lb_pair};
+use crate::multitests::test_helper::*;
 
 pub fn lb_pair_setup(
 ) -> Result<(App, ContractInfo, DeployedContracts, LBPairInformation), anyhow::Error> {
@@ -40,8 +32,8 @@ pub fn lb_pair_setup(
     let all_pairs = lb_factory::query_all_lb_pairs(
         &mut app,
         &lb_factory.clone().into(),
-        token_x.clone(),
-        token_y.clone(),
+        token_x,
+        token_y,
     )?;
     let lb_pair = all_pairs[0].clone();
     Ok((app, lb_factory.into(), deployed_contracts, lb_pair))
@@ -237,7 +229,8 @@ pub fn test_query_oracle_sample_at() -> Result<(), anyhow::Error> {
 #[test]
 pub fn test_query_price_from_id() -> Result<(), anyhow::Error> {
     let (app, _lb_factory, _deployed_contracts, lb_pair) = lb_pair_setup()?;
-    let delta = Uint256::from(DEFAULT_BIN_STEP).checked_mul(Uint256::from(5 * 10 ^ 13 as u128))?;
+    let delta =
+        Uint256::from(DEFAULT_BIN_STEP).checked_mul(Uint256::from((5 * 10) ^ 13_u128))?;
 
     assert_approx_eq_rel(
         lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, 1_000 + ID_ONE)?,
@@ -283,7 +276,7 @@ pub fn test_query_price_from_id() -> Result<(), anyhow::Error> {
     assert_approx_eq_rel(
         lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, ID_ONE - 80_000)?,
         Uint256::from_str("6392")?,
-        Uint256::from(10 ^ 8 as u128),
+        Uint256::from(10 ^ 8_u128),
         "test_query_id_from_price::7",
     );
 
@@ -406,12 +399,8 @@ pub fn test_query_id_from_price() -> Result<(), anyhow::Error> {
 fn test_fuzz_query_swap_out() -> Result<(), anyhow::Error> {
     let (app, _lb_factory, _deployed_contracts, lb_pair) = lb_pair_setup()?;
 
-    let amount_out: Uint128 = Uint128::from(generate_random(0, u128::MAX)).clone();
-    let swap_for_y: bool = if generate_random(0, 1) == 1 {
-        true
-    } else {
-        false
-    };
+    let amount_out: Uint128 = Uint128::from(generate_random(0, u128::MAX));
+    let swap_for_y: bool = generate_random(0, 1) == 1;
 
     let (amount_in, amount_out_left, fee) =
         lb_pair::query_swap_in(&app, &lb_pair.lb_pair.contract, amount_out, swap_for_y)?;
@@ -427,12 +416,8 @@ fn test_fuzz_query_swap_out() -> Result<(), anyhow::Error> {
 fn test_fuzz_query_swap_in() -> Result<(), anyhow::Error> {
     let (app, _lb_factory, _deployed_contracts, lb_pair) = lb_pair_setup()?;
 
-    let amount_in = Uint128::from(generate_random(0, u128::MAX)).clone();
-    let swap_for_y = if generate_random(0, 1) == 1 {
-        true
-    } else {
-        false
-    };
+    let amount_in = Uint128::from(generate_random(0, u128::MAX));
+    let swap_for_y = generate_random(0, 1) == 1;
     let (amount_out, amount_in_left, fee) =
         lb_pair::query_swap_out(&app, &lb_pair.lb_pair.contract, amount_in, swap_for_y)?;
 

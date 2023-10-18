@@ -5,9 +5,18 @@ members = [
   "packages/snip1155",
   "contracts/lb_factory",
   "contracts/lb_pair",
-  "contracts/lb_quoter",
+  # "contracts/lb_quoter",
   "contracts/lb_token",
-  "contracts/lb_router",
+  # "contracts/lb_router",
+  "contracts/tests",
+]
+default-members = [
+  "packages/lb_interfaces",
+  "packages/lb_libraries",
+  "packages/snip1155",
+  "contracts/lb_factory",
+  "contracts/lb_pair",
+  "contracts/lb_token",
   "contracts/tests",
 ]
 resolver = "2"
@@ -60,8 +69,8 @@ features = ["snip20", "storage", "viewing-key", "permit"]
 
 [workspace.dependencies.shade-protocol]
 git = "https://github.com/securesecrets/shade"
-branch = "kent-3/patch1"
-default_features = false
+branch = "itsHaseebSaeed-LiquidityBook"
+# default_features = false
 features = ["interface", "snip20", "utils"]
 
 [patch.crates-io]
@@ -72,9 +81,7 @@ secret-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = 
 
 # These patches are needed to make cw-storage-plus compatible with secret-cosmwasm-std
 cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
-
-# This one doesn't appear to get used so I commented it out
-# cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
+cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
 
 # TODO - patch the oracle to be compatible with the latest version of better-secret-math
 # [workspace.patch.'https://github.com/securesecrets/shade-oracle.git']

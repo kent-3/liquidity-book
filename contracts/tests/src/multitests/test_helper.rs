@@ -1,19 +1,18 @@
-extern crate rand;
 use cosmwasm_std::{Addr, BlockInfo, ContractInfo, StdResult, Timestamp, Uint128, Uint256};
 use rand::Rng;
-use shade_multi_test::{
-    interfaces::{
-        lb_factory, snip20,
-        utils::{DeployedContracts, SupportedContracts},
-    },
-    multi::{lb_pair::LbPair, lb_token::LbToken},
+use shade_multi_test::interfaces::{
+    snip20,
+    utils::{DeployedContracts, SupportedContracts},
 };
 use shade_protocol::{
-    lb_libraries::{constants::PRECISION, math::u24::U24, tokens::TokenType},
-    liquidity_book::lb_pair::LiquidityParameters,
     multi_test::App,
     utils::{asset::Contract, cycle::parse_utc_datetime, MultiTestable},
 };
+
+use crate::interfaces::lb_factory;
+use crate::multi::{lb_pair::LbPair, lb_token::LbToken};
+use lb_interfaces::lb_pair::LiquidityParameters;
+use lb_libraries::{constants::PRECISION, math::u24::U24, tokens::TokenType};
 
 pub const ID_ONE: u32 = 1 << 23;
 pub const BASIS_POINT_MAX: u128 = 10_000;
@@ -363,14 +362,14 @@ pub fn get_id(active_id: u32, i: u32, nb_bin_y: u8) -> u32 {
         id = id - nb_bin_y as u32 + 1;
     };
 
-    return safe24(id);
+    safe24(id)
 }
 
 pub fn get_total_bins(nb_bin_x: u8, nb_bin_y: u8) -> u8 {
     if nb_bin_x > 0 && nb_bin_y > 0 {
-        return (nb_bin_x + nb_bin_y - 1).into(); // Convert to u256
+        return nb_bin_x + nb_bin_y - 1; // Convert to u256
     }
-    (nb_bin_x + nb_bin_y).into()
+    nb_bin_x + nb_bin_y
 }
 
 // Placeholder function for safe24
@@ -379,7 +378,7 @@ fn safe24(value: u32) -> u32 {
     if value >= (1 << 24) {
         panic!("Value too large for 24 bits");
     }
-    value as u32
+    value
 }
 
 // Utility function to bound a value within a range [min, max]
@@ -426,7 +425,7 @@ pub fn liquidity_parameters_generator(
 
     for i in 0..total {
         if nb_bins_y > 0 {
-            delta_ids.push(i as i64 - nb_bins_y as i64 + 1 as i64);
+            delta_ids.push(i as i64 - nb_bins_y as i64 + 1_i64);
         } else {
             delta_ids.push(i as i64);
         }
@@ -463,7 +462,7 @@ pub fn liquidity_parameters_generator(
         amount_y_min: amount_y.multiply_ratio(90u128, 100u128),
         active_id_desired: active_id,
         id_slippage: 15,
-        delta_ids: delta_ids.into(),
+        delta_ids,
         distribution_x,
         distribution_y,
         deadline: 99999999999,
@@ -586,7 +585,7 @@ pub fn liquidity_parameters_generator(
 // }
 
 pub fn mint_token_helper(
-    mut app: &mut App,
+    app: &mut App,
     deployed_contracts: &DeployedContracts,
     addrs: &Addrs,
     user: String,
@@ -597,25 +596,25 @@ pub fn mint_token_helper(
     // Adding minters and minting for SSCRT and SHADE
     for (token, amount) in tokens_to_mint {
         snip20::add_minters_exec(
-            &mut app,
+            app,
             admin,
-            &deployed_contracts,
+            deployed_contracts,
             token,
             vec![admin.to_string()],
         )?;
         snip20::mint_exec(
-            &mut app,
+            app,
             admin,
-            &deployed_contracts,
+            deployed_contracts,
             token,
             &vec![],
             user.clone(),
             amount,
         )?;
         snip20::set_viewing_key_exec(
-            &mut app,
+            app,
             &user.clone(),
-            &deployed_contracts,
+            deployed_contracts,
             token,
             "viewing_key".to_owned(),
         )?;
@@ -625,7 +624,7 @@ pub fn mint_token_helper(
 }
 
 pub fn increase_allowance_helper(
-    mut app: &mut App,
+    app: &mut App,
     deployed_contracts: &DeployedContracts,
     sender: String,
     spender: String,
@@ -633,9 +632,9 @@ pub fn increase_allowance_helper(
 ) -> StdResult<()> {
     for (token, _) in tokens_to_mint {
         snip20::set_allowance_exec(
-            &mut app,
+            app,
             &sender.clone(),
-            &deployed_contracts,
+            deployed_contracts,
             token,
             spender.clone(),
             Uint128::MAX,
