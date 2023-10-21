@@ -156,7 +156,7 @@ pub fn init_lb_pair() -> Result<(App, Contract, DeployedContracts), anyhow::Erro
         "viewing_key".to_string(),
         String::new(),
         String::new(),
-        Addr::unchecked("protocol fee recipient"),
+        addrs.admin(),
     )?;
 
     Ok((app, lb_pair, deployed_contracts))

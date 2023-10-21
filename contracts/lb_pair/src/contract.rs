@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use cosmwasm_std::Attribute;
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
     MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Timestamp, Uint128,
@@ -9,8 +10,7 @@ use cosmwasm_std::{
 };
 
 use ethnum::U256;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use lb_interfaces::lb_pair::*;
 use lb_interfaces::lb_token;
@@ -19,23 +19,23 @@ use lb_libraries::{
     constants::{MAX_FEE, SCALE_OFFSET},
     fee_helper::FeeHelper,
     math::{
-        encoded_sample::EncodedSample,
         packed_u128_math::PackedUint128Math,
         sample_math::OracleSample,
         tree_math::TreeUint24,
         u24::U24,
         u256x256_math::U256x256Math,
-        uint256_to_u256::{self, ConvertU256, ConvertUint256},
+        uint256_to_u256::{ConvertU256, ConvertUint256},
     },
-    oracle_helper::{Oracle, OracleError, MAX_SAMPLE_LIFETIME},
+    oracle_helper::{Oracle, MAX_SAMPLE_LIFETIME},
     pair_parameter_helper::PairParameters,
     price_helper::PriceHelper,
     tokens::TokenType,
-    types::{Bytes32, LBPairInformation, LiquidityConfigurations, MintArrays},
+    types::{Bytes32, LiquidityConfigurations, MintArrays},
     viewing_keys::{register_receive, set_viewing_key_msg, ViewingKey},
 };
 // TODO - this is a big dependency just for this one interface, but maybe that's ok.
 use shade_protocol::snip20;
+use shadeswap_shared::router::ExecuteMsgResponse;
 use snip1155::state_structs::{LbPair, TokenAmount, TokenIdBalance};
 
 use crate::prelude::*;
@@ -133,11 +133,11 @@ pub fn instantiate(
     let viewing_key = ViewingKey::from(msg.viewing_key.as_str());
     for token in [&msg.token_x, &msg.token_y] {
         if let TokenType::CustomToken {
-            contract_addr,
-            token_code_hash,
+            contract_addr: _,
+            token_code_hash: _,
         } = token
         {
-            register_pair_token(&env, &mut messages, token, &viewing_key);
+            register_pair_token(&env, &mut messages, token, &viewing_key)?;
         }
     }
 
@@ -209,7 +209,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
                 info.sender.clone()
             };
 
-            let swap_for_y: bool = info.sender == config.token_x.unique_key();
+            let swap_for_y: bool = offer.token.unique_key() == config.token_x.unique_key();
 
             try_swap(deps, env, info, swap_for_y, checked_to, offer.amount)
         }
@@ -396,7 +396,7 @@ fn try_swap(
     reserves = reserves.sub(amounts_out);
 
     let mut oracle = ORACLE.load(deps.storage)?;
-    params = oracle.update(&env.block.time, params, active_id)?;
+    oracle.update(&env.block.time, params, active_id)?;
 
     CONFIG.update(deps.storage, |mut state| {
         state.protocol_fees = protocol_fees;
@@ -407,21 +407,39 @@ fn try_swap(
     })?;
 
     let mut messages: Vec<CosmosMsg> = Vec::new();
+    let amount_out: u128;
+
     if swap_for_y {
-        let msg = BinHelper::transfer_y(amounts_out, token_y, to);
+        amount_out = amounts_out.decode_y();
+        let msg = BinHelper::transfer_y(amounts_out, token_y.clone(), to);
 
         if let Some(message) = msg {
             messages.push(message);
         }
     } else {
-        let msg = BinHelper::transfer_x(amounts_out, token_x, to);
+        amount_out = amounts_out.decode_x();
+        let msg = BinHelper::transfer_x(amounts_out, token_x.clone(), to);
 
         if let Some(message) = msg {
             messages.push(message);
         }
     }
 
-    Ok(Response::default().add_messages(messages))
+    Ok(Response::new()
+        .add_messages(messages)
+        .add_attributes(vec![
+            Attribute::new("amount_in", amounts_received),
+            Attribute::new("amount_out", amount_out.to_string()),
+            Attribute::new("lp_fee_amount", "0".to_string()), // TODO FILL with correct parameters
+            Attribute::new("total_fee_amount", "0".to_string()), // TODO FILL with correct parameters
+            Attribute::new("shade_dao_fee_amount", "0".to_string()), // TODO FILL with correct parameters
+            Attribute::new("token_in_key", token_x.unique_key()),
+            Attribute::new("token_out_key", token_y.unique_key()),
+        ])
+        .set_data(to_binary(&ExecuteMsgResponse::SwapResult {
+            amount_in: amounts_received,
+            amount_out: Uint128::from(amount_out),
+        })?))
 }
 
 /// Flash loan tokens from the pool to a receiver contract and execute a callback function.
@@ -622,7 +640,7 @@ fn calculate_id(
 
     let id: i64 = active_id as i64 + liquidity_parameters.delta_ids[i];
 
-    if (id < 0 || id as u32 > U24::MAX) {
+    if id < 0 || id as u32 > U24::MAX {
         return Err(Error::DeltaIdOverflows {
             delta_id: liquidity_parameters.delta_ids[i],
         });
@@ -689,7 +707,7 @@ fn mint(
     let amounts_received = BinHelper::received(amount_received_x, amount_received_y);
     let mut messages: Vec<CosmosMsg> = Vec::new();
 
-    let (amounts_left) = _mint_bins(
+    let amounts_left = _mint_bins(
         &mut deps,
         &env.block.time,
         state.bin_step,
@@ -1398,10 +1416,10 @@ fn receiver_callback(
 
 /////////////// QUERY ///////////////
 
-// TODO: refactor this like the LBFactory contract
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
+        // QueryMsg::GetPairInfo {} => query_pair_info(deps),
         QueryMsg::GetFactory {} => query_factory(deps),
         QueryMsg::GetTokenX {} => query_token_x(deps),
         QueryMsg::GetTokenY {} => query_token_y(deps),
@@ -1432,8 +1450,110 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::TotalSupply { id } => query_total_supply(deps, id),
         QueryMsg::GetLbToken {} => query_lb_token(deps),
         QueryMsg::GetTokens {} => query_tokens(deps),
+        // QueryMsg::SwapSimulation { offer, exclude_fee } => {
+        //     query_swap_simulation(deps, env, offer, exclude_fee)
+        // }
     }
 }
+
+// TODO - Revisit if this function is necessary. It seems like something that might belong in the
+//        lb-factory contract. It should at least have it's own interface and not use amm_pair's.
+// fn query_pair_info(deps: Deps) -> Result<shadeswap_shared::msg::amm_pair::QueryMsgResponse> {
+//     let state = CONFIG.load(deps.storage)?;
+//
+//     let (mut reserve_x, mut reserve_y) = state.reserves.decode();
+//     let (protocol_fee_x, protocol_fee_y) = state.protocol_fees.decode();
+//
+//     Ok(
+//         shadeswap_shared::msg::amm_pair::QueryMsgResponse::GetPairInfo {
+//             liquidity_token: shade_protocol::Contract {
+//                 address: state.lb_token.address,
+//                 code_hash: state.lb_token.code_hash,
+//             },
+//             factory: Some(shade_protocol::Contract {
+//                 address: state.factory.address,
+//                 code_hash: state.factory.code_hash,
+//             }),
+//             pair: shadeswap_shared::core::TokenPair {
+//                 0: state.token_x,
+//                 1: state.token_y,
+//                 2: false,
+//             },
+//             amount_0: Uint128::from(reserve_x),
+//             amount_1: Uint128::from(reserve_y),
+//             total_liquidity: Uint128::default(), // no global liquidity, liquidity is calculated on per bin basis
+//             contract_version: 1, // TODO set this like const AMM_PAIR_CONTRACT_VERSION: u32 = 1;
+//             fee_info: shadeswap_shared::amm_pair::FeeInfo {
+//                 shade_dao_address: Addr::unchecked(""), // TODO set shade dao address
+//                 lp_fee: shadeswap_shared::core::Fee {
+//                     // TODO set this
+//                     nom: state.pair_parameters.get_base_fee_u64(state.bin_step),
+//                     denom: 1_000_000_000_000_000_000,
+//                 },
+//                 shade_dao_fee: shadeswap_shared::core::Fee {
+//                     // TODO set this
+//                     nom: state.pair_parameters.get_base_fee_u64(state.bin_step),
+//                     denom: 1_000_000_000_000_000_000,
+//                 },
+//                 stable_lp_fee: shadeswap_shared::core::Fee {
+//                     // TODO set this
+//                     nom: state.pair_parameters.get_base_fee_u64(state.bin_step),
+//                     denom: 1_000_000_000_000_000_000,
+//                 },
+//                 stable_shade_dao_fee: shadeswap_shared::core::Fee {
+//                     // TODO set this
+//                     nom: state.pair_parameters.get_base_fee_u64(state.bin_step),
+//                     denom: 1_000_000_000_000_000_000,
+//                 },
+//             },
+//             stable_info: None,
+//         },
+//     )
+// }
+
+// TODO - Revisit if this function is necessary. It seems like something that might belong in the
+//        lb-router contract. It should at least have it's own interface and not use amm_pair's.
+// fn query_swap_simulation(
+//     deps: Deps,
+//     env: Env,
+//     offer: shade_protocol::lb_libraries::tokens::TokenAmount,
+//     exclude_fee: Option<bool>,
+// ) -> Result<shadeswap_shared::msg::amm_pair::QueryMsgResponse> {
+//     let state = CONFIG.load(deps.storage)?;
+//
+//     let (mut reserve_x, mut reserve_y) = state.reserves.decode();
+//     let (protocol_fee_x, protocol_fee_y) = state.protocol_fees.decode();
+//     let mut swap_for_y = false;
+//     match offer.token {
+//         token if token == state.token_x => swap_for_y = true,
+//         token if token == state.token_y => {}
+//         _ => panic!("No such token"),
+//     };
+//
+//     let res = query_swap_out(deps, env, offer.amount.into(), swap_for_y)?;
+//
+//     if (res.amount_in_left.u128() > 0u128) {
+//         return Err(Error::AmountInLeft {
+//             amount_left_in: res.amount_in_left,
+//             total_amount: offer.amount,
+//             swapped_amount: res.amount_out,
+//         });
+//     }
+//
+//     let price = Decimal::from_ratio(res.amount_out, offer.amount).to_string();
+//
+//     Ok(
+//         shadeswap_shared::msg::amm_pair::QueryMsgResponse::SwapSimulation {
+//             total_fee_amount: res.fee,
+//             lp_fee_amount: res.fee,        //TODO lpfee
+//             shade_dao_fee_amount: res.fee, // dao fee
+//             result: SwapResult {
+//                 return_amount: res.amount_out,
+//             },
+//             price,
+//         },
+//     )
+// }
 
 /// Returns the Liquidity Book Factory.
 ///
@@ -1775,7 +1895,7 @@ fn query_oracle_sample_at(deps: Deps, env: Env, look_up_timestamp: u64) -> Resul
         oracle.get_sample_at(oracle_id, look_up_timestamp)?;
 
     if time_of_last_update < look_up_timestamp {
-        params.update_volatility_parameters(params.get_active_id(), &env.block.time);
+        params.update_volatility_parameters(params.get_active_id(), &env.block.time)?;
 
         let delta_time = look_up_timestamp - time_of_last_update;
 

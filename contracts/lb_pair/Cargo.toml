@@ -31,6 +31,7 @@ ethnum = { workspace = true }
 cw-storage-plus = { workspace = true }
 # the only thing we're using here is the snip20 interface...
 shade-protocol = { workspace = true }
+shadeswap-shared = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

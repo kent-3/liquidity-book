@@ -48,6 +48,7 @@ ethnum = { version = "1.4" }
 thiserror = { version = "1.0" }
 anyhow = "1.0"
 primitive-types = { version = "0.12", default-features = false }
+shadeswap-shared = { git = "https://github.com/securesecrets/shade", branch = "itsHaseebSaeed-LiquidityBook" }
 
 [workspace.dependencies.cosmwasm-std]
 git = "https://github.com/scrtlabs/cosmwasm"
@@ -70,7 +71,6 @@ features = ["snip20", "storage", "viewing-key", "permit"]
 [workspace.dependencies.shade-protocol]
 git = "https://github.com/securesecrets/shade"
 branch = "itsHaseebSaeed-LiquidityBook"
-# default_features = false
 features = ["interface", "snip20", "utils"]
 
 [patch.crates-io]
