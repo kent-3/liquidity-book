@@ -10,6 +10,7 @@ use lb_libraries::math::u256x256_math::U256x256MathError;
 use lb_libraries::oracle_helper::OracleError;
 use lb_libraries::pair_parameter_helper::PairParametersError;
 
+// TODO - Rework this for SNIP1155 errors (or not?)
 #[derive(thiserror::Error, Debug)]
 pub enum LBTokenError {
     #[error("Generic {0}")]

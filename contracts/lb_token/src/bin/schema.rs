@@ -1,11 +1,12 @@
 use cosmwasm_schema::write_api;
 
-use lb_token::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+// TODO - derive QueryResponse trait for QueryMsg and QueryWithPermit
+use lb_interfaces::lb_token::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryWithPermit};
 
 fn main() {
     write_api! {
         instantiate: InstantiateMsg,
         execute: ExecuteMsg,
-        query: QueryMsg,
+        // query: QueryMsg,
     }
 }
