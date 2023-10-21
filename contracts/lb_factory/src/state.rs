@@ -15,7 +15,7 @@ use lb_libraries::{
 use crate::prelude::*;
 use crate::types::{LBPair, LBPairInformation, NextPairKey};
 
-pub static CONFIG: Item<State> = Item::new("config");
+pub static CONFIG: Item<Config> = Item::new("config");
 pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
 
 // TODO: not sure if this should be a Keyset or a Vec.
@@ -47,7 +47,7 @@ pub static AVAILABLE_LB_PAIR_BIN_STEPS: Map<(String, String), Vec<u16>> =
 
 // TODO: Rename State to Config?
 #[cw_serde]
-pub struct State {
+pub struct Config {
     pub contract_info: ContractInfo,
     pub owner: Addr,
     pub fee_recipient: Addr,

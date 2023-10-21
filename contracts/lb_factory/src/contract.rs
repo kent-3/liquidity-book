@@ -4,6 +4,7 @@ use crate::prelude::*;
 use crate::state::*;
 use crate::types::{LBPair, LBPairInformation, NextPairKey};
 use ethnum::U256;
+use shade_protocol::utils::callback::ExecuteCallback;
 
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
@@ -44,7 +45,7 @@ pub fn instantiate(
         });
     }
 
-    let state = State {
+    let config = Config {
         contract_info: ContractInfo {
             address: env.contract.address,
             code_hash: env.contract.code_hash,
@@ -57,7 +58,7 @@ pub fn instantiate(
         lb_token_implementation: ContractInstantiationInfo::default(),
     };
 
-    CONFIG.save(deps.storage, &state)?;
+    CONFIG.save(deps.storage, &config)?;
 
     // TODO: decide on response output and format
     Ok(Response::default())
@@ -173,24 +174,24 @@ fn try_set_lb_pair_implementation(
     info: MessageInfo,
     new_lb_pair_implementation: ContractInstantiationInfo,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     // TODO: query the LBPair contract to check that the factory address is correct
     // if ILBPair(new_lb_pair_implementation).getFactory() != env.contract.address {
     //     return Err(Error::LBPairSafetyCheckFailed(new_lb_pair_implementation.address))
     // }
 
-    let old_lb_pair_implementation = state.lb_pair_implementation;
+    let old_lb_pair_implementation = config.lb_pair_implementation;
     if (old_lb_pair_implementation == new_lb_pair_implementation) {
         return Err(Error::SameImplementation {
             lb_implementation: old_lb_pair_implementation.id,
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
-        state.lb_pair_implementation = new_lb_pair_implementation;
-        Ok(state)
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.lb_pair_implementation = new_lb_pair_implementation;
+        Ok(config)
     })?;
 
     Ok(Response::default())
@@ -207,24 +208,24 @@ fn try_set_lb_token_implementation(
     info: MessageInfo,
     new_lb_token_implementation: ContractInstantiationInfo,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     // TODO: query the LBToken contract to check that the factory address is correct
     // if ILBToken(new_lb_token_implementation).getFactory() != env.contract.address {
     //     return Err(Error::LBTokenSafetyCheckFailed(new_lb_token_implementation.address))
     // }
 
-    let old_lb_token_implementation = state.lb_token_implementation;
+    let old_lb_token_implementation = config.lb_token_implementation;
     if (old_lb_token_implementation == new_lb_token_implementation) {
         return Err(Error::SameImplementation {
             lb_implementation: old_lb_token_implementation.id,
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
-        state.lb_token_implementation = new_lb_token_implementation;
-        Ok(state)
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.lb_token_implementation = new_lb_token_implementation;
+        Ok(config)
     })?;
 
     Ok(Response::default())
@@ -242,7 +243,6 @@ fn try_set_lb_token_implementation(
 /// # Returns
 ///
 /// * `pair` - The address of the newly created LBPair.
-#[allow(clippy::too_many_arguments)]
 fn try_create_lb_pair(
     deps: DepsMut,
     env: Env,
@@ -253,7 +253,7 @@ fn try_create_lb_pair(
     bin_step: u16,
     viewing_key: String,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
 
     if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
@@ -262,7 +262,7 @@ fn try_create_lb_pair(
     let preset = PRESETS
         .load(deps.storage, bin_step)
         .map_err(|_| Error::BinStepHasNoPreset { bin_step })?;
-    let is_owner = info.sender == state.owner;
+    let is_owner = info.sender == config.owner;
 
     if !_is_preset_open(preset.0 .0) && !is_owner {
         return Err(Error::PresetIsLockedForUsers {
@@ -311,7 +311,7 @@ fn try_create_lb_pair(
         });
     }
 
-    if state.lb_pair_implementation.id == 0 {
+    if config.lb_pair_implementation.id == 0 {
         return Err(Error::ImplementationNotSet);
     }
 
@@ -319,14 +319,14 @@ fn try_create_lb_pair(
 
     messages.push(SubMsg::reply_on_success(
         CosmosMsg::Wasm(WasmMsg::Instantiate {
-            code_id: state.lb_pair_implementation.id,
+            code_id: config.lb_pair_implementation.id,
             label: format!(
                 "{}-{}-{}-pair-{}-{}",
                 token_x.unique_key(),
                 token_y.unique_key(),
                 bin_step,
                 env.contract.address,
-                state.lb_pair_implementation.id
+                config.lb_pair_implementation.id
             ),
             msg: to_binary(&LBPairInstantiateMsg {
                 factory: env.contract,
@@ -343,15 +343,15 @@ fn try_create_lb_pair(
                     max_volatility_accumulator: preset.get_max_volatility_accumulator(),
                 },
                 active_id,
-                lb_token_implementation: state.lb_token_implementation,
+                lb_token_implementation: config.lb_token_implementation,
                 //TODO add viewing key
                 viewing_key,
                 //TODO add pair_name
                 pair_name: String::new(),
                 entropy: String::new(),
-                protocol_fee_recipient: state.fee_recipient,
+                protocol_fee_recipient: config.fee_recipient,
             })?,
-            code_hash: state.lb_pair_implementation.code_hash.clone(),
+            code_hash: config.lb_pair_implementation.code_hash.clone(),
             funds: vec![],
         }),
         INSTANTIATE_REPLY_ID,
@@ -361,7 +361,7 @@ fn try_create_lb_pair(
         token_a,
         token_b,
         bin_step,
-        code_hash: state.lb_pair_implementation.code_hash,
+        code_hash: config.lb_pair_implementation.code_hash,
         is_open: is_owner,
     })?;
 
@@ -387,8 +387,8 @@ fn try_create_lb_pair(
 //     bin_step: u16,
 //     ignored: bool,
 // ) -> Result<Response> {
-//     let state = CONFIG.load(deps.storage)?;
-//     only_owner(&info.sender, &state.owner)?;
+//     let config = CONFIG.load(deps.storage)?;
+//     only_owner(&info.sender, &config.owner)?;
 
 //     let (token_a, token_b) = _sort_tokens(token_a, token_b);
 
@@ -468,8 +468,8 @@ fn try_set_pair_preset(
     max_volatility_accumulator: u32,
     is_open: bool,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     if bin_step < _MIN_BIN_STEP as u16 {
         return Err(Error::BinStepTooLow { bin_step });
@@ -509,8 +509,8 @@ fn try_set_preset_open_state(
     bin_step: u16,
     is_open: bool,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
@@ -543,8 +543,8 @@ fn try_remove_preset(
     info: MessageInfo,
     bin_step: u16,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
@@ -585,8 +585,8 @@ fn try_set_fee_parameters_on_pair(
     protocol_share: u16,
     max_volatility_accumulator: u32,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     let (token_a, token_b) = _sort_tokens(token_x, token_y);
     let mut lb_pair = LB_PAIRS_INFO
@@ -601,23 +601,18 @@ fn try_set_fee_parameters_on_pair(
         })?
         .lb_pair;
 
-    let mut response = Response::new();
+    let msg: CosmosMsg = SetStaticFeeParameters {
+        base_factor,
+        filter_period,
+        decay_period,
+        reduction_factor,
+        variable_fee_control,
+        protocol_share,
+        max_volatility_accumulator,
+    }
+    .to_cosmos_msg(&lb_pair.contract, vec![])?;
 
-    response = response.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: lb_pair.contract.address.to_string(),
-        code_hash: lb_pair.contract.code_hash,
-        msg: to_binary(&SetStaticFeeParameters {
-            base_factor,
-            filter_period,
-            decay_period,
-            reduction_factor,
-            variable_fee_control,
-            protocol_share,
-            max_volatility_accumulator,
-        })?,
-        funds: vec![],
-    }));
-
+    let response = Response::new().add_message(msg);
     Ok(response)
 }
 
@@ -632,21 +627,21 @@ fn try_set_fee_recipient(
     info: MessageInfo,
     fee_recipient: Addr,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     // TODO: Is there way to check that the address exists / is not zero?
 
-    let old_fee_recipient = state.fee_recipient;
+    let old_fee_recipient = config.fee_recipient;
     if old_fee_recipient == fee_recipient {
         return Err(Error::SameFeeRecipient {
             fee_recipient: old_fee_recipient,
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
-        state.fee_recipient = fee_recipient.clone();
-        Ok(state)
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.fee_recipient = fee_recipient.clone();
+        Ok(config)
     })?;
 
     Ok(Response::default()
@@ -665,10 +660,10 @@ fn try_set_flash_loan_fee(
     info: MessageInfo,
     flash_loan_fee: u8,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
-    let old_flash_loan_fee = state.flash_loan_fee;
+    let old_flash_loan_fee = config.flash_loan_fee;
 
     if old_flash_loan_fee == flash_loan_fee {
         return Err(Error::SameFlashLoanFee {
@@ -682,9 +677,9 @@ fn try_set_flash_loan_fee(
         });
     }
 
-    CONFIG.update(deps.storage, |mut state| -> StdResult<_> {
-        state.flash_loan_fee = flash_loan_fee;
-        Ok(state)
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.flash_loan_fee = flash_loan_fee;
+        Ok(config)
     })?;
 
     Ok(Response::default()
@@ -703,8 +698,8 @@ fn try_add_quote_asset(
     info: MessageInfo,
     quote_asset: TokenType,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     if QUOTE_ASSET_WHITELIST
         .iter(deps.storage)?
@@ -735,8 +730,8 @@ fn try_remove_quote_asset(
     info: MessageInfo,
     asset: TokenType,
 ) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     // Enumerate the iterator and use `find` to locate the asset
     let found_asset = QUOTE_ASSET_WHITELIST
@@ -765,8 +760,8 @@ fn try_remove_quote_asset(
 }
 
 fn try_force_decay(deps: DepsMut, env: Env, info: MessageInfo, pair: LBPair) -> Result<Response> {
-    let state = CONFIG.load(deps.storage)?;
-    only_owner(&info.sender, &state.owner)?;
+    let config = CONFIG.load(deps.storage)?;
+    only_owner(&info.sender, &config.owner)?;
 
     // TODO: I think this needs to send a message to the LBPair contract to execute the force decay.
     // pair.forceDecay();
@@ -846,9 +841,9 @@ fn query_min_bin_step(deps: Deps) -> Result<Binary> {
 ///
 /// * `fee_recipient` - The address of the fee recipient.
 fn query_fee_recipient(deps: Deps) -> Result<Binary> {
-    let state = CONFIG.load(deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     let response = FeeRecipientResponse {
-        fee_recipient: state.fee_recipient,
+        fee_recipient: config.fee_recipient,
     };
     to_binary(&response).map_err(Error::CwErr)
 }
@@ -871,9 +866,9 @@ fn query_max_flash_loan_fee(deps: Deps) -> Result<Binary> {
 ///
 /// * `flash_loan_fee` - The fee percentage for flash loans.
 fn query_flash_loan_fee(deps: Deps) -> Result<Binary> {
-    let state = CONFIG.load(deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     let response = FlashLoanFeeResponse {
-        flash_loan_fee: state.flash_loan_fee,
+        flash_loan_fee: config.flash_loan_fee,
     };
     to_binary(&response).map_err(Error::CwErr)
 }
@@ -884,9 +879,9 @@ fn query_flash_loan_fee(deps: Deps) -> Result<Binary> {
 ///
 /// * `lb_pair_implementation` - The code ID and hash of the LBPair implementation.
 fn query_lb_pair_implementation(deps: Deps) -> Result<Binary> {
-    let state = CONFIG.load(deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     let response = LBPairImplementationResponse {
-        lb_pair_implementation: state.lb_pair_implementation,
+        lb_pair_implementation: config.lb_pair_implementation,
     };
     to_binary(&response).map_err(Error::CwErr)
 }
@@ -897,9 +892,9 @@ fn query_lb_pair_implementation(deps: Deps) -> Result<Binary> {
 ///
 /// * `lb_token_implementation` - The code ID and hash of the LBToken implementation.
 fn query_lb_token_implementation(deps: Deps) -> Result<Binary> {
-    let state = CONFIG.load(deps.storage)?;
+    let config = CONFIG.load(deps.storage)?;
     let response = LBTokenImplementationResponse {
-        lb_token_implementation: state.lb_token_implementation,
+        lb_token_implementation: config.lb_token_implementation,
     };
     to_binary(&response).map_err(Error::CwErr)
 }
@@ -1260,8 +1255,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 ephemeral_storage_w(deps.storage).remove();
                 Ok(Response::default())
             }
-            None => Err(StdError::generic_err("Expecting contract id".to_string())),
+            None => Err(StdError::generic_err("Expecting contract id")),
         },
-        _ => Err(StdError::generic_err("Unknown reply id".to_string())),
+        _ => Err(StdError::generic_err("Unknown reply id")),
     }
 }
