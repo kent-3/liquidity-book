@@ -1,11 +1,10 @@
 use std::fmt;
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::BlockInfo;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(Copy)]
 /// at the given point in time and after, Expiration will be considered expired
 pub enum Expiration {
     /// expires at this block height

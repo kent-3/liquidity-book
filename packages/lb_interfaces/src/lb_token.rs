@@ -1,3 +1,4 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Addr, Binary, Coin, CosmosMsg, StdResult, Uint128, Uint256, WasmMsg,
 };
@@ -20,7 +21,7 @@ use secret_toolkit::permit::Permit;
 // Init messages
 /////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)] //PartialEq
+#[cw_serde]
 pub struct InstantiateMsg {
     /// if `false` the contract will instantiate permanently as a no-admin (permissionless) contract
     pub has_admin: bool,
@@ -47,8 +48,7 @@ impl InstantiateCallback for InstantiateMsg {
 ///
 /// Mostly responds with `HandleAnswer { <variant_name>: { status: success }}` if successful.
 /// See [HandleAnswer](crate::msg::HandleAnswer) for the response messages for each variant.
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     // /// curates new token_ids. Only curators can access this function.
     // CurateTokenIds {
@@ -246,8 +246,7 @@ impl ExecuteMsg {
 
 /// Handle answers in the `data` field of `HandleResponse`. See
 /// [HandleMsg](crate::msg::HandleMsg), which has more details
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteAnswer {
     CurateTokenIds { status: ResponseStatus },
     MintTokens { status: ResponseStatus },
@@ -277,8 +276,9 @@ pub enum ExecuteAnswer {
 
 /// Query messages to SNIP1155 contract. See [QueryAnswer](crate::msg::QueryAnswer)
 /// for the response messages for each variant, which has more detail.
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+// TODO - derive this trait (see lb-pair for example)
+// #[derive(QueryResponses)]
 pub enum QueryMsg {
     /// returns public information of the SNIP1155 contract
     TokenContractInfo {},
@@ -365,8 +365,9 @@ impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+// TODO - derive this trait (see lb-pair for example)
+// #[derive(QueryResponses)]
 pub enum QueryWithPermit {
     Balance {
         owner: Addr,
@@ -395,8 +396,7 @@ pub enum QueryWithPermit {
 }
 
 /// the query responses for each [QueryMsg](crate::msg::QueryMsg) variant
-#[derive(Serialize, Deserialize, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryAnswer {
     /// returns contract-level information:
     TokenContractInfo {
@@ -464,15 +464,13 @@ pub enum QueryAnswer {
 // Structs, Enums and other functions
 /////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ResponseStatus {
     Success,
     Failure,
 }
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct TransferAction {
     pub token_id: String,
     // equivalent to `owner` in SNIP20. Tokens are sent from this address.
@@ -482,8 +480,7 @@ pub struct TransferAction {
     pub memo: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct SendAction {
     pub token_id: String,
     // equivalent to `owner` in SNIP20. Tokens are sent from this address.

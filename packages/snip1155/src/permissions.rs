@@ -1,19 +1,18 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
-use super::expiration::Expiration;
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, BlockInfo, Uint256};
 
-/// struct to store permission for a `[token_id, owner, allowed_addr]` combination
+use super::expiration::Expiration;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+/// struct to store permission for a `[token_id, owner, allowed_addr]` combination
+#[cw_serde]
+#[derive(Default)]
 pub struct Permission {
     pub view_balance_perm: bool,
     pub view_balance_exp: Expiration,
     pub view_pr_metadata_perm: bool,
     pub view_pr_metadata_exp: Expiration,
-    pub trfer_allowance_perm: Uint256,
-    pub trfer_allowance_exp: Expiration,
+    pub transfer_allowance_perm: Uint256,
+    pub transfer_allowance_exp: Expiration,
 }
 
 impl Permission {
@@ -25,8 +24,8 @@ impl Permission {
     }
 }
 
-/// to store all keys to access all permissions for a given `owner`
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+/// struct to store all keys to access all permissions for a given `owner`
+#[cw_serde]
 pub struct PermissionKey {
     pub token_id: String,
     pub allowed_addr: Addr,

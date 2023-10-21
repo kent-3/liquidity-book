@@ -1,10 +1,8 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Api, CanonicalAddr, StdResult, Uint256};
+
 /// tx type and specifics for storage
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum StoredTxAction {
     Mint {
         minter: CanonicalAddr,
@@ -32,8 +30,7 @@ pub enum StoredTxAction {
 }
 
 /// tx in storage
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct StoredTx {
     /// tx id
     pub tx_id: u64,
@@ -110,8 +107,7 @@ impl StoredTx {
 }
 
 /// tx type and specifics for storage with Addr
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum TxAction {
     Mint {
         minter: Addr,
@@ -139,8 +135,7 @@ pub enum TxAction {
 }
 
 /// tx in storage
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct Tx {
     /// tx id
     pub tx_id: u64,
