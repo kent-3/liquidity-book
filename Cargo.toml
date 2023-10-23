@@ -7,7 +7,7 @@ members = [
   "contracts/lb_pair",
   # "contracts/lb_quoter",
   "contracts/lb_token",
-  # "contracts/lb_router",
+  "contracts/router",
   "contracts/tests",
 ]
 default-members = [

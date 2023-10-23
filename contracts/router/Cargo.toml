@@ -1,0 +1,24 @@
+[package]
+name = "router"
+version = "0.1.0"
+authors = ["Tony <plutonyium@gmail.com>"]
+edition = "2021"
+exclude = ["contract.wasm", "hash.txt"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+snafu = { version = "0.7.1" }
+serde = { workspace = true, features = ["derive", "alloc"] }
+schemars = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+shade-protocol = { workspace = true }
+shadeswap-shared = { workspace = true }
+
+[dev-dependencies]
+cosmwasm-schema = { workspace = true }
+secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", features = [
+  "iterator",
+] }
