@@ -23,7 +23,9 @@ shade-protocol = { workspace = true, features = [
   "storage_plus",
   "multi-test",
   "query_auth_impl",
+  "lb-libraries",
 ] }
+shadeswap-shared = { workspace = true }
 secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", features = [
   "iterator",
 ] }
@@ -33,7 +35,7 @@ rand = "0.8"
 
 [dependencies.shade-multi-test]
 git = "https://github.com/securesecrets/shade"
-features = ["snip20", "query_auth"]
+features = ["admin", "query_auth", "router", "snip20"]
 branch = "itsHaseebSaeed-LiquidityBook"
 
 [dev-dependencies]

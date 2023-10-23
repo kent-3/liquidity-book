@@ -16,8 +16,8 @@ pub fn lb_pair_setup(
     let shd = extract_contract_info(&deployed_contracts, SHADE)?;
     let sscrt = extract_contract_info(&deployed_contracts, SSCRT)?;
 
-    let token_x = token_type_generator(&shd)?;
-    let token_y = token_type_generator(&sscrt)?;
+    let token_x = token_type_snip20_generator(&shd)?;
+    let token_y = token_type_snip20_generator(&sscrt)?;
 
     lb_factory::create_lb_pair(
         &mut app,
@@ -29,12 +29,8 @@ pub fn lb_pair_setup(
         token_y.clone(),
         "viewing_key".to_string(),
     )?;
-    let all_pairs = lb_factory::query_all_lb_pairs(
-        &mut app,
-        &lb_factory.clone().into(),
-        token_x,
-        token_y,
-    )?;
+    let all_pairs =
+        lb_factory::query_all_lb_pairs(&mut app, &lb_factory.clone().into(), token_x, token_y)?;
     let lb_pair = all_pairs[0].clone();
     Ok((app, lb_factory.into(), deployed_contracts, lb_pair))
 }
@@ -54,7 +50,7 @@ pub fn test_query_factory() -> Result<(), anyhow::Error> {
 pub fn test_query_token_x() -> Result<(), anyhow::Error> {
     let (app, _lb_factory, deployed_contracts, lb_pair) = lb_pair_setup()?;
 
-    let shd = token_type_generator(&extract_contract_info(&deployed_contracts, SHADE)?)?;
+    let shd = token_type_snip20_generator(&extract_contract_info(&deployed_contracts, SHADE)?)?;
 
     let token_x = lb_pair::query_token_x(&app, &lb_pair.lb_pair.contract)?;
 
@@ -67,7 +63,7 @@ pub fn test_query_token_x() -> Result<(), anyhow::Error> {
 pub fn test_query_token_y() -> Result<(), anyhow::Error> {
     let (app, _lb_factory, deployed_contracts, lb_pair) = lb_pair_setup()?;
 
-    let sscrt = token_type_generator(&extract_contract_info(&deployed_contracts, SSCRT)?)?;
+    let sscrt = token_type_snip20_generator(&extract_contract_info(&deployed_contracts, SSCRT)?)?;
 
     let token_y = lb_pair::query_token_y(&app, &lb_pair.lb_pair.contract)?;
 
@@ -229,8 +225,7 @@ pub fn test_query_oracle_sample_at() -> Result<(), anyhow::Error> {
 #[test]
 pub fn test_query_price_from_id() -> Result<(), anyhow::Error> {
     let (app, _lb_factory, _deployed_contracts, lb_pair) = lb_pair_setup()?;
-    let delta =
-        Uint256::from(DEFAULT_BIN_STEP).checked_mul(Uint256::from((5 * 10) ^ 13_u128))?;
+    let delta = Uint256::from(DEFAULT_BIN_STEP).checked_mul(Uint256::from((5 * 10) ^ 13_u128))?;
 
     assert_approx_eq_rel(
         lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, 1_000 + ID_ONE)?,

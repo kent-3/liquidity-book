@@ -43,6 +43,24 @@ impl TokenType {
             } => contract_addr.to_string(),
         }
     }
+    pub fn address(&self) -> Addr {
+        match self {
+            TokenType::NativeToken { .. } => panic!("Doesn't work for native tokens"),
+            TokenType::CustomToken {
+                contract_addr,
+                token_code_hash: _,
+            } => contract_addr.clone(),
+        }
+    }
+    pub fn code_hash(&self) -> String {
+        match self {
+            TokenType::NativeToken { .. } => panic!("Doesn't work for native tokens"),
+            TokenType::CustomToken {
+                contract_addr: _,
+                token_code_hash,
+            } => token_code_hash.to_string(),
+        }
+    }
     pub fn is_custom_token(&self) -> bool {
         match self {
             TokenType::NativeToken { .. } => false,

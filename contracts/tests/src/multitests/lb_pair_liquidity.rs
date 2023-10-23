@@ -29,8 +29,8 @@ pub fn lb_pair_setup() -> Result<
 
     let silk = extract_contract_info(&deployed_contracts, SILK)?;
     let shade = extract_contract_info(&deployed_contracts, SHADE)?;
-    let token_x = token_type_generator(&silk)?;
-    let token_y = token_type_generator(&shade)?;
+    let token_x = token_type_snip20_generator(&silk)?;
+    let token_y = token_type_snip20_generator(&shade)?;
 
     lb_factory::create_lb_pair(
         &mut app,
@@ -550,8 +550,8 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(reserves_x),
             amount_y_min: Uint128::from(reserves_y),
@@ -695,8 +695,8 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(1u128),
             amount_y_min: Uint128::from(1u128),
@@ -739,8 +739,8 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(1u128),
             amount_y_min: Uint128::from(1u128),
@@ -865,8 +865,8 @@ pub fn test_query_next_non_empty_bin() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(1u128),
             amount_y_min: Uint128::from(1u128),
@@ -1010,8 +1010,8 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(0u128),
             amount_y_min: Uint128::from(0u128),
@@ -1035,8 +1035,8 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(0u128),
             amount_y_min: Uint128::from(0u128),
@@ -1059,8 +1059,8 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(0u128),
             amount_y_min: Uint128::from(0u128),
@@ -1084,8 +1084,8 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(0u128),
             amount_y_min: Uint128::from(0u128),
@@ -1170,8 +1170,8 @@ pub fn test_revert_burn_more_than_balance() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(0u128),
             amount_y_min: Uint128::from(0u128),
@@ -1247,8 +1247,8 @@ pub fn test_revert_burn_zero() -> Result<(), anyhow::Error> {
         addrs.batman().as_str(),
         &lb_pair.lb_pair.contract,
         RemoveLiquidity {
-            token_x: token_type_generator(&token_x)?,
-            token_y: token_type_generator(&token_y)?,
+            token_x: token_type_snip20_generator(&token_x)?,
+            token_y: token_type_snip20_generator(&token_y)?,
             bin_step: lb_pair.bin_step,
             amount_x_min: Uint128::from(0u128),
             amount_y_min: Uint128::from(0u128),
