@@ -1,14 +1,33 @@
 #![allow(unused)] // For beginning only.
 
-use crate::prelude::*;
-use crate::state::*;
-use crate::types::{LBPair, LBPairInformation, NextPairKey};
+use crate::{
+    prelude::*,
+    state::*,
+    types::{LBPair, LBPairInformation, NextPairKey},
+};
 use ethnum::U256;
 use shade_protocol::utils::callback::ExecuteCallback;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Timestamp, Uint256,
+    entry_point,
+    to_binary,
+    Addr,
+    Binary,
+    ContractInfo,
+    CosmosMsg,
+    Deps,
+    DepsMut,
+    Env,
+    MessageInfo,
+    Reply,
+    Response,
+    StdError,
+    StdResult,
+    Storage,
+    SubMsg,
+    SubMsgResult,
+    Timestamp,
+    Uint256,
     WasmMsg,
 };
 use lb_interfaces::{
@@ -264,7 +283,7 @@ fn try_create_lb_pair(
         .map_err(|_| Error::BinStepHasNoPreset { bin_step })?;
     let is_owner = info.sender == config.owner;
 
-    if !_is_preset_open(preset.0 .0) && !is_owner {
+    if !_is_preset_open(preset.0.0) && !is_owner {
         return Err(Error::PresetIsLockedForUsers {
             user: info.sender,
             bin_step,
@@ -1150,7 +1169,7 @@ fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
 
     for result in iterator {
         let (bin_step, preset) = result.map_err(Error::CwErr)?;
-        if _is_preset_open(preset.0 .0) {
+        if _is_preset_open(preset.0.0) {
             open_bin_steps.push(bin_step)
         }
     }

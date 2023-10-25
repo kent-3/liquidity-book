@@ -2,18 +2,35 @@
 
 use std::collections::HashMap;
 
-use cosmwasm_std::Attribute;
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Timestamp, Uint128,
-    Uint256, WasmMsg,
+    entry_point,
+    from_binary,
+    to_binary,
+    Addr,
+    Attribute,
+    Binary,
+    ContractInfo,
+    CosmosMsg,
+    Deps,
+    DepsMut,
+    Env,
+    MessageInfo,
+    Reply,
+    Response,
+    StdError,
+    StdResult,
+    SubMsg,
+    SubMsgResult,
+    Timestamp,
+    Uint128,
+    Uint256,
+    WasmMsg,
 };
 
 use ethnum::U256;
 use serde::Serialize;
 
-use lb_interfaces::lb_pair::*;
-use lb_interfaces::lb_token;
+use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
     bin_helper::BinHelper,
     constants::{MAX_FEE, SCALE_OFFSET},
@@ -38,8 +55,7 @@ use shade_protocol::snip20;
 use shadeswap_shared::router::ExecuteMsgResponse;
 use snip1155::state_structs::{LbPair, TokenAmount, TokenIdBalance};
 
-use crate::prelude::*;
-use crate::state::*;
+use crate::{prelude::*, state::*};
 
 pub const INSTANTIATE_LP_TOKEN_REPLY_ID: u64 = 1u64;
 pub const MINT_REPLY_ID: u64 = 1u64;

@@ -5,11 +5,13 @@ use shade_multi_test::interfaces::utils::DeployedContracts;
 use shade_protocol::multi_test::App;
 use std::str::FromStr;
 
-use crate::interfaces::{lb_factory, lb_pair};
-use crate::multitests::test_helper::*;
+use crate::{
+    interfaces::{lb_factory, lb_pair},
+    multitests::test_helper::*,
+};
 
-pub fn lb_pair_setup(
-) -> Result<(App, ContractInfo, DeployedContracts, LBPairInformation), anyhow::Error> {
+pub fn lb_pair_setup()
+-> Result<(App, ContractInfo, DeployedContracts, LBPairInformation), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, lb_factory, deployed_contracts) = setup(None)?;
 

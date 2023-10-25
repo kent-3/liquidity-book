@@ -12,9 +12,11 @@ use lb_libraries::{
 use shade_multi_test::interfaces::snip20;
 use shade_protocol::utils::MultiTestable;
 
-use crate::interfaces::{lb_factory, lb_pair};
-use crate::multi::{lb_pair::LbPair, lb_token::LbToken};
-use crate::multitests::test_helper::*;
+use crate::{
+    interfaces::{lb_factory, lb_pair},
+    multi::{lb_pair::LbPair, lb_token::LbToken},
+    multitests::test_helper::*,
+};
 
 #[test]
 pub fn test_setup() -> Result<(), anyhow::Error> {

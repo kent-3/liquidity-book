@@ -7,8 +7,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::ContractInfo;
 use ethnum::U256;
 
-pub use crate::math::liquidity_configurations::LiquidityConfigurations;
-pub use crate::math::tree_math::TreeUint24;
+pub use crate::math::{liquidity_configurations::LiquidityConfigurations, tree_math::TreeUint24};
 use crate::tokens::TokenType;
 
 pub type Bytes32 = [u8; 32];
@@ -40,7 +39,7 @@ pub struct StaticFeeParameters {
     pub max_volatility_accumulator: u32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MintArrays {
     pub ids: Vec<U256>,
     pub amounts: Vec<Bytes32>,

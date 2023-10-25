@@ -12,8 +12,10 @@ use lb_libraries::{
     types::{Bytes32, ContractInstantiationInfo},
 };
 
-use crate::prelude::*;
-use crate::types::{LBPair, LBPairInformation, NextPairKey};
+use crate::{
+    prelude::*,
+    types::{LBPair, LBPairInformation, NextPairKey},
+};
 
 pub static CONFIG: Item<Config> = Item::new("config");
 pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";

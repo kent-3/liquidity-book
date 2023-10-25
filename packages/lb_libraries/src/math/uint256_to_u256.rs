@@ -2,8 +2,7 @@
 //! Author: Haseeb
 //!
 
-use cosmwasm_std::Uint128;
-use cosmwasm_std::Uint256;
+use cosmwasm_std::{Uint128, Uint256};
 use ethnum::U256;
 use std::convert::TryInto;
 
@@ -64,8 +63,7 @@ impl ConvertU256 for U256 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::Uint128;
-    use cosmwasm_std::Uint256;
+    use cosmwasm_std::{Uint128, Uint256};
     use ethnum::U256;
     use std::str::FromStr;
 

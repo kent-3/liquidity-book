@@ -4,11 +4,12 @@ use lb_interfaces::lb_pair::RemoveLiquidity;
 use lb_libraries::{math::u24::U24, types::LBPairInformation};
 use shade_multi_test::interfaces::{snip20, utils::DeployedContracts};
 use shade_protocol::multi_test::App;
-use std::cmp::Ordering;
-use std::ops::Add;
+use std::{cmp::Ordering, ops::Add};
 
-use crate::interfaces::{lb_factory, lb_pair, lb_token};
-use crate::multitests::test_helper::*;
+use crate::{
+    interfaces::{lb_factory, lb_pair, lb_token},
+    multitests::test_helper::*,
+};
 
 pub const PRECISION: u128 = 1_000_000_000_000_000_000;
 

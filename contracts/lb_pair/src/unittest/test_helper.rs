@@ -1,16 +1,21 @@
-use std::any::Any;
-use std::str::FromStr;
+use std::{any::Any, str::FromStr};
 
 use cosmwasm_std::{
-    Addr, BlockInfo, ContractInfo, StdError, StdResult, Timestamp, Uint128, Uint256,
+    Addr,
+    BlockInfo,
+    ContractInfo,
+    StdError,
+    StdResult,
+    Timestamp,
+    Uint128,
+    Uint256,
 };
 use lb_interfaces::lb_pair::{LiquidityParameters, RemoveLiquidity};
 use lb_libraries::{
     tokens::TokenType,
     types::{ContractInstantiationInfo, StaticFeeParameters},
 };
-use lb_tests::interfaces::lb_pair;
-use lb_tests::multi::lb_token::LbToken;
+use lb_tests::{interfaces::lb_pair, multi::lb_token::LbToken};
 use shade_multi_test::interfaces::{
     snip20,
     utils::{DeployedContracts, SupportedContracts},
@@ -29,27 +34,35 @@ impl Addrs {
     pub fn admin(&self) -> Addr {
         self.addrs[0].clone()
     }
+
     pub fn user1(&self) -> Addr {
         self.addrs[1].clone()
     }
+
     pub fn user2(&self) -> Addr {
         self.addrs[2].clone()
     }
+
     pub fn user3(&self) -> Addr {
         self.addrs[3].clone()
     }
+
     pub fn all(&self) -> Vec<Addr> {
         self.addrs.clone()
     }
+
     pub fn a_hash(&self) -> String {
         self.hashes[0].clone()
     }
+
     pub fn b_hash(&self) -> String {
         self.hashes[1].clone()
     }
+
     pub fn c_hash(&self) -> String {
         self.hashes[2].clone()
     }
+
     pub fn _d_hash(&self) -> String {
         self.hashes[3].clone()
     }

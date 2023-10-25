@@ -1,10 +1,9 @@
 use anyhow::Ok;
-use cosmwasm_std::Uint128;
-use cosmwasm_std::{to_binary, BalanceResponse, BankQuery, Coin, QueryRequest, StdError};
+use cosmwasm_std::{to_binary, BalanceResponse, BankQuery, Coin, QueryRequest, StdError, Uint128};
 // use lb_libraries::tokens::TokenType;
-use shade_multi_test::interfaces::snip20;
 use shade_multi_test::interfaces::{
     router::{self},
+    snip20,
     utils::SupportedContracts,
 };
 // TODO - work out the location of these two types better (TokenType and TokenAmount)
@@ -15,8 +14,10 @@ use shadeswap_shared::{
 };
 
 use super::lb_pair_fees::DEPOSIT_AMOUNT;
-use crate::interfaces::{lb_factory, lb_pair};
-use crate::multitests::test_helper::*;
+use crate::{
+    interfaces::{lb_factory, lb_pair},
+    multitests::test_helper::*,
+};
 
 const SWAP_AMOUNT: u128 = 1000;
 #[test]
@@ -337,14 +338,10 @@ pub fn router_integration() -> Result<(), anyhow::Error> {
     app.init_modules(|router, _, storage| {
         router
             .bank
-            .init_balance(
-                storage,
-                &addrs.altaf_bhai(),
-                vec![Coin {
-                    denom: "uscrt".into(),
-                    amount: amount_x + Uint128::from(SWAP_AMOUNT),
-                }],
-            )
+            .init_balance(storage, &addrs.altaf_bhai(), vec![Coin {
+                denom: "uscrt".into(),
+                amount: amount_x + Uint128::from(SWAP_AMOUNT),
+            }])
             .unwrap();
     });
 
@@ -367,15 +364,12 @@ pub fn router_integration() -> Result<(), anyhow::Error> {
         }))
         .unwrap();
 
-    assert_eq!(
-        res,
-        BalanceResponse {
-            amount: Coin {
-                amount: Uint128::new(SWAP_AMOUNT),
-                denom: "uscrt".to_string(),
-            },
-        }
-    );
+    assert_eq!(res, BalanceResponse {
+        amount: Coin {
+            amount: Uint128::new(SWAP_AMOUNT),
+            denom: "uscrt".to_string(),
+        },
+    });
 
     //     25. SWAP a native token for a SNIP20 token and ASSERT the resulting balance of the SNIP20 token.
     let offer = TokenAmount {
@@ -451,15 +445,12 @@ pub fn router_integration() -> Result<(), anyhow::Error> {
         }))
         .unwrap();
 
-    assert_eq!(
-        res,
-        BalanceResponse {
-            amount: Coin {
-                amount: Uint128::new(SWAP_AMOUNT + 999),
-                denom: "uscrt".to_string(),
-            },
-        }
-    );
+    assert_eq!(res, BalanceResponse {
+        amount: Coin {
+            amount: Uint128::new(SWAP_AMOUNT + 999),
+            denom: "uscrt".to_string(),
+        },
+    });
 
     //Swapping USCRT -> SILK
     let offer = TokenAmount {
@@ -508,15 +499,12 @@ pub fn router_integration() -> Result<(), anyhow::Error> {
         }))
         .unwrap();
 
-    assert_eq!(
-        res,
-        BalanceResponse {
-            amount: Coin {
-                amount: Uint128::from(999u128),
-                denom: "uscrt".to_string(),
-            },
-        }
-    );
+    assert_eq!(res, BalanceResponse {
+        amount: Coin {
+            amount: Uint128::from(999u128),
+            denom: "uscrt".to_string(),
+        },
+    });
 
     Ok(())
 }

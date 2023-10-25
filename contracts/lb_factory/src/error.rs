@@ -3,13 +3,17 @@
 #![allow(unused)] // For beginning only.
 
 use cosmwasm_std::Addr;
-use lb_libraries::bin_helper::BinError;
-use lb_libraries::fee_helper::FeeError;
-use lb_libraries::math::liquidity_configurations::LiquidityConfigurationsError;
-use lb_libraries::math::u128x128_math::U128x128MathError;
-use lb_libraries::math::u256x256_math::U256x256MathError;
-use lb_libraries::oracle_helper::OracleError;
-use lb_libraries::pair_parameter_helper::PairParametersError;
+use lb_libraries::{
+    bin_helper::BinError,
+    fee_helper::FeeError,
+    math::{
+        liquidity_configurations::LiquidityConfigurationsError,
+        u128x128_math::U128x128MathError,
+        u256x256_math::U256x256MathError,
+    },
+    oracle_helper::OracleError,
+    pair_parameter_helper::PairParametersError,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LBFactoryError {
@@ -73,7 +77,9 @@ pub enum LBFactoryError {
     #[error("Flash loan fee is already {fee}!")]
     SameFlashLoanFee { fee: u8 },
 
-    #[error("LBPair safety check failed. {lb_pair_implementation} factory address does not match this one!")]
+    #[error(
+        "LBPair safety check failed. {lb_pair_implementation} factory address does not match this one!"
+    )]
     LBPairSafetyCheckFailed { lb_pair_implementation: Addr },
 
     #[error("LB implementation is already set to code ID {lb_implementation}!")]

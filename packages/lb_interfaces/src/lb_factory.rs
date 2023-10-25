@@ -3,8 +3,10 @@ use cosmwasm_std::Addr;
 use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 
 use super::lb_pair;
-use lb_libraries::types::{LBPair, LBPairInformation};
-use lb_libraries::{tokens::TokenType, types::ContractInstantiationInfo};
+use lb_libraries::{
+    tokens::TokenType,
+    types::{ContractInstantiationInfo, LBPair, LBPairInformation},
+};
 pub use lb_pair::InstantiateMsg as LBPairInstantiateMsg;
 
 #[cw_serde]

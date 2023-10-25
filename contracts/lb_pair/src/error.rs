@@ -2,13 +2,17 @@
 
 use cosmwasm_std::Uint128;
 use ethnum::U256;
-use lb_libraries::bin_helper::BinError;
-use lb_libraries::fee_helper::FeeError;
-use lb_libraries::math::liquidity_configurations::LiquidityConfigurationsError;
-use lb_libraries::math::u128x128_math::U128x128MathError;
-use lb_libraries::math::u256x256_math::U256x256MathError;
-use lb_libraries::oracle_helper::OracleError;
-use lb_libraries::pair_parameter_helper::PairParametersError;
+use lb_libraries::{
+    bin_helper::BinError,
+    fee_helper::FeeError,
+    math::{
+        liquidity_configurations::LiquidityConfigurationsError,
+        u128x128_math::U128x128MathError,
+        u256x256_math::U256x256MathError,
+    },
+    oracle_helper::OracleError,
+    pair_parameter_helper::PairParametersError,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LBPairError {
@@ -60,7 +64,9 @@ pub enum LBPairError {
     #[error("Zero amount for bin id: {id}")]
     ZeroAmount { id: u32 },
 
-    #[error("Zero amounts out for bin id: {id} amount to burn: {amount_to_burn} total supply: {total_supply} ")]
+    #[error(
+        "Zero amounts out for bin id: {id} amount to burn: {amount_to_burn} total supply: {total_supply} "
+    )]
     ZeroAmountsOut {
         id: u32,
         // bin_reserves: [u8; 32],
@@ -141,14 +147,18 @@ pub enum LBPairError {
     #[error("Id overflows. Id: {id}")]
     IdOverflows { id: u32 },
 
-    #[error("Amount left unswapped. : Amount Left In: {amount_left_in}, Total Amount: {total_amount}, swapped_amount: {swapped_amount}")]
+    #[error(
+        "Amount left unswapped. : Amount Left In: {amount_left_in}, Total Amount: {total_amount}, swapped_amount: {swapped_amount}"
+    )]
     AmountInLeft {
         amount_left_in: Uint128,
         total_amount: Uint128,
         swapped_amount: Uint128,
     },
 
-    #[error("Id slippage caught. Active id desired: {active_id_desired}, Id slippage: {id_slippage}, Active id: {active_id}")]
+    #[error(
+        "Id slippage caught. Active id desired: {active_id_desired}, Id slippage: {id_slippage}, Active id: {active_id}"
+    )]
     IdSlippageCaught {
         active_id_desired: u32,
         id_slippage: u32,
@@ -161,7 +171,9 @@ pub enum LBPairError {
         token_y: String,
         bin_step: u16,
     },
-    #[error("Amount slippage caught. AmountXMin: {amount_x_min}, AmountX: {amount_x}, AmountYMin: {amount_y_min}, AmountY: {amount_y}")]
+    #[error(
+        "Amount slippage caught. AmountXMin: {amount_x_min}, AmountX: {amount_x}, AmountYMin: {amount_y_min}, AmountY: {amount_y}"
+    )]
     AmountSlippageCaught {
         amount_x_min: Uint128,
         amount_x: Uint128,

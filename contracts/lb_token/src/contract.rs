@@ -1,26 +1,49 @@
 use std::collections::BTreeSet;
 
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, BlockInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, StdResult, Storage, Timestamp, Uint256,
+    entry_point,
+    to_binary,
+    Addr,
+    Binary,
+    BlockInfo,
+    CosmosMsg,
+    Deps,
+    DepsMut,
+    Env,
+    MessageInfo,
+    Response,
+    StdError,
+    StdResult,
+    Storage,
+    Timestamp,
+    Uint256,
 };
 use secret_toolkit::{
     crypto::sha_256,
-    permit::RevokedPermits,
-    permit::{validate, Permit, TokenPermissions},
+    permit::{validate, Permit, RevokedPermits, TokenPermissions},
     utils::space_pad,
     viewing_key::{ViewingKey, ViewingKeyStore},
 };
 
 use lb_interfaces::lb_token::{
-    ExecuteAnswer, ExecuteMsg, InstantiateMsg, ResponseStatus::Success, SendAction, TransferAction,
+    ExecuteAnswer,
+    ExecuteMsg,
+    InstantiateMsg,
+    ResponseStatus::Success,
+    SendAction,
+    TransferAction,
 };
 use snip1155::{
     expiration::Expiration,
     metadata::Metadata,
     permissions::{Permission, PermissionKey},
     state_structs::{
-        ContractConfig, CurateTokenId, OwnerBalance, StoredTokenInfo, TknConfig, TokenAmount,
+        ContractConfig,
+        CurateTokenId,
+        OwnerBalance,
+        StoredTokenInfo,
+        TknConfig,
+        TokenAmount,
         TokenInfoMsg,
     },
 };
@@ -28,17 +51,34 @@ use snip1155::{
 use crate::{
     receiver::Snip1155ReceiveMsg,
     state::{
-        balances_r, balances_w, blockinfo_r, blockinfo_w, contr_conf_r, contr_conf_w,
+        balances_r,
+        balances_w,
+        blockinfo_r,
+        blockinfo_w,
+        contr_conf_r,
+        contr_conf_w,
         get_receiver_hash,
         permissions::{
-            list_owner_permission_keys, may_load_any_permission, new_permission, update_permission,
+            list_owner_permission_keys,
+            may_load_any_permission,
+            new_permission,
+            update_permission,
         },
-        set_receiver_hash, tkn_info_r, tkn_info_w, tkn_tot_supply_r, tkn_tot_supply_w,
+        set_receiver_hash,
+        tkn_info_r,
+        tkn_info_w,
+        tkn_tot_supply_r,
+        tkn_tot_supply_w,
         txhistory::{
-            append_new_owner, get_txs, may_get_current_owner, store_burn, store_mint,
+            append_new_owner,
+            get_txs,
+            may_get_current_owner,
+            store_burn,
+            store_mint,
             store_transfer,
         },
-        PREFIX_REVOKED_PERMITS, RESPONSE_BLOCK_SIZE,
+        PREFIX_REVOKED_PERMITS,
+        RESPONSE_BLOCK_SIZE,
     },
 };
 
@@ -163,20 +203,15 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             msg,
             memo,
             padding: _,
-        } => try_send(
-            deps,
-            env,
-            info,
-            SendAction {
-                token_id,
-                from,
-                recipient,
-                recipient_code_hash,
-                amount,
-                msg,
-                memo,
-            },
-        ),
+        } => try_send(deps, env, info, SendAction {
+            token_id,
+            from,
+            recipient,
+            recipient_code_hash,
+            amount,
+            msg,
+            memo,
+        }),
         ExecuteMsg::BatchSend {
             actions,
             padding: _,

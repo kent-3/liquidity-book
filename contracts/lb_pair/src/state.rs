@@ -5,8 +5,12 @@ use cosmwasm_std::{Addr, ContractInfo, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use cw_storage_plus::Map;
 use lb_libraries::{
-    math::tree_math::TreeUint24, oracle_helper::Oracle, pair_parameter_helper::PairParameters,
-    tokens::TokenType, types::Bytes32, viewing_keys::ViewingKey,
+    math::tree_math::TreeUint24,
+    oracle_helper::Oracle,
+    pair_parameter_helper::PairParameters,
+    tokens::TokenType,
+    types::Bytes32,
+    viewing_keys::ViewingKey,
 };
 use secret_toolkit::{
     serialization::{Bincode2, Json},

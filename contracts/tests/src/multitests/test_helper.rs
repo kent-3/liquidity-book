@@ -9,8 +9,10 @@ use shade_protocol::{
     utils::{asset::Contract, cycle::parse_utc_datetime, MultiTestable},
 };
 
-use crate::interfaces::lb_factory;
-use crate::multi::{lb_pair::LbPair, lb_token::LbToken};
+use crate::{
+    interfaces::lb_factory,
+    multi::{lb_pair::LbPair, lb_token::LbToken},
+};
 use lb_interfaces::lb_pair::LiquidityParameters;
 use lb_libraries::{constants::PRECISION, math::u24::U24, tokens::TokenType};
 
@@ -43,33 +45,43 @@ impl Addrs {
     pub fn admin(&self) -> Addr {
         self.addrs[0].clone()
     }
+
     pub fn user1(&self) -> Addr {
         self.addrs[1].clone()
     }
+
     pub fn user2(&self) -> Addr {
         self.addrs[2].clone()
     }
+
     pub fn batman(&self) -> Addr {
         self.addrs[3].clone()
     }
+
     pub fn scare_crow(&self) -> Addr {
         self.addrs[4].clone()
     }
+
     pub fn altaf_bhai(&self) -> Addr {
         self.addrs[5].clone()
     }
+
     pub fn all(&self) -> Vec<Addr> {
         self.addrs.clone()
     }
+
     pub fn a_hash(&self) -> String {
         self.hashes[0].clone()
     }
+
     pub fn b_hash(&self) -> String {
         self.hashes[1].clone()
     }
+
     pub fn c_hash(&self) -> String {
         self.hashes[2].clone()
     }
+
     pub fn _d_hash(&self) -> String {
         self.hashes[3].clone()
     }
@@ -688,13 +700,9 @@ pub fn mint_token_helper(
 
     // Adding minters and minting for SSCRT and SHADE
     for (token, amount) in tokens_to_mint {
-        snip20::add_minters_exec(
-            app,
-            admin,
-            deployed_contracts,
-            token,
-            vec![admin.to_string()],
-        )?;
+        snip20::add_minters_exec(app, admin, deployed_contracts, token, vec![
+            admin.to_string(),
+        ])?;
         snip20::mint_exec(
             app,
             admin,
