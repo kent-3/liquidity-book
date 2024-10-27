@@ -1,33 +1,20 @@
-use cosmwasm_storage::ReadonlyPrefixedStorage;
-use secret_toolkit::viewing_key::{ViewingKey, ViewingKeyStore};
-use serde::de::DeserializeOwned;
-use snip1155::{
-    metadata::{Extension, Metadata},
-    state_structs::*,
-};
-use std::any::Any;
-
 use crate::{
-    contract::{execute, instantiate, query},
+    contract::{execute, instantiate},
     state::balances_r,
 };
 use cosmwasm_std::{
-    from_binary,
-    testing::*,
-    to_binary,
-    Addr,
-    CosmosMsg,
-    Env,
-    MessageInfo,
-    OwnedDeps,
-    Response,
-    StdError,
-    StdResult,
-    Storage,
-    Uint256,
-    WasmMsg,
+    from_binary, testing::*, to_binary, Addr, CosmosMsg, Env, MessageInfo, OwnedDeps, Response,
+    StdError, StdResult, Storage, Uint256, WasmMsg,
 };
+use cosmwasm_storage::ReadonlyPrefixedStorage;
 use lb_interfaces::lb_token::*;
+use lb_libraries::lb_token::{
+    metadata::{Extension, Metadata},
+    state_structs::*,
+};
+use secret_toolkit::viewing_key::{ViewingKey, ViewingKeyStore};
+use serde::de::DeserializeOwned;
+use std::any::Any;
 
 pub fn default_curate_value() -> CurateTokenId {
     CurateTokenId {
@@ -59,16 +46,6 @@ pub fn default_token_config_fungible() -> TknConfig {
         public_total_supply: true,
         enable_mint: true,
         enable_burn: true,
-        minter_may_update_metadata: true,
-    }
-}
-pub fn default_token_config_nft() -> TknConfig {
-    TknConfig::Nft {
-        minters: vec![],
-        public_total_supply: true,
-        owner_is_public: true,
-        enable_burn: true,
-        owner_may_update_metadata: true,
         minter_may_update_metadata: true,
     }
 }
@@ -170,7 +147,7 @@ pub fn init_helper_default() -> (
 /// * 1 NFT token_id 2a to addr2
 pub fn mint_addtl_default(
     deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
 ) -> StdResult<()> {
     // init addtl addresses
@@ -258,7 +235,7 @@ pub fn _extract_log(resp: StdResult<Response>) -> String {
     }
 }
 
-/// checks token balance. Token_id input takes `&str` input, which converts to `String`
+/// checks token balance. Token_id input takes `&str` input, which converts to `String`  
 pub fn chk_bal(storage: &dyn Storage, token_id_str: &str, address: &Addr) -> Option<Uint256> {
     balances_r(storage, token_id_str)
         .may_load(to_binary(&address).unwrap().as_slice())

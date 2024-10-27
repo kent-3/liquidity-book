@@ -21,6 +21,7 @@ cosmwasm-std = { workspace = true }
 cosmwasm-storage = { workspace = true }
 cosmwasm-schema = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 secret-toolkit = { workspace = true }
 ethnum = { workspace = true }

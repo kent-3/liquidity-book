@@ -1,13 +1,17 @@
 [package]
 name = "lb-libraries"
-version = "0.0.1"
-authors = ["Kent, Haseeb"]
+version = "0.1.0"
+authors = ["Kent", "Haseeb Saeed <itsHaseebSaeed@gmail.com>"]
 edition = "2021"
-description = "Helper libraries for liquidity book contracts"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
+secret-toolkit = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 ethnum = { workspace = true }

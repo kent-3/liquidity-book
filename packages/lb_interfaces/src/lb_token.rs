@@ -1,21 +1,13 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
-    to_binary,
-    Addr,
-    Binary,
-    Coin,
-    CosmosMsg,
-    StdResult,
-    Uint128,
-    Uint256,
-    WasmMsg,
+    to_binary, Addr, Binary, Coin, CosmosMsg, StdResult, Uint128, Uint256, WasmMsg,
 };
 use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use snip1155::{
+use lb_libraries::lb_token::{
     expiration::Expiration,
     metadata::Metadata,
     permissions::{Permission, PermissionKey},
@@ -130,7 +122,7 @@ pub enum ExecuteMsg {
         actions: Vec<SendAction>,
         padding: Option<String>,
     },
-    /// allows an owner of token_ids to change transfer or viewership permissions to other addresses.
+    /// allows an owner of token_ids to change transfer or viewership permissions to other addresses.  
     ///
     /// The base specification has three types of permissions:
     /// * view balance permission: owner can allow another address to view owner's balance of specific token_ids
@@ -183,14 +175,14 @@ pub enum ExecuteMsg {
         permit_name: String,
         padding: Option<String>,
     },
-    AddCurators {
-        add_curators: Vec<Addr>,
-        padding: Option<String>,
-    },
-    RemoveCurators {
-        remove_curators: Vec<Addr>,
-        padding: Option<String>,
-    },
+    // AddCurators {
+    //     add_curators: Vec<Addr>,
+    //     padding: Option<String>,
+    // },
+    // RemoveCurators {
+    //     remove_curators: Vec<Addr>,
+    //     padding: Option<String>,
+    // },
     // AddMinters {
     //     token_id: String,
     //     add_minters: Vec<Addr>,
@@ -284,12 +276,12 @@ pub enum ExecuteAnswer {
 
 /// Query messages to SNIP1155 contract. See [QueryAnswer](crate::msg::QueryAnswer)
 /// for the response messages for each variant, which has more detail.
-#[cw_serde]
-// TODO - derive this trait (see lb-pair for example)
+// TODO: derive this trait (see lb-pair for example)
 // #[derive(QueryResponses)]
+#[cw_serde]
 pub enum QueryMsg {
     /// returns public information of the SNIP1155 contract
-    TokenContractInfo {},
+    ContractInfo {},
     IdTotalBalance {
         id: String,
     },
@@ -358,7 +350,7 @@ impl QueryMsg {
             } => Ok((vec![owner, allowed_address], key.clone())),
             Self::AllPermissions { address, key, .. } => Ok((vec![address], key.clone())),
             Self::TokenIdPrivateInfo { address, key, .. } => Ok((vec![address], key.clone())),
-            Self::TokenContractInfo {}
+            Self::ContractInfo {}
             | Self::IdTotalBalance { .. }
             | Self::TokenIdPublicInfo { .. }
             | Self::RegisteredCodeHash { .. }
@@ -373,9 +365,9 @@ impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-#[cw_serde]
-// TODO - derive this trait (see lb-pair for example)
+// TODO: derive this trait (see lb-pair for example)
 // #[derive(QueryResponses)]
+#[cw_serde]
 pub enum QueryWithPermit {
     Balance {
         owner: Addr,
@@ -404,7 +396,8 @@ pub enum QueryWithPermit {
 }
 
 /// the query responses for each [QueryMsg](crate::msg::QueryMsg) variant
-#[cw_serde]
+#[derive(Serialize, Deserialize, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum QueryAnswer {
     /// returns contract-level information:
     TokenContractInfo {
@@ -425,7 +418,7 @@ pub enum QueryAnswer {
     /// returns all token_id balances owned by an address. Only owners can use this query
     AllBalances(Vec<OwnerBalance>),
     /// all permissions related to a particular address. Note that "curation" is not recorded as a transaction per se, but
-    /// the tokens minted as part of the initial_balances set by the curator is recorded under `TxAction::Mint`
+    /// the tokens minted as part of the initial_balances set by the curator is recorded under `TxAction::Mint`  
     TransactionHistory {
         txs: Vec<Tx>,
         total: u64,
@@ -512,4 +505,70 @@ pub fn space_pad(block_size: usize, message: &mut Vec<u8>) -> &mut Vec<u8> {
     message.reserve(missing);
     message.extend(std::iter::repeat(b' ').take(missing));
     message
+}
+
+pub const RESPONSE_BLOCK_SIZE: usize = 256;
+
+/// Snip1155ReceiveMsg should be de/serialized under `Snip1155Receive()` variant in a HandleMsg
+#[cw_serde]
+pub struct Snip1155ReceiveMsg {
+    /// the address that sent the `Send` or `BatchSend` message
+    pub sender: Addr,
+    /// unique token_id `String`
+    pub token_id: String,
+    /// the previous owner of the tokens being transferred
+    pub from: Addr,
+    /// amount of tokens being transferred
+    pub amount: Uint256,
+    /// optional memo
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+    /// optional message
+    pub msg: Option<Binary>,
+}
+
+impl Snip1155ReceiveMsg {
+    pub fn new(
+        sender: Addr,
+        token_id: String,
+        from: Addr,
+        amount: Uint256,
+        memo: Option<String>,
+        msg: Option<Binary>,
+    ) -> Self {
+        Self {
+            sender,
+            token_id,
+            from,
+            amount,
+            memo,
+            msg,
+        }
+    }
+
+    /// serializes the message, and pads it to 256 bytes
+    pub fn into_binary(self) -> StdResult<Binary> {
+        let msg = ReceiverHandleMsg::Snip1155Receive(self);
+        let mut data = to_binary(&msg)?;
+        space_pad(RESPONSE_BLOCK_SIZE, &mut data.0);
+        Ok(data)
+    }
+
+    /// creates a cosmos_msg sending this struct to the named contract
+    pub fn into_cosmos_msg(self, code_hash: String, contract_addr: Addr) -> StdResult<CosmosMsg> {
+        let msg = self.into_binary()?;
+        let execute = WasmMsg::Execute {
+            msg,
+            code_hash,
+            contract_addr: contract_addr.to_string(),
+            funds: vec![],
+        };
+        Ok(execute.into())
+    }
+}
+
+// This is just a helper to properly serialize the above message
+#[cw_serde]
+pub enum ReceiverHandleMsg {
+    Snip1155Receive(Snip1155ReceiveMsg),
 }

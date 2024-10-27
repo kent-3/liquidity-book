@@ -3,12 +3,11 @@
 //!
 //! This module contains functions to interact with a tree of TreeUint24.
 
+use super::{bit_math::BitMath, u24::U24};
+use crate::types::Bytes32;
 use cosmwasm_schema::cw_serde;
 use ethnum::U256;
 use std::collections::HashMap;
-
-use super::{bit_math::BitMath, u24::U24};
-use crate::types::Bytes32;
 
 // TODO - This module is likely inefficient because we don't have bit ops for Bytes32.
 //      - Other libraries could benefit from Bytes32 bit ops also...
@@ -28,6 +27,8 @@ impl Default for TreeUint24 {
 }
 
 impl TreeUint24 {
+    // I think I was wrong about this!!
+    //
     // Note about HashMap capacity: HashMap will increase its capacity when it's about 2/3 full, which
     // requires memory reallocation. It would be better to start with the max size needed, to avoid
     // that reallocation (which may potentially require a lot of gas).
@@ -68,7 +69,6 @@ impl TreeUint24 {
     ///
     /// Returns `true` if the `id` was not already in the tree.
     /// If the `id` was already in the tree, no changes are made and `false` is returned.
-    // TODO: introduce u24
     pub fn add(&mut self, id: u32) -> bool {
         let key2 = U256::from(id) >> 8u8;
 
@@ -277,8 +277,6 @@ impl TreeUint24 {
 
 #[cfg(test)]
 mod tests {
-    use crate::math::u24::U24;
-
     use super::*;
 
     #[test]

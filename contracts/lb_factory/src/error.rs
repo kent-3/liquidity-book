@@ -1,22 +1,19 @@
-//! ### Custom Errors for LB_Factory contract.
+//! ### Custom Errors for lb-factory contract.
 
-#![allow(unused)] // For beginning only.
-
-use cosmwasm_std::Addr;
 use lb_libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
     math::{
-        liquidity_configurations::LiquidityConfigurationsError,
-        u128x128_math::U128x128MathError,
+        liquidity_configurations::LiquidityConfigurationsError, u128x128_math::U128x128MathError,
         u256x256_math::U256x256MathError,
     },
     oracle_helper::OracleError,
     pair_parameter_helper::PairParametersError,
 };
+use shade_protocol::c_std::{Addr, StdError};
 
 #[derive(thiserror::Error, Debug)]
-pub enum LBFactoryError {
+pub enum LbFactoryError {
     #[error("{0}!")]
     Generic(String),
 
@@ -32,22 +29,22 @@ pub enum LBFactoryError {
     #[error("Quote Asset {quote_asset} is already whitelisted!")]
     QuoteAssetAlreadyWhitelisted { quote_asset: String },
 
-    #[error("LBPair ({token_x}, {token_y}, bin_step: {bin_step}) does not exist!")]
-    LBPairDoesNotExist {
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) does not exist!")]
+    LbPairDoesNotExist {
         token_x: String,
         token_y: String,
         bin_step: u16,
     },
 
-    #[error("LBPair ({token_x}, {token_y}, bin_step: {bin_step}) not created!")]
-    LBPairNotCreated {
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) not created!")]
+    LbPairNotCreated {
         token_x: String,
         token_y: String,
         bin_step: u16,
     },
 
-    #[error("LBPair ({token_x}, {token_y}, bin_step: {bin_step}) already exists!")]
-    LBPairAlreadyExists {
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) already exists!")]
+    LbPairAlreadyExists {
         token_x: String,
         token_y: String,
         bin_step: u16,
@@ -62,8 +59,8 @@ pub enum LBFactoryError {
     #[error("Preset {bin_step} is locked for users! {user} is not the owner!")]
     PresetIsLockedForUsers { user: Addr, bin_step: u16 },
 
-    #[error("LBPair.ignored is already in the same state!")]
-    LBPairIgnoredIsAlreadyInTheSameState,
+    #[error("LbPair.ignored is already in the same state!")]
+    LbPairIgnoredIsAlreadyInTheSameState,
 
     #[error("Bin step {bin_step} has no preset!")]
     BinStepHasNoPreset { bin_step: u16 },
@@ -78,18 +75,26 @@ pub enum LBFactoryError {
     SameFlashLoanFee { fee: u8 },
 
     #[error(
-        "LBPair safety check failed. {lb_pair_implementation} factory address does not match this one!"
+        "LbPair safety check failed. {lb_pair_implementation} factory address does not match this one!"
     )]
-    LBPairSafetyCheckFailed { lb_pair_implementation: Addr },
+    LbPairSafetyCheckFailed { lb_pair_implementation: Addr },
 
-    #[error("LB implementation is already set to code ID {lb_implementation}!")]
-    SameImplementation { lb_implementation: u64 },
+    #[error(
+        "LbFactory safety check failed. {lb_factory_implementation} factory address does not match this one!"
+    )]
+    LbFactorySafetyCheckFailed { lb_factory_implementation: Addr },
 
-    #[error("The LBPair implementation has not been set yet!")]
+    #[error("Lb implementation is already set to code ID {implementation}!")]
+    SameImplementation { implementation: u64 },
+
+    #[error("The LbPair implementation has not been set yet!")]
     ImplementationNotSet,
 
+    #[error("Transaction is blocked by contract status")]
+    TransactionBlock(),
+
     #[error(transparent)]
-    CwErr(#[from] cosmwasm_std::StdError),
+    CwErr(#[from] StdError),
 
     #[error(transparent)]
     BinErr(#[from] BinError),

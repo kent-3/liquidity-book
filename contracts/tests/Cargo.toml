@@ -10,33 +10,26 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
-lb-interfaces = { workspace = true }
+shade-protocol = { workspace = true }
 lb-libraries = { workspace = true }
-lb-factory = { path = "../lb_factory" }
-lb-pair = { path = "../lb_pair" }
-lb-token = { path = "../lb_token" }
-
-cosmwasm-std = { workspace = true }
-cosmwasm-storage = { workspace = true }
-shade-protocol = { workspace = true, features = [
-  "snip20",
-  "storage_plus",
-  "multi-test",
-  "query_auth_impl",
-  "lb-libraries",
-] }
-shadeswap-shared = { workspace = true }
-secret-multi-test = { git = "https://github.com/securesecrets/secret-plus-utils", version = "0.13.4", features = [
-  "iterator",
-] }
-multi-derive = { git = "https://github.com/securesecrets/shade" }
-
-rand = "0.8"
-
-[dependencies.shade-multi-test]
-git = "https://github.com/securesecrets/shade"
-features = ["admin", "query_auth", "router", "snip20"]
-branch = "itsHaseebSaeed-LiquidityBook"
+schemars = { workspace = true }
+serde = { workspace = true }
+serde-json-wasm = { workspace = true }
+ethnum = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-anyhow = "1"
+anyhow = { workspace = true }
+cosmwasm-std = { workspace = true }
+rand = { workspace = true }
+shade-multi-test = { workspace = true, features = [
+  "admin",
+  "lb-factory",
+  "lb-pair",
+  "lb-router",
+  "lb-staking",
+  "lb-token",
+  "query_auth",
+  "snip20",
+] }
+serial_test = "2.0.0"

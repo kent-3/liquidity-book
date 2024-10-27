@@ -1,25 +1,17 @@
-use std::ops::{Add, Mul};
-
 use crate::multitests::test_helper::*;
-
-use super::test_helper::{
-    increase_allowance_helper, init_addrs, liquidity_parameters_generator, mint_token_helper,
-    setup, ID_ONE,
-};
 use anyhow::Ok;
-use cosmwasm_std::{ContractInfo, StdError, Uint128, Uint256};
 use ethnum::U256;
+use lb_libraries::{constants::SCALE_OFFSET, math::uint256_to_u256::ConvertU256};
+use serial_test::serial;
 use shade_multi_test::interfaces::{lb_factory, lb_pair, lb_token, utils::DeployedContracts};
 use shade_protocol::{
-    lb_libraries::{
-        constants::SCALE_OFFSET, math::uint256_to_u256::ConvertU256, types::LBPairInformation,
-    },
-    liquidity_book::lb_pair::RemoveLiquidity,
+    c_std::{ContractInfo, StdError, Uint128, Uint256},
+    liquidity_book::lb_pair::{LbPairInformation, RemoveLiquidity},
     multi_test::App,
 };
+use std::ops::{Add, Mul};
 
 pub const PRECISION: u128 = 1_000_000_000_000_000_000_u128;
-
 pub const ACTIVE_ID: u32 = ID_ONE - 24647;
 
 pub fn init_setup() -> Result<
@@ -27,13 +19,13 @@ pub fn init_setup() -> Result<
         App,
         ContractInfo,
         DeployedContracts,
-        LBPairInformation,
+        LbPairInformation,
         ContractInfo,
     ),
     anyhow::Error,
 > {
     let addrs = init_addrs();
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?;
 
     let silk = extract_contract_info(&deployed_contracts, SILK)?;
     let shade = extract_contract_info(&deployed_contracts, SHADE)?;
@@ -55,7 +47,7 @@ pub fn init_setup() -> Result<
         lb_factory::query_all_lb_pairs(&mut app, &lb_factory.clone().into(), token_x, token_y)?;
     let lb_pair = all_pairs[0].clone();
 
-    let lb_token = lb_pair::lb_token_query(&app, &lb_pair.lb_pair.contract)?;
+    let lb_token = lb_pair::query_lb_token(&app, &lb_pair.info.contract)?;
 
     lb_token::set_viewing_key(
         &mut app,
@@ -73,6 +65,7 @@ pub fn init_setup() -> Result<
 }
 
 #[test]
+#[serial]
 pub fn test_simple_mint() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, lb_token) = init_setup()?;
@@ -99,7 +92,7 @@ pub fn test_simple_mint() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -118,16 +111,17 @@ pub fn test_simple_mint() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
 
     for i in 0..total_bins {
         let id = get_id(ACTIVE_ID, i, nb_bins_y);
-        let (reserves_x, reserves_y) = lb_pair::query_bin(&app, &lb_pair.lb_pair.contract, id)?;
-        let price = lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, id)?;
+        let (reserves_x, reserves_y, _) =
+            lb_pair::query_bin_reserves(&app, &lb_pair.info.contract, id)?;
+        let price = lb_pair::query_price_from_id(&app, &lb_pair.info.contract, id)?;
 
         let expected_balance_x = U256::from(reserves_x);
         let expected_balance_y = U256::from(reserves_y);
@@ -152,6 +146,7 @@ pub fn test_simple_mint() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_mint_twice() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, lb_token) = init_setup()?;
@@ -181,7 +176,7 @@ pub fn test_mint_twice() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -196,20 +191,21 @@ pub fn test_mint_twice() -> Result<(), anyhow::Error> {
         nb_bins_x,
         nb_bins_y,
     )?;
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
 
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters.clone(),
     )?;
 
     let mut total: Vec<U256> = vec![U256::ZERO; total_bins as usize];
     for i in 0..total_bins {
         let id = get_id(ACTIVE_ID, i, nb_bins_y);
-        let (reserves_x, reserves_y) = lb_pair::query_bin(&app, &lb_pair.lb_pair.contract, id)?;
-        let price = lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, id)?;
+        let (reserves_x, reserves_y, _) =
+            lb_pair::query_bin_reserves(&app, &lb_pair.info.contract, id)?;
+        let price = lb_pair::query_price_from_id(&app, &lb_pair.info.contract, id)?;
 
         let expected_balance_x = U256::from(reserves_x);
         let expected_balance_y = U256::from(reserves_y);
@@ -234,7 +230,7 @@ pub fn test_mint_twice() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
@@ -263,6 +259,7 @@ pub fn test_mint_twice() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, lb_token) = init_setup()?;
@@ -288,7 +285,7 @@ pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -307,11 +304,11 @@ pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
     let mut balances = vec![Uint256::zero(); total_bins as usize];
 
     for i in 0..total_bins {
@@ -341,7 +338,7 @@ pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
@@ -359,7 +356,7 @@ pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
@@ -390,12 +387,13 @@ pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
         }
     }
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
 
     for i in 0..total_bins {
         let id = get_id(ACTIVE_ID, i, nb_bins_y);
-        let (reserves_x, reserves_y) = lb_pair::query_bin(&app, &lb_pair.lb_pair.contract, id)?;
-        let price = lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, id)?;
+        let (reserves_x, reserves_y, _) =
+            lb_pair::query_bin_reserves(&app, &lb_pair.info.contract, id)?;
+        let price = lb_pair::query_price_from_id(&app, &lb_pair.info.contract, id)?;
 
         let expected_balance_x = U256::from(reserves_x);
         let expected_balance_y = U256::from(reserves_y);
@@ -420,6 +418,7 @@ pub fn test_mint_with_different_bins() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_simple_burn() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, lb_token) = init_setup()?;
@@ -445,7 +444,7 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -464,11 +463,11 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
     let mut balances = vec![Uint256::zero(); total_bins as usize];
     let mut ids = vec![0u32; total_bins as usize];
 
@@ -485,12 +484,12 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
         )?;
     }
 
-    let (reserves_x, reserves_y) = lb_pair::query_reserves(&app, &lb_pair.lb_pair.contract)?;
+    let (reserves_x, reserves_y) = lb_pair::query_reserves(&app, &lb_pair.info.contract)?;
 
     lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -503,12 +502,12 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
         },
     )?;
 
-    let (reserves_x, reserves_y) = lb_pair::query_reserves(&app, &lb_pair.lb_pair.contract)?;
+    let (reserves_x, reserves_y) = lb_pair::query_reserves(&app, &lb_pair.info.contract)?;
 
     assert_eq!(reserves_x, 0u128);
     assert_eq!(reserves_y, 0u128);
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
 
     for i in 0..total_bins {
         let id = get_id(ACTIVE_ID, i, nb_bins_y);
@@ -524,12 +523,13 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
         assert_eq!(balance, Uint256::zero());
     }
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
 
     for i in 0..total_bins {
         let id = get_id(ACTIVE_ID, i, nb_bins_y);
-        let (reserves_x, reserves_y) = lb_pair::query_bin(&app, &lb_pair.lb_pair.contract, id)?;
-        let price = lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, id)?;
+        let (reserves_x, reserves_y, _) =
+            lb_pair::query_bin_reserves(&app, &lb_pair.info.contract, id)?;
+        let price = lb_pair::query_price_from_id(&app, &lb_pair.info.contract, id)?;
 
         let expected_balance_x = U256::from(reserves_x);
         let expected_balance_y = U256::from(reserves_y);
@@ -553,6 +553,7 @@ pub fn test_simple_burn() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, lb_token) = init_setup()?;
@@ -578,7 +579,7 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -597,11 +598,11 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
-    let total_bins = get_total_bins(nb_bins_x, nb_bins_y) as u32;
+    let total_bins = get_total_bins(nb_bins_x as u32, nb_bins_y as u32) as u32;
     let mut balances = vec![Uint256::zero(); total_bins as usize];
     let mut half_balances = vec![Uint256::zero(); total_bins as usize];
     let mut ids = vec![0u32; total_bins as usize];
@@ -624,7 +625,7 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
     lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -656,7 +657,7 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
     lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -671,8 +672,9 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
 
     for i in 0..total_bins {
         let id = get_id(ACTIVE_ID, i, nb_bins_y);
-        let (reserves_x, reserves_y) = lb_pair::query_bin(&app, &lb_pair.lb_pair.contract, id)?;
-        let price = lb_pair::query_price_from_id(&app, &lb_pair.lb_pair.contract, id)?;
+        let (reserves_x, reserves_y, _) =
+            lb_pair::query_bin_reserves(&app, &lb_pair.info.contract, id)?;
+        let price = lb_pair::query_price_from_id(&app, &lb_pair.info.contract, id)?;
 
         let expected_balance_x = U256::from(reserves_x);
         let expected_balance_y = U256::from(reserves_y);
@@ -684,7 +686,7 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
         assert_eq!(total[i as usize].u256_to_uint256(), Uint256::zero());
     }
 
-    let (reserves_x, reserves_y) = lb_pair::query_reserves(&app, &lb_pair.lb_pair.contract)?;
+    let (reserves_x, reserves_y) = lb_pair::query_reserves(&app, &lb_pair.info.contract)?;
 
     assert_eq!(reserves_x, 0u128);
     assert_eq!(reserves_y, 0u128);
@@ -693,6 +695,7 @@ pub fn test_burn_half_twice() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_revert_mint_zero_tokens() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, _lb_token) = init_setup()?;
@@ -718,7 +721,7 @@ pub fn test_revert_mint_zero_tokens() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -737,7 +740,7 @@ pub fn test_revert_mint_zero_tokens() -> Result<(), anyhow::Error> {
     let res = lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     );
 
@@ -753,6 +756,7 @@ pub fn test_revert_mint_zero_tokens() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, _lb_token) = init_setup()?;
@@ -778,7 +782,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -796,7 +800,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
@@ -807,7 +811,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
     let res = lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -832,7 +836,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
     let res = lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -856,7 +860,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
     let res = lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -881,7 +885,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
     let res = lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -903,6 +907,7 @@ pub fn test_revert_burn_empty_array() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_revert_burn_more_than_balance() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, lb_token) = init_setup()?;
@@ -928,7 +933,7 @@ pub fn test_revert_burn_more_than_balance() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -946,7 +951,7 @@ pub fn test_revert_burn_more_than_balance() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
@@ -967,7 +972,7 @@ pub fn test_revert_burn_more_than_balance() -> Result<(), anyhow::Error> {
     let res = lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,
@@ -989,6 +994,7 @@ pub fn test_revert_burn_more_than_balance() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_revert_burn_zero() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
     let (mut app, _lb_factory, deployed_contracts, lb_pair, _lb_token) = init_setup()?;
@@ -1014,7 +1020,7 @@ pub fn test_revert_burn_zero() -> Result<(), anyhow::Error> {
         &mut app,
         &deployed_contracts,
         addrs.batman().into_string(),
-        lb_pair.lb_pair.contract.address.to_string(),
+        lb_pair.info.contract.address.to_string(),
         tokens_to_mint,
     )?;
 
@@ -1032,7 +1038,7 @@ pub fn test_revert_burn_zero() -> Result<(), anyhow::Error> {
     lb_pair::add_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         liquidity_parameters,
     )?;
 
@@ -1044,7 +1050,7 @@ pub fn test_revert_burn_zero() -> Result<(), anyhow::Error> {
     let res = lb_pair::remove_liquidity(
         &mut app,
         addrs.batman().as_str(),
-        &lb_pair.lb_pair.contract,
+        &lb_pair.info.contract,
         RemoveLiquidity {
             token_x: token_type_snip20_generator(&token_x)?,
             token_y: token_type_snip20_generator(&token_y)?,

@@ -7,7 +7,8 @@ members = [
   "contracts/lb_pair",
   # "contracts/lb_quoter",
   "contracts/lb_token",
-  "contracts/router",
+  "contracts/lb_router",
+  "contracts/lb_staking",
   "contracts/tests",
 ]
 default-members = [
@@ -17,6 +18,8 @@ default-members = [
   "contracts/lb_factory",
   "contracts/lb_pair",
   "contracts/lb_token",
+  "contracts/lb_router",
+  "contracts/lb_staking",
   "contracts/tests",
 ]
 resolver = "2"
@@ -39,49 +42,55 @@ snip1155 = { path = "packages/snip1155" }
 cosmwasm-schema = { version = "1.4" }
 schemars = { version = "0.8" }
 serde = { version = "1.0" }
+serde_json = { version = "1.0" }
 serde-json-wasm = { version = "1.0" }
 cw-storage-plus = { version = "1.1.0", default-features = false, features = [
-  "iterator",
   "macro",
 ] }
 ethnum = { version = "1.4" }
 thiserror = { version = "1.0" }
 anyhow = "1.0"
 primitive-types = { version = "0.12", default-features = false }
-shadeswap-shared = { git = "https://github.com/securesecrets/shade", branch = "itsHaseebSaeed-LiquidityBook" }
+# shadeswap-shared = { git = "https://github.com/securesecrets/shade", branch = "itsHaseebSaeed-LiquidityBook" }
+rand = "0.8"
+snafu = "0.8"
 
 [workspace.dependencies.cosmwasm-std]
 git = "https://github.com/scrtlabs/cosmwasm"
-tag = "v1.1.10-secret"
+tag = "v1.1.11-secret"
 package = "secret-cosmwasm-std"
-features = ["iterator", "random"]
+features = ["random"]
 
 [workspace.dependencies.cosmwasm-storage]
 git = "https://github.com/scrtlabs/cosmwasm"
-tag = "v1.1.10-secret"
+tag = "v1.1.11-secret"
 package = "secret-cosmwasm-storage"
-features = ["iterator"]
 
 [workspace.dependencies.secret-toolkit]
 git = "https://github.com/scrtlabs/secret-toolkit"
-tag = "v0.9.0"
-default_features = false
+tag = "v0.10.0"
+default-features = false
 features = ["snip20", "storage", "viewing-key", "permit"]
 
 [workspace.dependencies.shade-protocol]
 git = "https://github.com/securesecrets/shade"
-branch = "itsHaseebSaeed-LiquidityBook"
-features = ["interface", "snip20", "utils"]
+branch = "orderbook/library"
+features = ["interface", "liquidity-book", "snip20", "utils"]
+
+[workspace.dependencies.shade-multi-test]
+git = "https://github.com/securesecrets/shade"
+branch = "orderbook/library"
+features = ["snip20", "query_auth"]
 
 [patch.crates-io]
 # These patches are needed to make secret-toolkit compatible with the github versions
 # of secret-cosmwasm-std and secret-cosmwasm-storage, because it depend on the crates.io versions.
-secret-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
-secret-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
+secret-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
+secret-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
 
 # These patches are needed to make cw-storage-plus compatible with secret-cosmwasm-std
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.10-secret" }
+cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
+cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
 
 # TODO - patch the oracle to be compatible with the latest version of better-secret-math
 # [workspace.patch.'https://github.com/securesecrets/shade-oracle.git']

@@ -1,19 +1,31 @@
+use super::lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
-use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
-
-use super::lb_pair;
-use lb_libraries::{
-    tokens::TokenType,
-    types::{ContractInstantiationInfo, LBPair, LBPairInformation},
+use lb_libraries::types::ContractImplementation;
+use shade_protocol::{
+    swap::core::TokenType,
+    utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
-pub use lb_pair::InstantiateMsg as LBPairInstantiateMsg;
+
+#[cw_serde]
+pub struct StaticFeeParameters {
+    pub base_factor: u16,
+    pub filter_period: u16,
+    pub decay_period: u16,
+    pub reduction_factor: u16,
+    pub variable_fee_control: u32,
+    pub protocol_share: u16,
+    pub max_volatility_accumulator: u32,
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    pub admin_auth: RawContract,
+    pub query_auth: RawContract,
     pub owner: Option<Addr>,
     pub fee_recipient: Addr,
-    pub flash_loan_fee: u8,
+    pub recover_staking_funds_receiver: Addr,
+    pub max_bins_per_swap: Option<u32>,
 }
 impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
@@ -21,25 +33,25 @@ impl InstantiateCallback for InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    #[serde(rename = "set_lb_pair_implementation")]
-    SetLBPairImplementation {
-        lb_pair_implementation: ContractInstantiationInfo,
+    SetLbPairImplementation {
+        implementation: ContractImplementation,
     },
-    #[serde(rename = "set_lb_token_implementation")]
-    SetLBTokenImplementation {
-        lb_token_implementation: ContractInstantiationInfo,
+    SetLbTokenImplementation {
+        implementation: ContractImplementation,
     },
-    #[serde(rename = "create_lb_pair")]
-    CreateLBPair {
+    SetStakingContractImplementation {
+        implementation: ContractImplementation,
+    },
+    CreateLbPair {
         token_x: TokenType,
         token_y: TokenType,
         // u24
         active_id: u32,
         bin_step: u16,
         viewing_key: String,
+        entropy: String,
     },
-    // #[serde(rename = "set_lb_pair_ignored")]
-    // SetLBPairIgnored {
+    // SetLbPairIgnored {
     //     token_x: TokenType,
     //     token_y: TokenType,
     //     bin_step: u16,
@@ -56,6 +68,11 @@ pub enum ExecuteMsg {
         protocol_share: u16,
         // u24
         max_volatility_accumulator: u32,
+        total_reward_bins: u32,
+        rewards_distribution_algorithm: RewardsDistributionAlgorithm,
+        epoch_staking_index: u64,
+        epoch_staking_duration: u64,
+        expiry_staking_duration: Option<u64>,
         is_open: bool,
     },
     SetPresetOpenState {
@@ -82,9 +99,7 @@ pub enum ExecuteMsg {
     SetFeeRecipient {
         fee_recipient: Addr,
     },
-    SetFlashLoanFee {
-        flash_loan_fee: u8,
-    },
+
     AddQuoteAsset {
         asset: TokenType,
     },
@@ -92,7 +107,7 @@ pub enum ExecuteMsg {
         asset: TokenType,
     },
     ForceDecay {
-        pair: LBPair,
+        pair: LbPair,
     },
 }
 
@@ -107,31 +122,26 @@ pub enum QueryMsg {
     GetMinBinStep {},
     #[returns(FeeRecipientResponse)]
     GetFeeRecipient {},
-    #[returns(MaxFlashLoanFeeResponse)]
-    GetMaxFlashLoanFee {},
-    #[returns(FlashLoanFeeResponse)]
-    GetFlashLoanFee {},
-    #[returns(LBPairImplementationResponse)]
-    #[serde(rename = "get_lb_pair_implementation")]
-    GetLBPairImplementation {},
-    #[returns(LBTokenImplementationResponse)]
-    #[serde(rename = "get_lb_token_implementation")]
-    GetLBTokenImplementation {},
-    #[returns(NumberOfLBPairsResponse)]
-    #[serde(rename = "get_number_of_lb_pairs")]
-    GetNumberOfLBPairs {},
-    #[returns(LBPairAtIndexResponse)]
-    #[serde(rename = "get_lb_pair_at_index")]
-    GetLBPairAtIndex { index: u32 },
+    // #[returns(MaxFlashLoanFeeResponse)]
+    // GetMaxFlashLoanFee {},
+    // #[returns(FlashLoanFeeResponse)]
+    // GetFlashLoanFee {},
+    #[returns(LbPairImplementationResponse)]
+    GetLbPairImplementation {},
+    #[returns(LbTokenImplementationResponse)]
+    GetLbTokenImplementation {},
+    #[returns(NumberOfLbPairsResponse)]
+    GetNumberOfLbPairs {},
+    #[returns(LbPairAtIndexResponse)]
+    GetLbPairAtIndex { index: u32 },
     #[returns(NumberOfQuoteAssetsResponse)]
     GetNumberOfQuoteAssets {},
     #[returns(QuoteAssetAtIndexResponse)]
     GetQuoteAssetAtIndex { index: u32 },
     #[returns(IsQuoteAssetResponse)]
     IsQuoteAsset { token: TokenType },
-    #[returns(LBPairInformationResponse)]
-    #[serde(rename = "get_lb_pair_information")]
-    GetLBPairInformation {
+    #[returns(LbPairInformationResponse)]
+    GetLbPairInformation {
         token_x: TokenType,
         token_y: TokenType,
         bin_step: u16,
@@ -142,9 +152,8 @@ pub enum QueryMsg {
     GetAllBinSteps {},
     #[returns(OpenBinStepsResponse)]
     GetOpenBinSteps {},
-    #[returns(AllLBPairsResponse)]
-    #[serde(rename = "get_all_lb_pairs")]
-    GetAllLBPairs {
+    #[returns(AllLbPairsResponse)]
+    GetAllLbPairs {
         token_x: TokenType,
         token_y: TokenType,
     },
@@ -166,33 +175,23 @@ pub struct FeeRecipientResponse {
 }
 
 #[cw_serde]
-pub struct MaxFlashLoanFeeResponse {
-    pub max_fee: u8,
+pub struct LbPairImplementationResponse {
+    pub lb_pair_implementation: ContractImplementation,
 }
 
 #[cw_serde]
-pub struct FlashLoanFeeResponse {
-    pub flash_loan_fee: u8,
+pub struct LbTokenImplementationResponse {
+    pub lb_token_implementation: ContractImplementation,
 }
 
 #[cw_serde]
-pub struct LBPairImplementationResponse {
-    pub lb_pair_implementation: ContractInstantiationInfo,
-}
-
-#[cw_serde]
-pub struct LBTokenImplementationResponse {
-    pub lb_token_implementation: ContractInstantiationInfo,
-}
-
-#[cw_serde]
-pub struct NumberOfLBPairsResponse {
+pub struct NumberOfLbPairsResponse {
     pub lb_pair_number: u32,
 }
 
 #[cw_serde]
-pub struct LBPairAtIndexResponse {
-    pub lb_pair: LBPair,
+pub struct LbPairAtIndexResponse {
+    pub lb_pair: LbPair,
 }
 
 #[cw_serde]
@@ -211,8 +210,8 @@ pub struct IsQuoteAssetResponse {
 }
 
 #[cw_serde]
-pub struct LBPairInformationResponse {
-    pub lb_pair_information: LBPairInformation,
+pub struct LbPairInformationResponse {
+    pub lb_pair_information: LbPairInformation,
 }
 
 #[cw_serde]
@@ -240,6 +239,6 @@ pub struct OpenBinStepsResponse {
 }
 
 #[cw_serde]
-pub struct AllLBPairsResponse {
-    pub lb_pairs_available: Vec<LBPairInformation>,
+pub struct AllLbPairsResponse {
+    pub lb_pairs_available: Vec<LbPairInformation>,
 }

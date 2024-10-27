@@ -1,8 +1,7 @@
 use super::*;
-
 use cosmwasm_std::{to_binary, Addr, StdError, StdResult, Storage};
+use lb_libraries::lb_token::permissions::PermissionKey;
 use secret_toolkit::storage::AppendStore;
-use snip1155::permissions::PermissionKey;
 
 pub static PERMISSION_ID_STORE: AppendStore<PermissionKey> = AppendStore::new(PREFIX_PERMISSION_ID);
 
@@ -54,7 +53,7 @@ pub fn update_permission(
     permission: &Permission, // update_action: A,
 ) -> StdResult<()>
 // where
-    // S: Storage,
+    // S: Storage, 
     // A: FnOnce(Option<Permission>) -> StdResult<Permission>
 {
     let update_action = |perm: Option<Permission>| -> StdResult<Permission> {

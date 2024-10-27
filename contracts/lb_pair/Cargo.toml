@@ -24,6 +24,7 @@ cosmwasm-storage = { workspace = true }
 cosmwasm-schema = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }
 secret-toolkit = { workspace = true }
@@ -31,13 +32,9 @@ ethnum = { workspace = true }
 cw-storage-plus = { workspace = true }
 # the only thing we're using here is the snip20 interface...
 shade-protocol = { workspace = true }
-shadeswap-shared = { workspace = true }
+# shadeswap-shared = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
 lb-tests = { path = "../tests" }
-
-[dev-dependencies.shade-multi-test]
-git = "https://github.com/securesecrets/shade"
-features = ["snip20", "query_auth"]
-branch = "itsHaseebSaeed-LiquidityBook"
+shade-multi-test = { workspace = true }

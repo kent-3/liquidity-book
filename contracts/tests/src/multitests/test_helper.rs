@@ -1,20 +1,30 @@
-use cosmwasm_std::{Addr, BlockInfo, ContractInfo, StdResult, Timestamp, Uint128, Uint256};
+use cosmwasm_std::to_binary;
+use lb_libraries::{constants::PRECISION, math::u24::U24};
 use rand::Rng;
-use shade_multi_test::interfaces::{
-    snip20,
-    utils::{DeployedContracts, SupportedContracts},
+use shade_multi_test::{
+    interfaces::{
+        lb_factory, snip20,
+        utils::{DeployedContracts, SupportedContracts},
+    },
+    multi::{
+        admin::init_admin_auth, lb_pair::LbPair, lb_staking::LbStaking, lb_token::LbToken,
+        query_auth::QueryAuth,
+    },
 };
 use shade_protocol::{
+    c_std::{Addr, BlockInfo, ContractInfo, StdResult, Timestamp, Uint128, Uint256},
+    liquidity_book::{
+        lb_pair::{LiquidityParameters, RewardsDistributionAlgorithm},
+        lb_staking::Auth,
+    },
     multi_test::App,
-    utils::{asset::Contract, cycle::parse_utc_datetime, MultiTestable},
+    query_auth,
+    swap::core::TokenType,
+    utils::{
+        asset::Contract, cycle::parse_utc_datetime, ExecuteCallback, InstantiateCallback,
+        MultiTestable,
+    },
 };
-
-use crate::{
-    interfaces::lb_factory,
-    multi::{lb_pair::LbPair, lb_token::LbToken},
-};
-use lb_interfaces::lb_pair::LiquidityParameters;
-use lb_libraries::{constants::PRECISION, math::u24::U24, tokens::TokenType};
 
 pub const ID_ONE: u32 = 1 << 23;
 pub const BASIS_POINT_MAX: u128 = 10_000;
@@ -30,6 +40,8 @@ pub const DEFAULT_PROTOCOL_SHARE: u16 = 1_000;
 pub const DEFAULT_MAX_VOLATILITY_ACCUMULATOR: u32 = 350_000;
 pub const DEFAULT_OPEN_STATE: bool = false;
 pub const DEFAULT_FLASHLOAN_FEE: u128 = 800_000_000_000_000;
+
+pub const DEFAULT_TOTAL_REWARD_BINS: u32 = 10;
 
 pub const SHADE: &str = "SHD";
 pub const SSCRT: &str = "SSCRT";
@@ -62,7 +74,7 @@ impl Addrs {
         self.addrs[4].clone()
     }
 
-    pub fn altaf_bhai(&self) -> Addr {
+    pub fn joker(&self) -> Addr {
         self.addrs[5].clone()
     }
 
@@ -82,7 +94,7 @@ impl Addrs {
         self.hashes[2].clone()
     }
 
-    pub fn _d_hash(&self) -> String {
+    pub fn d_hash(&self) -> String {
         self.hashes[3].clone()
     }
 }
@@ -105,7 +117,11 @@ pub fn init_addrs() -> Addrs {
     Addrs { addrs, hashes }
 }
 
+/// input delta anything between 0 to 10000. 1 == 0.01%
 pub fn assert_approx_eq_rel(a: Uint256, b: Uint256, delta: Uint256, error_message: &str) {
+    //accurate upto 10000
+    let delta = delta.multiply_ratio(Uint256::from(10_u128.pow(14)), Uint256::from(1u128));
+
     let abs_delta = (a).abs_diff(b);
     let percent_delta = abs_delta.multiply_ratio(Uint256::from(10_u128.pow(18)), b);
 
@@ -127,7 +143,26 @@ pub fn assert_approx_eq_abs(a: Uint256, b: Uint256, delta: Uint256, error_messag
     }
 }
 
-pub fn setup(bin_step: Option<u16>) -> Result<(App, Contract, DeployedContracts), anyhow::Error> {
+pub fn generate_auth(addr: String) -> Auth {
+    Auth::ViewingKey {
+        key: "viewing_key".to_string(),
+        address: addr,
+    }
+}
+
+pub fn setup(
+    bin_step: Option<u16>,
+    rewards_distribution_algorithm: Option<RewardsDistributionAlgorithm>,
+) -> Result<
+    (
+        App,
+        ContractInfo,
+        DeployedContracts,
+        ContractInfo,
+        ContractInfo,
+    ),
+    anyhow::Error,
+> {
     // init snip-20's
     let mut app = App::default();
     let addrs = init_addrs();
@@ -231,9 +266,39 @@ pub fn setup(bin_step: Option<u16>) -> Result<(App, Contract, DeployedContracts)
     .unwrap();
 
     //2. init factory
-    let lb_factory = lb_factory::init(&mut app, addrs.admin().as_str(), addrs.altaf_bhai(), 0)?;
+    let admin_contract = init_admin_auth(&mut app, &addrs.admin());
+    let query_contract = query_auth::InstantiateMsg {
+        admin_auth: admin_contract.clone().into(),
+        prng_seed: to_binary("").ok().unwrap(),
+    }
+    .test_init(
+        QueryAuth::default(),
+        &mut app,
+        addrs.admin(),
+        "query_auth",
+        &[],
+    )
+    .unwrap();
+
+    // set staking user VK
+    query_auth::ExecuteMsg::SetViewingKey {
+        key: "viewing_key".to_string(),
+        padding: None,
+    }
+    .test_exec(&query_contract, &mut app, addrs.batman().clone(), &[])
+    .unwrap();
+
+    let lb_factory = lb_factory::init(
+        &mut app,
+        addrs.admin().as_str(),
+        addrs.joker(),
+        admin_contract.clone().into(),
+        query_contract.clone().into(),
+        addrs.admin(),
+    )?;
     let lb_token_stored_code = app.store_code(LbToken::default().contract());
     let lb_pair_stored_code = app.store_code(LbPair::default().contract());
+    let staking_contract = app.store_code(LbStaking::default().contract());
 
     lb_factory::set_lb_pair_implementation(
         &mut app,
@@ -251,6 +316,14 @@ pub fn setup(bin_step: Option<u16>) -> Result<(App, Contract, DeployedContracts)
         lb_token_stored_code.code_hash,
     )?;
 
+    lb_factory::set_staking_contract_implementation(
+        &mut app,
+        addrs.admin().as_str(),
+        &lb_factory.clone().into(),
+        staking_contract.code_id,
+        staking_contract.code_hash,
+    )?;
+
     lb_factory::set_pair_preset(
         &mut app,
         addrs.admin().as_str(),
@@ -264,6 +337,14 @@ pub fn setup(bin_step: Option<u16>) -> Result<(App, Contract, DeployedContracts)
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         DEFAULT_OPEN_STATE,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(
+            rewards_distribution_algorithm
+                .unwrap_or(RewardsDistributionAlgorithm::TimeBasedRewards),
+        ),
+        1,
+        100,
+        None,
     )?;
 
     // add quote asset
@@ -342,7 +423,31 @@ pub fn setup(bin_step: Option<u16>) -> Result<(App, Contract, DeployedContracts)
         },
     )?;
 
-    Ok((app, lb_factory, deployed_contracts))
+    Ok((
+        app,
+        lb_factory,
+        deployed_contracts,
+        admin_contract,
+        query_contract,
+    ))
+}
+
+pub fn roll_blockchain(app: &mut App, blocks: Option<u64>) {
+    app.set_block(BlockInfo {
+        height: app.block_info().height + blocks.unwrap_or(1),
+        time: Timestamp::from_seconds(
+            parse_utc_datetime(&"1995-11-13T00:00:00.00Z".to_string())
+                .unwrap()
+                .timestamp() as u64,
+        ),
+        chain_id: "chain_id".to_string(),
+        random: None,
+    });
+}
+
+pub fn roll_time(app: &mut App, time: Option<u64>) {
+    let timestamp = Timestamp::from_seconds(app.block_info().time.seconds() + time.unwrap_or(1));
+    app.set_time(timestamp);
 }
 
 pub fn extract_contract_info(
@@ -370,7 +475,7 @@ fn safe64_divide(numerator: u128, denominator: u64) -> u64 {
     (numerator / denominator as u128) as u64
 }
 
-pub fn get_id(active_id: u32, i: u32, nb_bin_y: u8) -> u32 {
+pub fn get_id(active_id: u32, i: u32, nb_bin_y: u32) -> u32 {
     let mut id: u32 = active_id + i;
 
     if nb_bin_y > 0 {
@@ -380,7 +485,7 @@ pub fn get_id(active_id: u32, i: u32, nb_bin_y: u8) -> u32 {
     safe24(id)
 }
 
-pub fn get_total_bins(nb_bin_x: u8, nb_bin_y: u8) -> u8 {
+pub fn get_total_bins(nb_bin_x: u32, nb_bin_y: u32) -> u32 {
     if nb_bin_x > 0 && nb_bin_y > 0 {
         return nb_bin_x + nb_bin_y - 1; // Convert to u256
     }
@@ -424,8 +529,36 @@ pub fn liquidity_parameters_generator(
     token_y: ContractInfo,
     amount_x: Uint128,
     amount_y: Uint128,
-    nb_bins_x: u8,
-    nb_bins_y: u8,
+    nb_bins_x: u32,
+    nb_bins_y: u32,
+) -> StdResult<LiquidityParameters> {
+    liquidity_parameters_generator_custom(
+        // Assuming lbPair has methods to get tokenX and tokenY
+        // lbPair: &LBPair,
+        _deployed_contracts,
+        active_id,
+        token_x,
+        token_y,
+        amount_x,
+        amount_y,
+        nb_bins_x,
+        nb_bins_y,
+        DEFAULT_BIN_STEP,
+    )
+}
+
+pub fn liquidity_parameters_generator_custom(
+    // Assuming lbPair has methods to get tokenX and tokenY
+    // lbPair: &LBPair,
+    _deployed_contracts: &DeployedContracts,
+    active_id: u32,
+    token_x: ContractInfo,
+    token_y: ContractInfo,
+    amount_x: Uint128,
+    amount_y: Uint128,
+    nb_bins_x: u32,
+    nb_bins_y: u32,
+    bin_step: u16,
 ) -> StdResult<LiquidityParameters> {
     let total = get_total_bins(nb_bins_x, nb_bins_y);
 
@@ -470,7 +603,7 @@ pub fn liquidity_parameters_generator(
             contract_addr: token_y.address,
             token_code_hash: token_y.code_hash,
         },
-        bin_step: DEFAULT_BIN_STEP,
+        bin_step,
         amount_x,
         amount_y,
         amount_x_min: amount_x.multiply_ratio(90u128, 100u128),
@@ -495,8 +628,8 @@ pub fn liquidity_parameters_generator_with_native(
     token_y: TokenType,
     amount_x: Uint128,
     amount_y: Uint128,
-    nb_bins_x: u8,
-    nb_bins_y: u8,
+    nb_bins_x: u32,
+    nb_bins_y: u32,
 ) -> StdResult<LiquidityParameters> {
     let total = get_total_bins(nb_bins_x, nb_bins_y);
 
@@ -700,9 +833,13 @@ pub fn mint_token_helper(
 
     // Adding minters and minting for SSCRT and SHADE
     for (token, amount) in tokens_to_mint {
-        snip20::add_minters_exec(app, admin, deployed_contracts, token, vec![
-            admin.to_string(),
-        ])?;
+        snip20::add_minters_exec(
+            app,
+            admin,
+            deployed_contracts,
+            token,
+            vec![admin.to_string()],
+        )?;
         snip20::mint_exec(
             app,
             admin,
@@ -720,7 +857,6 @@ pub fn mint_token_helper(
             "viewing_key".to_owned(),
         )?;
     }
-
     Ok(())
 }
 

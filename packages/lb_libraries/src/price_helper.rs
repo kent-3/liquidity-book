@@ -8,6 +8,7 @@ use ethnum::{I256, U256};
 use super::{
     constants::*,
     math::{
+        safe_math::Safe,
         u128x128_math::{U128x128Math, U128x128MathError},
         u256x256_math::{U256x256Math, U256x256MathError},
     },
@@ -28,7 +29,7 @@ pub enum PriceError {
 pub struct PriceHelper;
 
 impl PriceHelper {
-    /// Calculates the price as a 128.128-binary fixed-point number from the id and the bin step.
+    /// Calculates the price as a 128.128-binary fixed-point number
     pub fn get_price_from_id(id: u32, bin_step: u16) -> Result<U256, U128x128MathError> {
         let base = Self::get_base(bin_step);
         let exponent = Self::get_exponent(id);
@@ -36,18 +37,15 @@ impl PriceHelper {
         U128x128Math::pow(base, exponent)
     }
 
-    // TODO: make unique type for fixed-point numbers?
     /// Calculates the id from the price and the bin step.
-    ///
-    /// # Arguments
-    ///
-    /// * `price` - The price as a 128.128-binary fixed-point number
-    /// * `bin_step` - The bin step
     pub fn get_id_from_price(price: U256, bin_step: u16) -> Result<u32, U128x128MathError> {
         let base = Self::get_base(bin_step);
         let real_id = U128x128Math::log2(price)? / U128x128Math::log2(base)?;
 
-        Ok((REAL_ID_SHIFT + real_id).as_u32())
+        u32::safe24(
+            (REAL_ID_SHIFT + real_id).as_u32(),
+            U128x128MathError::IdShiftOverflow,
+        )
     }
 
     /// Calculates the base from the bin step, which is `1 + binStep / BASIS_POINT_MAX`.
@@ -105,15 +103,6 @@ mod tests {
             price,
             U256::from_str_prefixed("42008768657166552252904831246223292524636112144").unwrap()
         );
-
-        // TODO - add some assertions for the fixed point stuff
-        let fixed_point =
-            U256::from_str_prefixed("42008768657166552252904831246223292524636112144").unwrap();
-        let integer_part = fixed_point >> 128;
-        let shifted: U256 = U256::from(1u128) << 128;
-        let fractional_part = fixed_point & shifted.checked_sub(U256::ONE).unwrap();
-        let fractional_part_decimal = fractional_part / U256::from(shifted);
-        let real_value = integer_part;
     }
 
     #[test]
@@ -123,6 +112,12 @@ mod tests {
         let id = PriceHelper::get_id_from_price(price, bin_step).unwrap();
 
         assert!(id > 0);
+
+        let price =
+            U256::from_str_prefixed("42008768657166552252904831246223292524636112144").unwrap();
+        let bin_step = 1u16;
+        let id = PriceHelper::get_id_from_price(price, bin_step).unwrap();
+        assert_eq!(id, 8574931);
     }
 
     #[test]

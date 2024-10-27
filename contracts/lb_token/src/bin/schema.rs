@@ -1,12 +1,17 @@
-use cosmwasm_schema::write_api;
-
-// TODO - derive QueryResponse trait for QueryMsg and QueryWithPermit
-use lb_interfaces::lb_token::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryWithPermit};
+use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
+use lb_interfaces::lb_token::{ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg};
+use std::{env, fs::create_dir_all, path::PathBuf};
 
 fn main() {
-    write_api! {
-        instantiate: InstantiateMsg,
-        execute: ExecuteMsg,
-        // query: QueryMsg,
-    }
+    // Get the directory of the current crate
+    let mut out_dir = env::var("CARGO_MANIFEST_DIR").map(PathBuf::from).unwrap();
+    out_dir.push("schema");
+
+    create_dir_all(&out_dir).unwrap();
+    remove_schemas(&out_dir).unwrap();
+
+    export_schema(&schema_for!(InstantiateMsg), &out_dir);
+    export_schema(&schema_for!(ExecuteMsg), &out_dir);
+    export_schema(&schema_for!(QueryMsg), &out_dir);
+    export_schema(&schema_for!(QueryAnswer), &out_dir);
 }

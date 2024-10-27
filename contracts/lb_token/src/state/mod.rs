@@ -3,21 +3,11 @@ mod save_load_functions;
 pub mod txhistory;
 
 use cosmwasm_std::{to_binary, Addr, BlockInfo, StdError, StdResult, Storage, Uint256};
-
 use cosmwasm_storage::{
-    bucket,
-    bucket_read,
-    singleton,
-    singleton_read,
-    Bucket,
-    PrefixedStorage,
-    ReadonlyBucket,
-    ReadonlyPrefixedStorage,
-    ReadonlySingleton,
-    Singleton,
+    bucket, bucket_read, singleton, singleton_read, Bucket, PrefixedStorage, ReadonlyBucket,
+    ReadonlyPrefixedStorage, ReadonlySingleton, Singleton,
 };
-
-use snip1155::{
+use lb_libraries::lb_token::{
     permissions::Permission,
     state_structs::{ContractConfig, StoredTokenInfo},
 };
@@ -94,13 +84,13 @@ pub fn tkn_tot_supply_r(storage: &dyn Storage) -> ReadonlyBucket<Uint256> {
 /////////////////////////////////////////////////////////////////////////////////
 
 /// Multilevel bucket to store balances for each token_id & addr combination. Key is to
-/// be [`token_id`, `owner`: to_binary(&Addr)?.as_slice()]
+/// be [`token_id`, `owner`: to_binary(&Addr)?.as_slice()]  
 /// When using `balances_w` make sure to also check if need to change `current owner` of an nft and `total_supply`
 pub fn balances_w<'a>(storage: &'a mut dyn Storage, token_id: &str) -> Bucket<'a, Uint256> {
     Bucket::multilevel(storage, &[BALANCES, token_id.as_bytes()])
 }
 /// Multilevel bucket to store balances for each token_id & addr combination. Key is to
-/// be [`token_id`, `owner`: to_binary(&Addr)?.as_slice()]
+/// be [`token_id`, `owner`: to_binary(&Addr)?.as_slice()]  
 pub fn balances_r<'a>(storage: &'a dyn Storage, token_id: &str) -> ReadonlyBucket<'a, Uint256> {
     ReadonlyBucket::multilevel(storage, &[BALANCES, token_id.as_bytes()])
 }
@@ -114,11 +104,14 @@ fn permission_w<'a>(
     token_id: &'a str,
 ) -> Bucket<'a, Permission> {
     let owner_bin = to_binary(owner).unwrap();
-    Bucket::multilevel(storage, &[
-        PREFIX_PERMISSIONS,
-        owner_bin.as_slice(),
-        token_id.as_bytes(),
-    ])
+    Bucket::multilevel(
+        storage,
+        &[
+            PREFIX_PERMISSIONS,
+            owner_bin.as_slice(),
+            token_id.as_bytes(),
+        ],
+    )
 }
 /// private functions.
 /// To read permission. key is to be [`owner`, `token_id`, `allowed_addr`]
@@ -129,11 +122,14 @@ fn permission_r<'a>(
     token_id: &'a str,
 ) -> ReadonlyBucket<'a, Permission> {
     let owner_bin = to_binary(owner).unwrap();
-    ReadonlyBucket::multilevel(storage, &[
-        PREFIX_PERMISSIONS,
-        owner_bin.as_slice(),
-        token_id.as_bytes(),
-    ])
+    ReadonlyBucket::multilevel(
+        storage,
+        &[
+            PREFIX_PERMISSIONS,
+            owner_bin.as_slice(),
+            token_id.as_bytes(),
+        ],
+    )
 }
 #[cfg(test)]
 pub fn perm_r<'a>(
@@ -142,11 +138,14 @@ pub fn perm_r<'a>(
     token_id: &'a str,
 ) -> ReadonlyBucket<'a, Permission> {
     let owner_bin = to_binary(owner).unwrap();
-    ReadonlyBucket::multilevel(storage, &[
-        PREFIX_PERMISSIONS,
-        owner_bin.as_slice(),
-        token_id.as_bytes(),
-    ])
+    ReadonlyBucket::multilevel(
+        storage,
+        &[
+            PREFIX_PERMISSIONS,
+            owner_bin.as_slice(),
+            token_id.as_bytes(),
+        ],
+    )
 }
 
 /////////////////////////////////////////////////////////////////////////////////

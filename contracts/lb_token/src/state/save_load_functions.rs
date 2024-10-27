@@ -1,10 +1,7 @@
-use std::any::type_name;
-
-use serde::{de::DeserializeOwned, Serialize};
-
 use cosmwasm_std::{StdError, StdResult, Storage};
-
 use secret_toolkit::serialization::{Json, Serde};
+use serde::{de::DeserializeOwned, Serialize};
+use std::any::type_name;
 
 // /////////////////////////////////////////////////////////////////////////////////
 // // Save and load functions
@@ -24,7 +21,7 @@ pub fn json_save<T: Serialize>(storage: &mut dyn Storage, key: &[u8], value: &T)
 }
 
 /// Returns StdResult<T> from retrieving the item with the specified key using Json
-/// (de)serialization because bincode2 annoyingly uses a float op when deserializing an enum.
+/// (de)serialization because bincode2 annoyingly uses a float op when deserializing an enum.  
 /// Returns a StdError::NotFound if there is no item with that key
 ///
 /// # Arguments

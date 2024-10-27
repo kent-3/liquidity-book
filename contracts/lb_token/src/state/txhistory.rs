@@ -1,11 +1,8 @@
 use super::*;
-
 use cosmwasm_std::{Addr, Api, BlockInfo, CanonicalAddr, StdResult, Storage, Uint256};
-
 use cosmwasm_storage::{PrefixedStorage, ReadonlyPrefixedStorage};
-
+use lb_libraries::lb_token::txhistory::{StoredTx, StoredTxAction, Tx};
 use secret_toolkit::storage::AppendStore;
-use snip1155::txhistory::{StoredTx, StoredTxAction, Tx};
 
 use crate::state::save_load_functions::{json_load, json_save};
 
@@ -208,7 +205,7 @@ fn append_tx_for_addr(
 /////////////////////////////////////////////////////////////////////////////////
 
 /// stores ownership history for a given token_id. Meant to be used for nfts.
-/// In base specification, only the latest (ie: current) owner is relevant. But
+/// In base specification, only the latest (ie: current) owner is relevant. But  
 /// this design pattern is used to allow viewing a token_id's ownership history,
 /// which is allowed in the additional specifications
 pub fn append_new_owner(

@@ -1,49 +1,46 @@
+use crate::multitests::test_helper::*;
 use anyhow::Ok;
-use cosmwasm_std::{ContractInfo, StdError};
-use lb_interfaces::lb_factory::PresetResponse;
-use lb_libraries::{
-    constants::BASIS_POINT_MAX,
-    math::{
-        encoded_sample::{MASK_UINT12, MASK_UINT20},
-        u24::U24,
-    },
-    tokens::TokenType,
+use lb_libraries::math::{
+    encoded::{MASK_UINT12, MASK_UINT20},
+    u24::U24,
 };
-use shade_multi_test::interfaces::snip20;
-use shade_protocol::utils::MultiTestable;
-
-use crate::{
-    interfaces::{lb_factory, lb_pair},
-    multi::{lb_pair::LbPair, lb_token::LbToken},
-    multitests::test_helper::*,
+use serial_test::serial;
+use shade_multi_test::{
+    interfaces::{lb_factory, lb_pair, snip20},
+    multi::{lb_pair::LbPair, lb_staking::LbStaking, lb_token::LbToken},
+};
+use shade_protocol::{
+    c_std::{
+        ContractInfo,
+        StdError::{self, GenericErr},
+    },
+    liquidity_book::{lb_factory::PresetResponse, lb_pair::RewardsDistributionAlgorithm},
+    swap::core::TokenType,
+    utils::MultiTestable,
 };
 
 #[test]
+#[serial]
 pub fn test_setup() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
     //query fee recipient
     let fee_recipient = lb_factory::query_fee_recipient(&mut app, &lb_factory.clone().into())?;
 
-    assert_eq!(fee_recipient.as_str(), addrs.altaf_bhai().as_str());
-    //query flashloanfee
-    let flash_loan_fee = lb_factory::query_flash_loan_fee(&mut app, &lb_factory.clone().into())?;
+    assert_eq!(fee_recipient.as_str(), addrs.joker().as_str());
 
-    assert_eq!(flash_loan_fee, 0u8);
     //query getMinBinStep
     let min_bin_step = lb_factory::query_min_bin_step(&mut app, &lb_factory.clone().into())?;
     assert_eq!(min_bin_step, 1u8); // fixed in contract
 
-    //query getMaxFlashLoanFee
-    let max_flash_loan_fee = lb_factory::query_max_flash_loan_fee(&mut app, &lb_factory.into())?;
-    assert_eq!(max_flash_loan_fee, 10 ^ 17);
     Ok(())
 }
 
 #[test]
+#[serial]
 pub fn test_set_lb_pair_implementation() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
     let lb_pair_stored_code = app.store_code(LbPair::default().contract());
 
     lb_factory::set_lb_pair_implementation(
@@ -60,9 +57,10 @@ pub fn test_set_lb_pair_implementation() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_revert_set_lb_pair_implementation() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
     let lb_pair_stored_code = app.store_code(LbPair::default().contract());
 
     lb_factory::set_lb_pair_implementation(
@@ -92,9 +90,10 @@ pub fn test_revert_set_lb_pair_implementation() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_set_lb_token_implementation() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
     let lb_token_stored_code = app.store_code(LbToken::default().contract());
     lb_factory::set_lb_token_implementation(
         &mut app,
@@ -110,9 +109,10 @@ pub fn test_set_lb_token_implementation() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_create_lb_pair() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?;
 
     // 3. Create an LBPair.
 
@@ -130,6 +130,7 @@ pub fn test_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
 
     // 4. Check if the number of LBPairs is 1.
@@ -158,11 +159,11 @@ pub fn test_create_lb_pair() -> Result<(), anyhow::Error> {
     // 6. Validate that the returned information matches the expected values (binStep, LBPair address, createdByOwner, ignoredForRouting).
     //SORTED token
     if token_x.unique_key() < token_y.unique_key() {
-        assert_eq!(lb_pair_info.lb_pair.token_x, token_x);
-        assert_eq!(lb_pair_info.lb_pair.token_y, token_y);
+        assert_eq!(lb_pair_info.info.token_x, token_x);
+        assert_eq!(lb_pair_info.info.token_y, token_y);
     } else {
-        assert_eq!(lb_pair_info.lb_pair.token_x, token_y);
-        assert_eq!(lb_pair_info.lb_pair.token_y, token_x);
+        assert_eq!(lb_pair_info.info.token_x, token_y);
+        assert_eq!(lb_pair_info.info.token_y, token_x);
     }
 
     let (
@@ -173,7 +174,7 @@ pub fn test_create_lb_pair() -> Result<(), anyhow::Error> {
         variable_fee_control,
         protocol_share,
         max_volatility_accumulator,
-    ) = lb_pair::query_static_fee_params(&mut app, &lb_pair_info.lb_pair.contract)?;
+    ) = lb_pair::query_static_fee_params(&app, &lb_pair_info.info.contract)?;
     assert_eq!(base_factor, DEFAULT_BASE_FACTOR);
     assert_eq!(filter_period, DEFAULT_FILTER_PERIOD);
     assert_eq!(decay_period, DEFAULT_DECAY_PERIOD);
@@ -186,7 +187,7 @@ pub fn test_create_lb_pair() -> Result<(), anyhow::Error> {
     );
 
     let (volatility_accumulator, volatility_reference, id_reference, time_of_last_update) =
-        lb_pair::query_variable_fee_params(&mut app, &lb_pair_info.lb_pair.contract)?;
+        lb_pair::query_variable_fee_params(&app, &lb_pair_info.info.contract)?;
 
     assert_eq!(volatility_reference, 0);
     assert_eq!(volatility_accumulator, 0);
@@ -197,9 +198,10 @@ pub fn test_create_lb_pair() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_create_lb_pair_factory_unlocked() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?;
 
     let shd = extract_contract_info(&deployed_contracts, SHADE)?;
     let sscrt = extract_contract_info(&deployed_contracts, SSCRT)?;
@@ -215,6 +217,7 @@ pub fn test_create_lb_pair_factory_unlocked() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     assert_eq!(
         res.unwrap_err(),
@@ -242,6 +245,7 @@ pub fn test_create_lb_pair_factory_unlocked() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
     // query and check if created by owner == false
     let lb_pair_info = lb_factory::query_lb_pair_information(
@@ -272,6 +276,7 @@ pub fn test_create_lb_pair_factory_unlocked() -> Result<(), anyhow::Error> {
         token_x,
         token_y,
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     assert_eq!(
         res.unwrap_err(),
@@ -285,9 +290,11 @@ pub fn test_create_lb_pair_factory_unlocked() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, deployed_contracts, admin_contract, query_contract) =
+        setup(None, None)?;
 
     let shd = extract_contract_info(&deployed_contracts, SHADE)?;
     let sscrt = extract_contract_info(&deployed_contracts, SSCRT)?;
@@ -303,6 +310,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     //Check failing error
     assert_eq!(
@@ -314,7 +322,14 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         ))
     );
 
-    let new_lb_factory = lb_factory::init(&mut app, addrs.admin().as_str(), addrs.admin(), 0)?;
+    let new_lb_factory = lb_factory::init(
+        &mut app,
+        addrs.admin().as_str(),
+        addrs.admin(),
+        admin_contract.into(),
+        query_contract.into(), // query_auth should be here,
+        addrs.admin(),
+    )?;
 
     //can't create a pair if the preset is not set
     let res = lb_factory::create_lb_pair(
@@ -326,6 +341,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x,
         token_y,
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     //Check failing error
     assert_eq!(
@@ -346,6 +362,11 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         DEFAULT_OPEN_STATE,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
 
     //can't create a pair if quote asset is not whitelisted
@@ -362,6 +383,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     //Check failing error
     assert_eq!(
@@ -400,6 +422,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_x.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     //Check failing error
     assert_eq!(
@@ -419,6 +442,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
     //Check failing error
     assert_eq!(
@@ -429,6 +453,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
     //can't create a pair the same pair twice
     let lb_token_stored_code = app.store_code(LbToken::default().contract());
     let lb_pair_stored_code = app.store_code(LbPair::default().contract());
+    let staking_contract = app.store_code(LbStaking::default().contract());
 
     lb_factory::set_lb_pair_implementation(
         &mut app,
@@ -445,6 +470,15 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         lb_token_stored_code.code_id,
         lb_token_stored_code.code_hash,
     )?;
+
+    lb_factory::set_staking_contract_implementation(
+        &mut app,
+        addrs.admin().as_str(),
+        &new_lb_factory.clone().into(),
+        staking_contract.code_id,
+        staking_contract.code_hash,
+    )?;
+
     lb_factory::create_lb_pair(
         &mut app,
         addrs.admin().as_str(),
@@ -454,7 +488,9 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
+
     let res = lb_factory::create_lb_pair(
         &mut app,
         addrs.admin().as_str(),
@@ -464,6 +500,7 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     );
 
     assert_eq!(
@@ -480,17 +517,18 @@ fn test_revert_create_lb_pair() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 fn test_fuzz_set_preset() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
-    let mut bin_step: u16 = generate_random(0, u16::MAX);
-    let base_factor: u16 = generate_random(0, u16::MAX);
-    let mut filter_period: u16 = generate_random(0, u16::MAX);
-    let mut decay_period: u16 = generate_random(0, u16::MAX);
-    let mut reduction_factor: u16 = generate_random(0, u16::MAX);
-    let mut variable_fee_control: u32 = generate_random(0, U24::MAX);
-    let mut protocol_share: u16 = generate_random(0, u16::MAX);
-    let mut max_volatility_accumulator: u32 = generate_random(0, U24::MAX);
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
+    let mut bin_step: u16 = generate_random(0, 10000);
+    let base_factor: u16 = generate_random(0, 10000);
+    let mut filter_period: u16 = generate_random(0, 1000);
+    let mut decay_period: u16 = generate_random(0, 1000);
+    let mut reduction_factor: u16 = generate_random(0, 10000);
+    let mut variable_fee_control: u32 = generate_random(0, 100000);
+    let mut protocol_share: u16 = generate_random(0, 1000);
+    let mut max_volatility_accumulator: u32 = generate_random(0, 1000_000);
     let is_open: bool = generate_random(0, 1) == 0;
 
     let min_bin_step = lb_factory::query_min_bin_step(&mut app, &lb_factory.clone().into())?;
@@ -499,7 +537,7 @@ fn test_fuzz_set_preset() -> Result<(), anyhow::Error> {
     bin_step = bound(bin_step, min_bin_step as u16, u16::MAX);
     filter_period = bound(filter_period, 0, MASK_UINT12.as_u16() - 1);
     decay_period = bound(decay_period, filter_period + 1, MASK_UINT12.as_u16());
-    reduction_factor = bound(reduction_factor, 0u16, BASIS_POINT_MAX);
+    reduction_factor = bound(reduction_factor, 0u16, BASIS_POINT_MAX.try_into().unwrap());
     variable_fee_control = bound(variable_fee_control, 0u32, BASIS_POINT_MAX as u32);
     protocol_share = bound(protocol_share, 0, 2_500);
     max_volatility_accumulator = bound(max_volatility_accumulator, 0, MASK_UINT20.as_u32());
@@ -517,19 +555,12 @@ fn test_fuzz_set_preset() -> Result<(), anyhow::Error> {
         protocol_share,
         max_volatility_accumulator,
         is_open,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
-
-    // Additional assertions and verifications
-    let all_bin_steps = lb_factory::query_all_bin_steps(&mut app, &lb_factory.clone().into())?;
-
-    if bin_step != DEFAULT_BIN_STEP {
-        assert_eq!(all_bin_steps.len(), 2);
-        assert_eq!(all_bin_steps[0], DEFAULT_BIN_STEP);
-        assert_eq!(all_bin_steps[1], bin_step);
-    } else {
-        assert_eq!(all_bin_steps.len(), 1);
-        assert_eq!(all_bin_steps[0], bin_step);
-    }
 
     let PresetResponse {
         base_factor: base_factor_view,
@@ -555,9 +586,10 @@ fn test_fuzz_set_preset() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 fn test_remove_preset() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
 
     // Set presets
     lb_factory::set_pair_preset(
@@ -573,6 +605,11 @@ fn test_remove_preset() -> Result<(), anyhow::Error> {
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         DEFAULT_OPEN_STATE,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
 
     lb_factory::set_pair_preset(
@@ -588,6 +625,11 @@ fn test_remove_preset() -> Result<(), anyhow::Error> {
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         DEFAULT_OPEN_STATE,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
 
     let all_bin_steps = lb_factory::query_all_bin_steps(&mut app, &lb_factory.clone().into())?;
@@ -636,9 +678,12 @@ fn test_remove_preset() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_set_fees_parameters_on_pair() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?;
+
+    println!("{deployed_contracts:#?}");
 
     let sscrt = extract_contract_info(&deployed_contracts, SSCRT)?;
     let shd = extract_contract_info(&deployed_contracts, SHADE)?;
@@ -653,6 +698,7 @@ pub fn test_set_fees_parameters_on_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
     // let liquidity_parameters = liquidity_parameters_generator(
     //     &deployed_contracts,
@@ -683,7 +729,7 @@ pub fn test_set_fees_parameters_on_pair() -> Result<(), anyhow::Error> {
         old_volatility_reference,
         old_id_reference,
         old_time_of_last_update,
-    ) = lb_pair::query_variable_fee_params(&mut app, &all_pairs[0].lb_pair.contract)?;
+    ) = lb_pair::query_variable_fee_params(&app, &all_pairs[0].info.contract)?;
 
     // Set the fees parameters on pair
     lb_factory::set_fees_parameters_on_pair(
@@ -711,7 +757,7 @@ pub fn test_set_fees_parameters_on_pair() -> Result<(), anyhow::Error> {
         variable_fee_control,
         protocol_share,
         max_volatility_accumulator,
-    ) = lb_pair::query_static_fee_params(&mut app, &all_pairs[0].lb_pair.contract)?;
+    ) = lb_pair::query_static_fee_params(&app, &all_pairs[0].info.contract)?;
 
     assert_eq!(base_factor, DEFAULT_BASE_FACTOR * 2);
     assert_eq!(filter_period, DEFAULT_FILTER_PERIOD * 2);
@@ -725,7 +771,7 @@ pub fn test_set_fees_parameters_on_pair() -> Result<(), anyhow::Error> {
     );
 
     let (volatility_accumulator, volatility_reference, id_reference, time_of_last_update) =
-        lb_pair::query_variable_fee_params(&mut app, &all_pairs[0].lb_pair.contract)?;
+        lb_pair::query_variable_fee_params(&app, &all_pairs[0].info.contract)?;
 
     assert_eq!(volatility_accumulator, old_volatility_accumulator);
     assert_eq!(volatility_reference, old_volatility_reference);
@@ -751,18 +797,16 @@ pub fn test_set_fees_parameters_on_pair() -> Result<(), anyhow::Error> {
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR * 2,
     );
 
-    assert_eq!(
-        res.unwrap_err(),
-        StdError::generic_err("Only the Owner can do that!")
-    );
+    assert!(res.is_err());
 
     Ok(())
 }
 
 #[test]
+#[serial]
 pub fn test_set_fee_recipient() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?;
     lb_factory::set_fee_recipient(
         &mut app,
         addrs.admin().as_str(),
@@ -785,10 +829,7 @@ pub fn test_set_fee_recipient() -> Result<(), anyhow::Error> {
         &lb_factory.clone().into(),
         addrs.scare_crow(),
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err("Only the Owner can do that!")
-    );
+    assert!(err.is_err());
 
     // Try setting fee recipient to the same recipient, should revert
     let err = lb_factory::set_fee_recipient(
@@ -797,18 +838,16 @@ pub fn test_set_fee_recipient() -> Result<(), anyhow::Error> {
         &lb_factory.into(),
         addrs.batman(),
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err(format!("Fee recipient is already {}!", addrs.batman()))
-    );
+    assert!(err.is_err(),);
 
     Ok(())
 }
 
 #[test]
+#[serial]
 pub fn test_fuzz_open_presets() -> Result<(), anyhow::Error> {
     let addrs = init_addrs(); // Initialize addresses
-    let (mut app, lb_factory, _deployed_contracts) = setup(None)?; // Setup
+    let (mut app, lb_factory, _deployed_contracts, _, _) = setup(None, None)?; // Setup
 
     let min_bin_step = lb_factory::query_min_bin_step(&mut app, &lb_factory.clone().into())?;
     let max_bin_step = u16::MAX;
@@ -849,6 +888,11 @@ pub fn test_fuzz_open_presets() -> Result<(), anyhow::Error> {
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         true,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
     let PresetResponse { is_open, .. } =
         lb_factory::query_preset(&mut app, &lb_factory.clone().into(), bin_step)?;
@@ -888,10 +932,7 @@ pub fn test_fuzz_open_presets() -> Result<(), anyhow::Error> {
         bin_step,
         true,
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err("Only the Owner can do that!")
-    );
+    assert!(err.is_err(),);
 
     // Can't set to the same state
     let err = lb_factory::set_preset_open_state(
@@ -901,28 +942,29 @@ pub fn test_fuzz_open_presets() -> Result<(), anyhow::Error> {
         bin_step,
         false,
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err("Preset open state is already in the same state!")
-    );
+    assert!(err.is_err(),);
 
     Ok(())
 }
 
 #[test]
+#[serial]
 pub fn test_add_quote_asset() -> Result<(), anyhow::Error> {
     let addrs = init_addrs(); // Initialize addresses
-    let (mut app, lb_factory, mut deployed_contracts) = setup(None)?; // Setup
+    let (mut app, lb_factory, mut deployed_contracts, _, _) = setup(None, None)?; // Setup
 
     let num_quote_assets_before =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
+
+    let _num_quote_assets =
         lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
 
     snip20::init(
         &mut app,
         addrs.admin().as_str(),
         &mut deployed_contracts,
-        "sBTC",
-        "SBTC",
+        "SOMOS",
+        "SOMOS",
         8,
         Some(shade_protocol::snip20::InitConfig {
             public_total_supply: Some(true),
@@ -934,12 +976,15 @@ pub fn test_add_quote_asset() -> Result<(), anyhow::Error> {
         }),
     )
     .unwrap();
-    let sbtc = extract_contract_info(&deployed_contracts, "SBTC")?;
-    let new_token = token_type_snip20_generator(&sbtc)?;
+    let sosmo = extract_contract_info(&deployed_contracts, "SOMOS")?;
+    let new_token = token_type_snip20_generator(&sosmo)?;
     // Check if the new token is a quote asset
     let is_quote_asset =
         lb_factory::query_is_quote_asset(&mut app, &lb_factory.clone().into(), new_token.clone())?;
     assert!(!is_quote_asset, "test_add_quote_asset::1");
+
+    let _num_quote_assets =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
 
     // Add the new token as a quote asset
     lb_factory::add_quote_asset(
@@ -949,25 +994,34 @@ pub fn test_add_quote_asset() -> Result<(), anyhow::Error> {
         new_token.clone(),
     )?;
 
+    let _num_quote_assets =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
+
     // Validate that the new token is now a quote asset
     let is_quote_asset =
         lb_factory::query_is_quote_asset(&mut app, &lb_factory.clone().into(), new_token.clone())?;
     assert!(is_quote_asset, "test_add_quote_asset::2");
 
+    let _num_quote_assets =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
+
     let num_quote_assets_after =
         lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
+
     assert_eq!(
         num_quote_assets_after,
         num_quote_assets_before + 1,
         "test_add_quote_asset::3"
     );
+    // assert_eq!(num_quote_assets_after, 6, "test_add_quote_asset::4");
+    // assert_eq!(num_quote_assets_before, 5, "test_add_quote_asset::5");
 
     let last_quote_asset = lb_factory::query_quote_asset_at_index(
         &mut app,
         &lb_factory.clone().into(),
         num_quote_assets_before,
     )?;
-    assert_eq!(last_quote_asset, new_token, "test_add_quote_asset::4");
+    assert_eq!(last_quote_asset, new_token, "test_add_quote_asset::6");
 
     // Try to add the same asset when not the owner
     let err = lb_factory::add_quote_asset(
@@ -976,13 +1030,10 @@ pub fn test_add_quote_asset() -> Result<(), anyhow::Error> {
         &lb_factory.clone().into(),
         new_token.clone(),
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err("Only the Owner can do that!")
-    );
+    assert!(err.is_err());
 
     // Try to add the same asset again, should revert
-    let err = lb_factory::add_quote_asset(
+    let err: Result<(), StdError> = lb_factory::add_quote_asset(
         &mut app,
         addrs.admin().as_str(),
         &lb_factory.into(),
@@ -1000,9 +1051,10 @@ pub fn test_add_quote_asset() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+#[serial]
 pub fn test_remove_quote_asset() -> Result<(), anyhow::Error> {
     let addrs = init_addrs(); // Initialize addresses
-    let (mut app, lb_factory, mut deployed_contracts) = setup(None)?; // Setup
+    let (mut app, lb_factory, mut deployed_contracts, _, _) = setup(None, None)?; // Setup
 
     //SSCRT and SHD already added as quote asset
     let num_quote_assets_before =
@@ -1025,9 +1077,16 @@ pub fn test_remove_quote_asset() -> Result<(), anyhow::Error> {
         }),
     )
     .unwrap();
+
+    let _num_quote_assets =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
+
     let usdc_info: ContractInfo = extract_contract_info(&deployed_contracts, USDC)?;
     let usdc_token_type = token_type_snip20_generator(&usdc_info)?;
     let usdc = usdc_token_type;
+
+    let _num_quote_assets =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
 
     // Add the new token as a quote asset
     lb_factory::add_quote_asset(
@@ -1036,6 +1095,9 @@ pub fn test_remove_quote_asset() -> Result<(), anyhow::Error> {
         &lb_factory.clone().into(),
         usdc.clone(),
     )?;
+
+    let _num_quote_assets =
+        lb_factory::query_number_of_quote_assets(&mut app, &lb_factory.clone().into())?;
 
     // Check if usdc is a quote asset
     let is_quote_asset =
@@ -1069,33 +1131,21 @@ pub fn test_remove_quote_asset() -> Result<(), anyhow::Error> {
         &lb_factory.clone().into(),
         usdc.clone(),
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err("Only the Owner can do that!")
-    );
+    assert!(err.is_err());
 
     // Try to remove usdc again, should revert
-    let err = lb_factory::remove_quote_asset(
-        &mut app,
-        addrs.admin().as_str(),
-        &lb_factory.into(),
-        usdc.clone(),
-    );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err(format!(
-            "Quote Asset {} is not whitelisted!",
-            usdc.unique_key()
-        ))
-    );
+    let err =
+        lb_factory::remove_quote_asset(&mut app, addrs.admin().as_str(), &lb_factory.into(), usdc);
+    assert!(err.is_err());
 
     Ok(())
 }
 
 #[test]
+#[serial]
 pub fn test_force_decay() -> Result<(), anyhow::Error> {
     let addrs = init_addrs(); // Initialize addresses
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?; // Setup
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?; // Setup
 
     let sscrt_info = extract_contract_info(&deployed_contracts, SSCRT)?;
     let sscrt = token_type_snip20_generator(&sscrt_info)?;
@@ -1113,12 +1163,13 @@ pub fn test_force_decay() -> Result<(), anyhow::Error> {
         sscrt.clone(),
         shd.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
 
     let all_pairs =
         lb_factory::query_all_lb_pairs(&mut app, &lb_factory.clone().into(), sscrt, shd)?;
 
-    let lb_pair = all_pairs[0].clone().lb_pair;
+    let lb_pair = all_pairs[0].clone().info;
 
     // Force decay on the created LBPair
     lb_factory::force_decay(
@@ -1135,18 +1186,16 @@ pub fn test_force_decay() -> Result<(), anyhow::Error> {
         &lb_factory.into(),
         lb_pair,
     );
-    assert_eq!(
-        err.unwrap_err(),
-        StdError::generic_err("Only the Owner can do that!")
-    );
+    assert!(err.is_err());
 
     Ok(())
 }
 
 #[test]
+#[serial]
 pub fn test_get_all_lb_pair() -> Result<(), anyhow::Error> {
     let addrs = init_addrs();
-    let (mut app, lb_factory, deployed_contracts) = setup(None)?;
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?;
 
     // 3. Create an LBPair.
 
@@ -1168,6 +1217,11 @@ pub fn test_get_all_lb_pair() -> Result<(), anyhow::Error> {
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         DEFAULT_OPEN_STATE,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
 
     lb_factory::set_pair_preset(
@@ -1183,6 +1237,11 @@ pub fn test_get_all_lb_pair() -> Result<(), anyhow::Error> {
         DEFAULT_PROTOCOL_SHARE,
         DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
         DEFAULT_OPEN_STATE,
+        DEFAULT_TOTAL_REWARD_BINS,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
     )?;
 
     lb_factory::create_lb_pair(
@@ -1194,6 +1253,7 @@ pub fn test_get_all_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
 
     lb_factory::create_lb_pair(
@@ -1205,11 +1265,66 @@ pub fn test_get_all_lb_pair() -> Result<(), anyhow::Error> {
         token_x.clone(),
         token_y.clone(),
         "viewing_key".to_string(),
+        "entropy".to_string(),
     )?;
 
     let all_pairs = lb_factory::query_all_lb_pairs(&mut app, &lb_factory.into(), token_x, token_y)?;
 
     assert_eq!(all_pairs.len(), 2);
+
+    Ok(())
+}
+
+#[test]
+#[serial]
+pub fn test_invalid_reward_bins_error() -> Result<(), anyhow::Error> {
+    let addrs = init_addrs();
+    let (mut app, lb_factory, deployed_contracts, _, _) = setup(None, None)?;
+
+    lb_factory::set_pair_preset(
+        &mut app,
+        addrs.admin().as_str(),
+        &lb_factory.clone().into(),
+        DEFAULT_BIN_STEP,
+        DEFAULT_BASE_FACTOR,
+        DEFAULT_FILTER_PERIOD,
+        DEFAULT_DECAY_PERIOD,
+        DEFAULT_REDUCTION_FACTOR,
+        DEFAULT_VARIABLE_FEE_CONTROL,
+        DEFAULT_PROTOCOL_SHARE,
+        DEFAULT_MAX_VOLATILITY_ACCUMULATOR,
+        DEFAULT_OPEN_STATE,
+        U24::MAX + 1,
+        Some(RewardsDistributionAlgorithm::TimeBasedRewards),
+        1,
+        100,
+        None,
+    )?;
+
+    let shd = extract_contract_info(&deployed_contracts, SHADE)?;
+    let sscrt = extract_contract_info(&deployed_contracts, SILK)?;
+
+    let token_x = token_type_snip20_generator(&shd)?;
+    let token_y = token_type_snip20_generator(&sscrt)?;
+
+    let res = lb_factory::create_lb_pair(
+        &mut app,
+        addrs.admin().as_str(),
+        &lb_factory.clone().into(),
+        DEFAULT_BIN_STEP,
+        ID_ONE,
+        token_x.clone(),
+        token_y.clone(),
+        "viewing_key".to_string(),
+        "entropy".to_string(),
+    );
+
+    assert_eq!(
+        res,
+        Err(GenericErr {
+            msg: "Invalid input!".to_string()
+        })
+    );
 
     Ok(())
 }

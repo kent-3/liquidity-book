@@ -14,9 +14,10 @@ use super::bit_math::BitMath;
 pub enum U128x128MathError {
     #[error("U128x128 Math Error: LogUnderflow")]
     LogUnderflow,
-    // TODO: format this error better
     #[error("U128x128 Math Error: PowUnderflow {0} {1}")]
     PowUnderflow(U256, I256),
+    #[error("U128x128 Math Error: ID Shift overflow")]
+    IdShiftOverflow,
 }
 
 // This is 127
@@ -189,12 +190,9 @@ mod tests {
 
     #[test]
     fn test_pow_and_log() {
-        println!("{}", LOG_SCALE);
-        println!("{}", LOG_SCALE_SQUARED);
         let x = (U256::from((1.0001 * PRECISION as f64) as u128) << 128) / PRECISION;
         let y = 100_000;
         let res = U128x128Math::pow(x, y.into()).unwrap();
-        // let expected = U256::from(7491471493045233295460405875225305845649644);
         let tolerance = 10 ^ 12;
 
         let expected = U256::from_str("7491471493045233295460405875225305845649644").unwrap();
@@ -219,6 +217,58 @@ mod tests {
             res > expected.as_i256() - tolerance.as_i256()
                 && res < expected.as_i256() + tolerance.as_i256(),
             "test_pow_and_log::1 failed"
+        );
+    }
+    #[test]
+    fn test_log2_x_equals_1() {
+        let x = U256::ONE;
+        let result = U128x128Math::log2(x).unwrap();
+        assert_eq!(result, I256::from(-128));
+    }
+
+    #[test]
+    fn test_log2_x_equals_0() {
+        let x = U256::ZERO;
+        let result = U128x128Math::log2(x);
+
+        assert!(matches!(result, Err(U128x128MathError::LogUnderflow)));
+    }
+
+    #[test]
+    fn test_pow_y_equals_0() {
+        let x = U256::from(123456789u128);
+        let y = I256::ZERO;
+        let result = U128x128Math::pow(x, y).unwrap();
+        assert_eq!(result, SCALE);
+    }
+
+    #[test]
+    fn test_pow_y_negative() {
+        let x = U256::from(123456789u128);
+        let y = I256::from(-1);
+        let _result = U128x128Math::pow(x, y).unwrap();
+        assert_eq!(
+            _result.to_string(),
+            "937915931357296158282320018939484225960793332034907890237268231623237"
+        );
+    }
+
+    #[test]
+    fn test_pow_y_positive() {
+        let x = U256::from(123456789u128);
+        let y = I256::from(1);
+        let _result = U128x128Math::pow(x, y).unwrap();
+        assert_eq!(_result.to_string(), "123456789");
+    }
+
+    #[test]
+    fn test_pow_invert_result() {
+        let x = U256::from(0xffffffffffffffffffffffffffffffffu128);
+        let y = I256::from(-1);
+        let _result = U128x128Math::pow(x, y).unwrap();
+        assert_eq!(
+            _result.to_string(),
+            "340282366920938463463374607431768211457"
         );
     }
 }

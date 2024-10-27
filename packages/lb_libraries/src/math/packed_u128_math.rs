@@ -7,6 +7,8 @@
 //! u128 is a 128-bit unsigned integer type, which means that its little-endian byte representation is 16 bytes long.
 //! A `Bytes32` value is a `[u8; 32]` and can hold 256 bits, or two `u128` values.
 
+use ethnum::U256;
+
 use crate::types::Bytes32;
 use cosmwasm_std::StdError;
 
@@ -341,7 +343,6 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
             return Ok(Self::min());
         }
 
-        // TODO - Consider removing this. I think the check happens elsewhere.
         if multiplier > BASIS_POINT_MAX {
             return Err(StdError::GenericErr {
                 msg: format!(
@@ -353,9 +354,10 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
 
         let (x1, x2) = self.decode();
 
-        // TODO - Is there a chance this overflows during the calculation?
-        let z1 = x1 * multiplier / BASIS_POINT_MAX;
-        let z2 = x2 * multiplier / BASIS_POINT_MAX;
+        let intermediate_z1 = U256::from(x1) * U256::from(multiplier) / U256::from(BASIS_POINT_MAX);
+        let intermediate_z2 = U256::from(x2) * U256::from(multiplier) / U256::from(BASIS_POINT_MAX);
+        let z1 = intermediate_z1.as_u128();
+        let z2 = intermediate_z2.as_u128();
 
         Ok(Self::encode(z1, z2))
     }
@@ -589,8 +591,10 @@ mod tests {
         assert_eq!(result.decode(), (15, 25));
 
         // Underflow Test Case
-        let bytes1 = Bytes32::encode(0, 0);
-        let bytes2 = Bytes32::encode(10, 20);
+        let _bytes1 = Bytes32::encode(0, 0);
+        let _bytes2 = Bytes32::encode(10, 20);
+
+        // TODO - add a separate test for this?
         // This should panic
         // let result = Bytes32::sub(&bytes1, bytes2);
 
@@ -620,7 +624,7 @@ mod tests {
         // Underflow Test Case
         let bytes1 = Bytes32::encode(0, 0);
         // This should panic
-        let result = Bytes32::sub_alt(&bytes1, 10, 20);
+        let _result = Bytes32::sub_alt(&bytes1, 10, 20);
     }
 
     #[test]
