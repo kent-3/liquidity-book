@@ -1,4 +1,4 @@
-# lb-pair
+# lb_pair
 
 ## Instantiate Message
 
@@ -46,12 +46,7 @@ secretcli tx compute instantiate 1 '{
     "address": "secret1...foobar",
     "code_hash": "0123456789ABCDEF"
   },
-  "query_auth": {
-    "address": "secret1...foobar",
-    "code_hash": "0123456789ABCDEF"
-  },
   "total_reward_bins": 10,
-  "max_bins_per_swap": 500,
   "rewards_distribution_algorithm": "time_based_rewards",
   "epoch_staking_index": 1,
   "epoch_staking_duration": 100,
@@ -206,6 +201,16 @@ secretcli tx compute execute secret1foobar '{
 }'
 ```
 
+### increase_oracle_length
+
+```sh
+secretcli tx compute execute secret1foobar '{
+  "increase_oracle_length": {
+    "new_length": 100
+  }
+}'
+```
+
 ### set_static_fee_parameters
 
 ```sh
@@ -234,7 +239,7 @@ secretcli tx compute execute secret1foobar '{
 
 ```sh
 secretcli tx compute execute secret1foobar '{
-  "calculate_rewards_distribution": {}
+  "calculate_rewards": {}
 }'
 ```
 
@@ -859,6 +864,7 @@ secretcli query compute query secret1foobar '{
 {
   "sample_lifetime": 120,
   "size": 10,
+  "active_size": 5,
   "last_updated": 1703403384,
   "first_timestamp": 1703403383
 }
@@ -869,7 +875,7 @@ secretcli query compute query secret1foobar '{
 ```sh
 secretcli query compute query secret1foobar '{
   "get_oracle_sample_at": {
-    "oracle_id": 12345
+    "look_up_timestamp": 1234567890
   }
 }'
 ```
@@ -878,17 +884,9 @@ secretcli query compute query secret1foobar '{
 
 ```json
 {
-  "oracle_id": 50,
-  "cumulative_txns": 10,
   "cumulative_id": 100,
   "cumulative_volatility": 200,
-  "cumulative_bin_crossed": 50,
-  "cumulative_volume_x": 2000,
-  "cumulative_volume_y": 1000,
-  "cumulative_fee_x": 20,
-  "cumulative_fee_y": 50,
-  "lifetime": 20,
-  "created_at": 652230
+  "cumulative_bin_crossed": 50
 }
 ```
 
