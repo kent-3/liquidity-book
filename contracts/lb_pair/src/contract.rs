@@ -26,9 +26,8 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response> {
     // Constants
-    const EMPTY_ADDR: &str = "";
-    const EMPTY_STRING: &str = "";
     const LB_TOKEN_DECIMALS: u8 = 18;
+    // TODO: isn't this supposed to start at 0?
     const START_ORACLE_ID: u16 = 1;
     const START_REWARDS_EPOCH: u64 = 1;
     let tree: TreeUint24 = TreeUint24::new();
@@ -131,12 +130,12 @@ pub fn instantiate(
 
         // ContractInfo for lb_token and lb_staking are intentionally kept empty and will be filled in later
         lb_token: ContractInfo {
-            address: Addr::unchecked(EMPTY_ADDR.to_string()),
-            code_hash: EMPTY_STRING.to_string(),
+            address: Addr::unchecked(""),
+            code_hash: "".to_string(),
         },
         lb_staking: ContractInfo {
-            address: Addr::unchecked(EMPTY_ADDR.to_string()),
-            code_hash: EMPTY_STRING.to_string(),
+            address: Addr::unchecked(""),
+            code_hash: "".to_string(),
         },
 
         viewing_key,
@@ -181,7 +180,6 @@ pub fn instantiate(
     )?;
 
     response = response.add_messages(messages);
-
     response = response.set_data(env.contract.address.as_bytes());
 
     Ok(response)
@@ -201,7 +199,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             | ExecuteMsg::Receive(..) => {
                 return Err(Error::TransactionBlock());
             }
-
             _ => {}
         },
         ContractStatus::LpWithdrawOnly => match msg {
@@ -243,7 +240,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 
             try_swap(deps, env, info, swap_for_y, checked_to, offer.amount)
         }
-        //TODO: Flash loan
         ExecuteMsg::FlashLoan {} => todo!(),
         ExecuteMsg::AddLiquidity {
             liquidity_parameters,
@@ -292,8 +288,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
                 &info.sender,
                 &state.admin_auth,
             )?;
-
             CONTRACT_STATUS.save(deps.storage, &contract_status)?;
+
             Ok(Response::default().add_attribute("new_status", contract_status.to_string()))
         }
     }
@@ -324,7 +320,7 @@ pub fn receiver_callback(
                 return Err(Error::TransactionBlock());
             }
 
-            //validate recipient address
+            // validate recipient address
             let checked_to = if let Some(to) = to {
                 deps.api.addr_validate(to.as_str())?
             } else {
@@ -347,85 +343,82 @@ pub fn receiver_callback(
 
 /////////////// QUERY ///////////////
 
-macro_rules! binary {
-    ($result:expr) => {
-        $result.and_then(|res| to_binary(&res).map_err(Into::into))
-    };
-}
-
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::GetPairInfo {} => binary!(query_pair_info(deps)),
-        QueryMsg::GetFactory {} => binary!(query_factory(deps)),
-        QueryMsg::GetTokenX {} => binary!(query_token_x(deps)),
-        QueryMsg::GetTokenY {} => binary!(query_token_y(deps)),
-        QueryMsg::GetBinStep {} => binary!(query_bin_step(deps)),
-        QueryMsg::GetReserves {} => binary!(query_reserves(deps)),
-        QueryMsg::GetActiveId {} => binary!(query_active_id(deps)),
-        QueryMsg::GetBinReserves { id } => binary!(query_bin_reserves(deps, id)),
-        QueryMsg::GetBinsReserves { ids } => binary!(query_bins_reserves(deps, ids)),
+        QueryMsg::GetPairInfo {} => to_binary(&query_pair_info(deps)?),
+        QueryMsg::GetFactory {} => to_binary(&query_factory(deps)?),
+        QueryMsg::GetTokenX {} => to_binary(&query_token_x(deps)?),
+        QueryMsg::GetTokenY {} => to_binary(&query_token_y(deps)?),
+        QueryMsg::GetBinStep {} => to_binary(&query_bin_step(deps)?),
+        QueryMsg::GetReserves {} => to_binary(&query_reserves(deps)?),
+        QueryMsg::GetActiveId {} => to_binary(&query_active_id(deps)?),
+        QueryMsg::GetBinReserves { id } => to_binary(&query_bin_reserves(deps, id)?),
+        QueryMsg::GetBinsReserves { ids } => to_binary(&query_bins_reserves(deps, ids)?),
         QueryMsg::GetAllBinsReserves {
             id,
             page,
             page_size,
-        } => binary!(query_all_bins_reserves(deps, env, page, page_size, id)),
+        } => to_binary(&query_all_bins_reserves(deps, env, page, page_size, id)?),
         QueryMsg::GetUpdatedBinAtHeight { height } => {
-            binary!(query_updated_bins_at_height(deps, height))
+            to_binary(&query_updated_bins_at_height(deps, height)?)
         }
         QueryMsg::GetUpdatedBinAtMultipleHeights { heights } => {
-            binary!(query_updated_bins_at_multiple_heights(deps, heights))
+            to_binary(&query_updated_bins_at_multiple_heights(deps, heights)?)
         }
         QueryMsg::GetUpdatedBinAfterHeight {
             height,
             page,
             page_size,
-        } => binary!(query_updated_bins_after_height(
-            deps, env, height, page, page_size
-        )),
+        } => to_binary(&query_updated_bins_after_height(
+            deps, env, height, page, page_size,
+        )?),
 
         QueryMsg::GetBinUpdatingHeights { page, page_size } => {
-            binary!(query_bins_updating_heights(deps, page, page_size))
+            to_binary(&query_bins_updating_heights(deps, page, page_size)?)
         }
 
         QueryMsg::GetNextNonEmptyBin { swap_for_y, id } => {
-            binary!(query_next_non_empty_bin(deps, swap_for_y, id))
+            to_binary(&query_next_non_empty_bin(deps, swap_for_y, id)?)
         }
-        QueryMsg::GetProtocolFees {} => binary!(query_protocol_fees(deps)),
-        QueryMsg::GetStaticFeeParameters {} => binary!(query_static_fee_params(deps)),
-        QueryMsg::GetVariableFeeParameters {} => binary!(query_variable_fee_params(deps)),
-        QueryMsg::GetOracleParameters {} => binary!(query_oracle_params(deps)),
+        QueryMsg::GetProtocolFees {} => to_binary(&query_protocol_fees(deps)?),
+        QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_params(deps)?),
+        QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_params(deps)?),
+        QueryMsg::GetOracleParameters {} => to_binary(&query_oracle_params(deps)?),
         QueryMsg::GetOracleSampleAt { oracle_id } => {
-            binary!(query_oracle_sample(deps, env, oracle_id))
+            to_binary(&query_oracle_sample(deps, env, oracle_id)?)
         }
         QueryMsg::GetOracleSamplesAt { oracle_ids } => {
-            binary!(query_oracle_samples(deps, env, oracle_ids))
+            to_binary(&query_oracle_samples(deps, env, oracle_ids)?)
         }
         QueryMsg::GetOracleSamplesAfter {
             oracle_id,
             page_size,
-        } => binary!(query_oracle_samples_after(deps, env, oracle_id, page_size)),
-        QueryMsg::GetPriceFromId { id } => binary!(query_price_from_id(deps, id)),
-        QueryMsg::GetIdFromPrice { price } => binary!(query_id_from_price(deps, price)),
+        } => to_binary(&query_oracle_samples_after(
+            deps, env, oracle_id, page_size,
+        )?),
+        QueryMsg::GetPriceFromId { id } => to_binary(&query_price_from_id(deps, id)?),
+        QueryMsg::GetIdFromPrice { price } => to_binary(&query_id_from_price(deps, price)?),
         QueryMsg::GetSwapIn {
             amount_out,
             swap_for_y,
-        } => binary!(query_swap_in(deps, env, amount_out.u128(), swap_for_y)),
+        } => to_binary(&query_swap_in(deps, env, amount_out.u128(), swap_for_y)?),
         QueryMsg::GetSwapOut {
             amount_in,
             swap_for_y,
-        } => binary!(query_swap_out(deps, env, amount_in.u128(), swap_for_y)),
-        QueryMsg::TotalSupply { id } => binary!(query_total_supply(deps, id)),
-        QueryMsg::GetLbToken {} => binary!(query_lb_token(deps)),
-        QueryMsg::GetStakingContract {} => binary!(query_staking(deps)),
-        QueryMsg::GetTokens {} => binary!(query_tokens(deps)),
+        } => to_binary(&query_swap_out(deps, env, amount_in.u128(), swap_for_y)?),
+        QueryMsg::TotalSupply { id } => to_binary(&query_total_supply(deps, id)?),
+        QueryMsg::GetLbToken {} => to_binary(&query_lb_token(deps)?),
+        QueryMsg::GetStakingContract {} => to_binary(&query_staking(deps)?),
+        QueryMsg::GetTokens {} => to_binary(&query_tokens(deps)?),
         QueryMsg::SwapSimulation { offer, exclude_fee } => {
-            binary!(query_swap_simulation(deps, env, offer, exclude_fee))
+            to_binary(&query_swap_simulation(deps, env, offer, exclude_fee)?)
         }
         QueryMsg::GetRewardsDistribution { epoch_id } => {
-            binary!(query_rewards_distribution(deps, epoch_id))
+            to_binary(&query_rewards_distribution(deps, epoch_id)?)
         }
     }
+    .map_err(Error::from)
 }
 
 #[entry_point]
