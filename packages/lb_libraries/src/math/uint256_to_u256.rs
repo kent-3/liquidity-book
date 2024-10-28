@@ -33,9 +33,11 @@ impl ConvertUint256 for Uint256 {
     }
 
     fn uint256_to_u256(&self) -> U256 {
-        let (upper, lower) = self.split_uint256();
+        // let (upper, lower) = self.split_uint256();
+        //
+        // U256::from_words(upper.u128(), lower.u128())
 
-        U256::from_words(upper.u128(), lower.u128())
+        U256::from_be_bytes(self.to_be_bytes())
     }
 }
 
@@ -52,11 +54,13 @@ impl ConvertU256 for U256 {
     }
 
     fn u256_to_uint256(&self) -> Uint256 {
-        let (upper, lower) = self.split_u256();
-        let upper_uint256 = Uint256::from(upper) << 128;
-        let lower_uint256 = Uint256::from(lower);
+        // let (upper, lower) = self.split_u256();
+        // let upper_uint256 = Uint256::from(upper) << 128;
+        // let lower_uint256 = Uint256::from(lower);
+        //
+        // upper_uint256 + lower_uint256
 
-        upper_uint256 + lower_uint256
+        Uint256::from_be_bytes(self.to_be_bytes())
     }
 }
 

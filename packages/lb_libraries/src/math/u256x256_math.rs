@@ -4,7 +4,7 @@
 //! Helper library used for full precision calculations.
 
 use ethnum::U256;
-use primitive_types::{U128, U512};
+use primitive_types::U512;
 use std::ops::BitXor;
 
 pub trait U256ToU512Conversion {
@@ -28,14 +28,15 @@ impl U512ToU256Conversion for U512 {
         } else if self > &U512::from_little_endian(&U256::MAX.to_le_bytes()) {
             U256::MAX
         } else {
-            let lo: u128 = U128([self.0[0], self.0[1]]).as_u128();
-            let hi: u128 = U128([self.0[2], self.0[3]]).as_u128();
-            U256::from_words(hi, lo)
+            let mut bytes = [0; 32];
+            self.to_little_endian(&mut bytes);
+            U256::from_le_bytes(bytes)
         }
     }
 }
 
-/// Computes (x * y) % k where the addition is performed with arbitrary precision and does not wrap around at 2^256.
+/// Computes (x * y) % k where the multiplication is performed with arbitrary
+/// precision and does not wrap around at 2^256.
 fn mulmod(x: U256, y: U256, k: U256) -> U256 {
     if k == U256::ZERO {
         return U256::ZERO;
@@ -49,6 +50,7 @@ fn mulmod(x: U256, y: U256, k: U256) -> U256 {
     let y: &U512 = &y.to_u512();
     let k: &U512 = &k.to_u512();
     let z: U512 = (x * y) % k;
+
     z.to_u256()
 }
 
