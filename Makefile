@@ -6,13 +6,9 @@ check:
 clippy:
 	cargo clippy
 
-.PHONY: test
-test:
-	npx ts-node tests/integration.ts
-
 .PHONY: unit-test
 unit-test:
-	cargo unit-test
+	cargo test --lib
 
 # This is a local build with debug-prints activated. Debug prints only show up
 # in the local development chain (see the `start-server` command below)
@@ -38,6 +34,7 @@ build-mainnet-reproducible:
 		# FIXME: This must be a mistake...
 		ghcr.io/scrtlabs/localsecret:v1.8.0
 
+# FIXME: This is not right...
 .PHONY: compress-wasm
 compress-wasm:
 	cp ./target/wasm32-unknown-unknown/release/lb_*.wasm ./tests/wasm
@@ -45,6 +42,7 @@ compress-wasm:
 	@# wasm-opt -Os ./contract.wasm -o ./contract.wasm
 	@# cat ./contract.wasm | gzip -9 > ./contract.wasm.gz
 
+# FIXME: This is not right...
 .PHONY: schema
 schema:
 	cargo run schema
@@ -63,8 +61,3 @@ start-server: # CTRL+C to stop
 .PHONY: store-contract-local
 store-contract-local:
 	docker exec localsecret secretcli tx compute store -y --from a --gas 6000000 /root/code/contract.wasm.gz
-
-.PHONY: clean
-clean:
-	cargo clean
-	-rm -f ./contract.wasm ./contract.wasm.gz
