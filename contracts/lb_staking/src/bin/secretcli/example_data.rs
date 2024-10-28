@@ -1,17 +1,17 @@
 #![allow(unused)]
 
-use lb_libraries::types::{ContractImplementation, StaticFeeParameters};
+use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
+use lb_interfaces::{
+    lb_factory::{ContractImplementation, StaticFeeParameters},
+    lb_pair::{
+        LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity, RewardsDistribution,
+        TokenPair,
+    },
+    lb_staking::Auth,
+    lb_token::Snip1155ReceiveMsg,
+};
 use serde_json::from_str;
 use shade_protocol::{
-    c_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64},
-    liquidity_book::{
-        lb_pair::{
-            LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity, RewardsDistribution,
-            TokenPair,
-        },
-        lb_staking::Auth,
-        lb_token::Snip1155ReceiveMsg,
-    },
     s_toolkit::permit::{Permit, TokenPermissions},
     snip20::Snip20ReceiveMsg,
     swap::core::{TokenAmount, TokenType},
@@ -260,8 +260,9 @@ impl ExampleData for RewardsDistribution {
 impl ExampleData for TokenPair {
     fn example() -> Self {
         TokenPair {
-            token_0: TokenType::example(),
-            token_1: TokenType::example(),
+            0: TokenType::example(),
+            1: TokenType::example(),
+            2: false,
         }
     }
 }

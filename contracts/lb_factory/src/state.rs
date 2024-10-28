@@ -1,11 +1,14 @@
-use crate::types::{LbPair, LbPairInformation, NextPairKey};
-use lb_interfaces::lb_pair::RewardsDistributionAlgorithm;
-use lb_libraries::{pair_parameter_helper::PairParameters, types::ContractImplementation};
+use crate::types::NextPairKey;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Addr, ContractInfo, Storage};
+use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
+use lb_interfaces::{
+    lb_factory::ContractImplementation,
+    lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm},
+};
+use lb_libraries::pair_parameter_helper::PairParameters;
 use shade_protocol::{
-    c_std::{Addr, ContractInfo, Storage},
-    cosmwasm_schema::cw_serde,
     secret_storage_plus::{AppendStore, Item, Map},
-    storage::{singleton, singleton_read, ReadonlySingleton, Singleton},
     swap::core::TokenType,
     Contract,
 };

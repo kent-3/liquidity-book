@@ -1,15 +1,15 @@
 mod example_data;
 
 use example_data::*;
+use lb_interfaces::{
+    lb_pair::RewardsDistribution,
+    lb_staking::{
+        Auth, ExecuteMsg, InstantiateMsg, InvokeMsg, QueryAnswer, QueryMsg, QueryTxnType,
+    },
+    lb_token::Snip1155ReceiveMsg,
+};
 use shade_protocol::{
     c_std::{Addr, ContractInfo, Uint256},
-    liquidity_book::{
-        lb_pair::RewardsDistribution,
-        lb_staking::{
-            Auth, ExecuteMsg, InstantiateMsg, InvokeMsg, QueryAnswer, QueryMsg, QueryTxnType,
-        },
-        lb_token::Snip1155ReceiveMsg,
-    },
     snip20::Snip20ReceiveMsg,
     utils::asset::RawContract,
     Contract,

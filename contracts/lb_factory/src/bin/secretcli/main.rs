@@ -6,7 +6,6 @@ use lb_interfaces::{
     lb_factory::*,
     lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm},
 };
-use lb_libraries::types::ContractImplementation;
 use shade_protocol::{swap::core::TokenType, utils::asset::RawContract};
 use std::{
     env,

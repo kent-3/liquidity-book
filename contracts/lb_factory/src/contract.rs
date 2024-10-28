@@ -1,8 +1,4 @@
-use crate::{
-    prelude::*,
-    state::*,
-    types::{LbPair, LbPairInformation, NextPairKey},
-};
+use crate::{prelude::*, state::*, types::NextPairKey};
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, WasmMsg,
@@ -10,15 +6,13 @@ use cosmwasm_std::{
 use lb_interfaces::{
     lb_factory::*,
     lb_pair::{
-        ExecuteMsg as LbPairExecuteMsg, InstantiateMsg as LbPairInstantiateMsg,
-        RewardsDistributionAlgorithm,
+        ExecuteMsg as LbPairExecuteMsg, InstantiateMsg as LbPairInstantiateMsg, LbPair,
+        LbPairInformation, RewardsDistributionAlgorithm,
     },
 };
 use lb_libraries::{
-    math::encoded::Encoded,
-    pair_parameter_helper::PairParameters,
-    price_helper::PriceHelper,
-    types::{Bytes32, ContractImplementation, StaticFeeParameters},
+    math::encoded::Encoded, pair_parameter_helper::PairParameters, price_helper::PriceHelper,
+    types::Bytes32,
 };
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},

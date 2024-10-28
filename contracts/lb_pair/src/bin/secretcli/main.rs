@@ -4,12 +4,11 @@ use ethnum::U256;
 use example_data::*;
 //TODO: List the imports explicitly.
 use cosmwasm_std::{Addr, ContractInfo, Decimal256, Uint128, Uint256};
-use lb_interfaces::lb_pair::*;
-use lb_libraries::{
-    math::uint256_to_u256::ConvertU256,
-    pair_parameter_helper::PairParameters,
-    types::{ContractImplementation, StaticFeeParameters},
+use lb_interfaces::{
+    lb_factory::{ContractImplementation, StaticFeeParameters},
+    lb_pair::*,
 };
+use lb_libraries::{math::uint256_to_u256::ConvertU256, pair_parameter_helper::PairParameters};
 // TODO: any chance we can do away with these dependencies?
 use shade_protocol::{
     swap::{

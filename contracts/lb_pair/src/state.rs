@@ -1,9 +1,10 @@
-use lb_interfaces::lb_pair::{ContractStatus, RewardsDistribution, RewardsDistributionAlgorithm};
+use lb_interfaces::{
+    lb_factory::ContractImplementation,
+    lb_pair::{ContractStatus, RewardsDistribution, RewardsDistributionAlgorithm},
+};
 use lb_libraries::{
-    math::tree_math::TreeUint24,
-    oracle_helper::Oracle,
-    pair_parameter_helper::PairParameters,
-    types::{Bytes32, ContractImplementation},
+    math::tree_math::TreeUint24, oracle_helper::Oracle, pair_parameter_helper::PairParameters,
+    types::Bytes32,
 };
 // TODO: sort out viewing key strategy
 use shade_protocol::swap::core::ViewingKey;

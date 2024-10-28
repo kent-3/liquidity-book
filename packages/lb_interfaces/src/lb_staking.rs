@@ -1,4 +1,5 @@
 use super::{
+    lb_factory::ContractImplementation,
     lb_pair::RewardsDistribution,
     lb_token::{space_pad, Snip1155ReceiveMsg},
 };
@@ -6,7 +7,6 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_binary, Addr, Binary, Coin, ContractInfo, CosmosMsg, StdResult, Uint128, Uint256, WasmMsg,
 };
-use lb_libraries::types::ContractImplementation;
 use shade_protocol::{
     query_auth::QueryPermit,
     snip20::Snip20ReceiveMsg,

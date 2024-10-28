@@ -1,6 +1,7 @@
+use super::lb_factory::{ContractImplementation, StaticFeeParameters};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, ContractInfo, Decimal256, Uint128, Uint256, Uint64};
-use lb_libraries::types::{Bytes32, ContractImplementation, StaticFeeParameters};
+use lb_libraries::types::Bytes32;
 use shade_protocol::{
     swap::{
         amm_pair::SwapResult,

@@ -1,8 +1,10 @@
 #![allow(unused)]
 
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
-use lb_interfaces::lb_pair::{LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity};
-use lb_libraries::types::{ContractImplementation, StaticFeeParameters};
+use lb_interfaces::{
+    lb_factory::{ContractImplementation, StaticFeeParameters},
+    lb_pair::{LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity},
+};
 use shade_protocol::{
     snip20::Snip20ReceiveMsg,
     swap::core::{TokenAmount, TokenType},

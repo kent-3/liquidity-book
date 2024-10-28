@@ -1,11 +1,17 @@
 use super::lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
-use lb_libraries::types::ContractImplementation;
 use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
+
+#[cw_serde]
+#[derive(Default)]
+pub struct ContractImplementation {
+    pub id: u64,
+    pub code_hash: String,
+}
 
 #[cw_serde]
 pub struct StaticFeeParameters {
