@@ -1,5 +1,6 @@
 //! ### Custom Errors for LB_Pair contract.
 
+use cosmwasm_std::{StdError, Uint128, Uint256};
 use lb_libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
@@ -10,10 +11,9 @@ use lb_libraries::{
     oracle_helper::OracleError,
     pair_parameter_helper::PairParametersError,
 };
-use shade_protocol::c_std::{StdError, Uint128, Uint256};
 
 #[derive(thiserror::Error, Debug)]
-pub enum LBPairError {
+pub enum LbPairError {
     // Generic Errors
     #[error("Generic {0}")]
     Generic(String),

@@ -23,6 +23,8 @@ pub const OFFSET_CUMULATIVE_BIN_CROSSED: u8 = 144;
 pub const OFFSET_SAMPLE_LIFETIME: u8 = 208;
 pub const OFFSET_SAMPLE_CREATION: u8 = 216;
 
+// TODO: We need to really think about this. This triples the size of the oracle sample...
+
 #[cw_serde]
 #[derive(Copy, Default)]
 pub struct OracleSample {
@@ -84,7 +86,7 @@ impl OracleSample {
     ///     * [0 - 16[: oracle length (16 bits)
     ///     * [16 - 256[: any (240 bits)
     pub fn get_cumulative_txns(&self) -> u16 {
-        self.data.decode_uint16(0)
+        self.data.decode_uint16(OFFSET_CUMULATIVE_TXNS)
     }
 
     /// Gets the cumulative id from an encoded sample.
@@ -157,42 +159,20 @@ impl OracleSample {
         self.get_sample_creation() + self.get_sample_lifetime() as u64
     }
 
-    /// Gets the sample creation timestamp from an encoded sample.
-    ///
-    /// # Arguments
-    ///
-    /// * `sample` - The encoded sample as follows:
-    ///     * [0 - 128[: any (128 bits)
+    // TODO: These should have more explicit OFFSET values.
+
     pub fn get_vol_token_x(&self) -> u128 {
         self.volume.decode_uint128(0)
     }
 
-    /// Gets the sample creation timestamp from an encoded sample.
-    ///
-    /// # Arguments
-    ///
-    /// * `sample` - The encoded sample as follows:
-    ///     * [128 - 256[: any (128 bits)
     pub fn get_vol_token_y(&self) -> u128 {
         self.volume.decode_uint128(128)
     }
 
-    /// Gets the sample creation timestamp from an encoded sample.
-    ///
-    /// # Arguments
-    ///
-    /// * `sample` - The encoded sample as follows:
-    ///     * [0 - 128[: any (128 bits)
     pub fn get_fee_token_x(&self) -> u128 {
         self.fee.decode_uint128(0)
     }
 
-    /// Gets the sample creation timestamp from an encoded sample.
-    ///
-    /// # Arguments
-    ///
-    /// * `sample` - The encoded sample as follows:
-    ///     * [128 - 256[: any (128 bits)
     pub fn get_fee_token_y(&self) -> u128 {
         self.fee.decode_uint128(128)
     }

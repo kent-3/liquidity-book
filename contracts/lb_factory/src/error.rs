@@ -1,5 +1,6 @@
 //! ### Custom Errors for lb-factory contract.
 
+use cosmwasm_std::{Addr, StdError};
 use lb_libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
@@ -10,7 +11,6 @@ use lb_libraries::{
     oracle_helper::OracleError,
     pair_parameter_helper::PairParametersError,
 };
-use shade_protocol::c_std::{Addr, StdError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbFactoryError {
