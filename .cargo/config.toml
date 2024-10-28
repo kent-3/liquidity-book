@@ -3,4 +3,4 @@ target = "wasm32-unknown-unknown"
 rustflags = "-C link-arg=-s"
 
 [check]
-target = "wasm32-unknown-unknown"
+# target = "wasm32-unknown-unknown"
