@@ -6,7 +6,6 @@ use cosmwasm_std::{
 use ethnum::U256;
 use lb_interfaces::{lb_pair::*, lb_staking, lb_token};
 use lb_libraries::{
-    approx_div,
     bin_helper::BinHelper,
     constants::{BASIS_POINT_MAX, MAX_FEE, PRECISION, SCALE_OFFSET},
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
@@ -322,7 +321,7 @@ fn updating_oracles_for_vol_analysis(
 
     let updated_sample;
     (*params, updated_sample) = oracle.update(
-        &env.block.time,
+        env.block.time.seconds(),
         *params,
         active_id,
         Some(vol),
@@ -770,8 +769,14 @@ fn update_bin(
 
             let mut oracle = ORACLE.load(deps.storage, oracle_id)?;
             let new_sample;
-            (parameters, new_sample) =
-                oracle.update(time, parameters, id, None, None, DEFAULT_ORACLE_LENGTH)?;
+            (parameters, new_sample) = oracle.update(
+                time.seconds(),
+                parameters,
+                id,
+                None,
+                None,
+                DEFAULT_ORACLE_LENGTH,
+            )?;
             if let Some(n_s) = new_sample {
                 ORACLE.save(deps.storage, parameters.get_oracle_id(), &Oracle(n_s))?;
             }
@@ -1355,4 +1360,19 @@ pub fn try_reset_rewards_config(
     STATE.save(deps.storage, &state)?;
 
     Ok(Response::default())
+}
+
+pub fn approx_div(a: Uint256, b: Uint256) -> Uint256 {
+    if b == Uint256::zero() {
+        panic!("Division by zero");
+    }
+    let div = a / b;
+    let rem = a % b;
+    if rem >= b / Uint256::from(2u128) {
+        // If so, we add one to the division result
+        div + Uint256::one()
+    } else {
+        // If not, we return the division result as it is
+        div
+    }
 }

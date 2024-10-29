@@ -122,10 +122,13 @@ mod tests {
         // Verify that the correct Error type is returned
         match result {
             Ok(_) => panic!("This should have returned an Err"),
-            Err(e) => assert_eq!(e, FeeError::FeeTooLarge {
-                max_fee: MAX_FEE,
-                current_fee: fee
-            }),
+            Err(e) => assert_eq!(
+                e,
+                FeeError::FeeTooLarge {
+                    max_fee: MAX_FEE,
+                    current_fee: fee
+                }
+            ),
         }
     }
 
@@ -208,10 +211,13 @@ mod tests {
         // Verify that the correct Error type is returned
         match result {
             Ok(_) => panic!("This should have returned an Err"),
-            Err(e) => assert_eq!(e, FeeError::FeeTooLarge {
-                max_fee: MAX_FEE,
-                current_fee: total_fee
-            }),
+            Err(e) => assert_eq!(
+                e,
+                FeeError::FeeTooLarge {
+                    max_fee: MAX_FEE,
+                    current_fee: total_fee
+                }
+            ),
         }
     }
 

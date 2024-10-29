@@ -3,12 +3,10 @@
 //!
 //! This library contains functions to encode and decode the config of a pool and interact with the encoded Bytes32.
 
+use super::packed_u128_math::PackedUint128Math;
+use crate::types::Bytes32;
 use cosmwasm_schema::cw_serde;
 use ethnum::U256;
-
-use crate::types::Bytes32;
-
-use super::packed_u128_math::PackedUint128Math;
 
 pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
 

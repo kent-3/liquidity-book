@@ -540,8 +540,6 @@ impl BinHelper {
 mod tests {
     use super::*;
 
-    use crate::types::StaticFeeParameters;
-    use cosmwasm_std::StdResult;
     use ethnum::U256;
     use std::str::FromStr;
 
@@ -551,7 +549,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_amount_out_of_bin_zero_bin_reserves() -> StdResult<()> {
+    fn test_get_amount_out_of_bin_zero_bin_reserves() -> Result<(), BinError> {
         let bin_reserves = Bytes32::encode(0, 0);
         let amount_to_burn = U256::from(1000u128);
         let total_supply = U256::from(10000u128);
@@ -628,7 +626,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_amount_out_of_bin() -> StdResult<()> {
+    fn test_get_amount_out_of_bin() -> Result<(), BinError> {
         let bin_reserves_x = 1000;
         let bin_reserves_y = 1000;
 
@@ -705,7 +703,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_shares_and_effective_amounts_in() -> StdResult<()> {
+    fn test_get_shares_and_effective_amounts_in() -> Result<(), BinError> {
         let mut total_supply = U256::from_str("0").unwrap();
         let max_u256 = U256::MAX;
         let mut bin_reserves = Bytes32::encode(1000, 1000);
@@ -911,27 +909,25 @@ mod tests {
             total_supply,
         )?;
 
-        let msg = StaticFeeParameters {
-            base_factor: 5000,
-            filter_period: 30,
-            decay_period: 600,
-            reduction_factor: 5000,
-            variable_fee_control: 40000,
-            protocol_share: 1000,
-            max_volatility_accumulator: 350000,
-        };
+        let base_factor = 5000;
+        let filter_period = 30;
+        let decay_period = 600;
+        let reduction_factor = 5000;
+        let variable_fee_control = 40000;
+        let protocol_share = 1000;
+        let max_volatility_accumulator = 350000;
 
         // Set the parameters (assuming PairParameters and DEFAULT_* constants are defined)
         let mut pair_parameters = PairParameters(Bytes32::default());
         pair_parameters
             .set_static_fee_parameters(
-                msg.base_factor,
-                msg.filter_period,
-                msg.decay_period,
-                msg.reduction_factor,
-                msg.variable_fee_control,
-                msg.protocol_share,
-                msg.max_volatility_accumulator,
+                base_factor,
+                filter_period,
+                decay_period,
+                reduction_factor,
+                variable_fee_control,
+                protocol_share,
+                max_volatility_accumulator,
             )
             .unwrap();
         // Call the function we are testing
