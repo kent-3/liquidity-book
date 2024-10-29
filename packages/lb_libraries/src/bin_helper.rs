@@ -19,7 +19,7 @@ use ethnum::U256;
 // use secret_toolkit::snip20::transfer_msg;
 // use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum BinError {
     #[error("Bin Error: Composition Factor Flawed, id: {0}")]
     CompositionFactorFlawed(u32),

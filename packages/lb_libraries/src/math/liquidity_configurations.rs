@@ -12,7 +12,7 @@ use super::packed_u128_math::PackedUint128Math;
 
 pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum LiquidityConfigurationsError {
     #[error("Liquidity Configurations Error: Distribution must be less than PRECISION")]
     InvalidConfig,

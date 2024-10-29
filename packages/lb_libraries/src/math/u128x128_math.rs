@@ -10,7 +10,7 @@ use crate::constants::*;
 
 use super::bit_math::BitMath;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum U128x128MathError {
     #[error("U128x128 Math Error: LogUnderflow")]
     LogUnderflow,

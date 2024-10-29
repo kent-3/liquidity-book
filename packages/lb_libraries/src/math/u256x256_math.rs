@@ -54,7 +54,7 @@ fn mulmod(x: U256, y: U256, k: U256) -> U256 {
     z.to_u256()
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum U256x256MathError {
     #[error("Generic {0}")]
     Generic(String),

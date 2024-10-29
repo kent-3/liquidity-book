@@ -29,7 +29,7 @@ pub struct Oracle(
 pub const MAX_SAMPLE_LIFETIME: u8 = 120; //seconds
 
 #[cw_serde]
-#[derive(thiserror::Error)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum OracleError {
     #[error("Oracle Error: Invalid Oracle ID")]
     InvalidOracleId,
