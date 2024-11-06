@@ -3,7 +3,8 @@ use lb_interfaces::{
     lb_pair::{ContractStatus, RewardsDistribution, RewardsDistributionAlgorithm},
 };
 use lb_libraries::{
-    math::tree_math::TreeUint24, oracle_helper::Oracle, pair_parameter_helper::PairParameters,
+    math::{sample_math::OracleSample, tree_math::TreeUint24},
+    pair_parameter_helper::PairParameters,
     types::Bytes32,
 };
 // TODO: sort out viewing key strategy
@@ -21,7 +22,7 @@ pub const STATE: Item<State> = Item::new("state");
 pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new("contract_status");
 pub const BIN_MAP: Map<u32, Bytes32> = Map::new("bins_map");
 pub const BIN_TREE: Item<TreeUint24, Bincode2> = Item::new("bin_tree");
-pub const ORACLE: Map<u16, Oracle> = Map::new("oracle");
+pub const ORACLE: Map<u16, OracleSample> = Map::new("oracle");
 pub const EPHEMERAL_STORAGE: Item<EphemeralStruct> = Item::new("ephemeral_storage");
 
 pub const FEE_APPEND_STORE: AppendStore<FeeLog> = AppendStore::new("fee_logs");

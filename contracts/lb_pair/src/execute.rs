@@ -769,14 +769,8 @@ fn update_bin(
 
             let mut oracle = ORACLE.load(deps.storage, oracle_id)?;
             let new_sample;
-            (parameters, new_sample) = oracle.update(
-                time.seconds(),
-                parameters,
-                id,
-                None,
-                None,
-                DEFAULT_ORACLE_LENGTH,
-            )?;
+            (parameters, new_sample) =
+                oracle.update(time.seconds(), parameters, id, DEFAULT_ORACLE_LENGTH)?;
             if let Some(n_s) = new_sample {
                 ORACLE.save(deps.storage, parameters.get_oracle_id(), &Oracle(n_s))?;
             }

@@ -18,16 +18,14 @@
 //! * [216 - 232[: oracle index (16 bits)
 //! * [232 - 256[: active index (24 bits)
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Timestamp;
-use ethnum::U256;
-
-use crate::types::Bytes32;
-
 use super::{
     constants::*,
     math::{encoded::*, safe_math::Safe, u24::U24},
 };
+use crate::types::Bytes32;
+use cosmwasm_std::Timestamp;
+use ethnum::U256;
+use serde::{Deserialize, Serialize};
 
 const OFFSET_BASE_FACTOR: u8 = 0;
 const OFFSET_FILTER_PERIOD: u8 = 16;
@@ -47,16 +45,15 @@ const MASK_STATIC_PARAMETER: u128 = 0xffffffffffffffffffffffffffffu128;
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum PairParametersError {
-    #[error("Pair Parameters Error: Invalid Parameter")]
+    #[error("Invalid Parameter")]
     InvalidParameter,
-    #[error("Pair Parameters Error: Volatility Reference greater than limit")]
+    #[error("Volatility Reference greater than limit")]
     InvalidVolatilityReference,
     #[error("Value greater than u128")]
     U128Overflow,
 }
 
-#[cw_serde]
-#[derive(Copy, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq)]
 pub struct PairParameters(pub Bytes32);
 
 impl PairParameters {

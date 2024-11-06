@@ -14,7 +14,7 @@ use lb_libraries::{
         u256x256_math::U256x256Math,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
-    oracle_helper::MAX_SAMPLE_LIFETIME,
+    oracle_helper::{self, Oracle},
     price_helper::PriceHelper,
     types::Bytes32,
 };
@@ -107,9 +107,6 @@ pub fn query_swap_simulation(
 
     let price = Decimal::from_ratio(res.amount_out, offer.amount).to_string();
 
-    // FIXME: Circular dependency!
-    // shade_protocol::contract_interfaces::swap::amm_pair::QueryMsgResponse uses
-    // shade_protocol::contract_interfaces::liquidity_book::lb_pair
     let response = SwapSimulation {
         total_fee_amount: res.total_fees,
         lp_fee_amount: res.lp_fees,               //TODO lpfee
@@ -615,35 +612,40 @@ pub fn query_oracle_params(deps: Deps) -> Result<OracleParametersResponse> {
     let state = STATE.load(deps.storage)?;
     let params = state.pair_parameters;
 
-    let sample_lifetime = MAX_SAMPLE_LIFETIME;
     let oracle_id = params.get_oracle_id();
-    let oracle = ORACLE.load(deps.storage, oracle_id)?;
-    let size = DEFAULT_ORACLE_LENGTH;
+
+    let sample_lifetime = oracle_helper::MAX_SAMPLE_LIFETIME;
 
     if oracle_id > 0 {
-        let sample = oracle.0;
+        // TODO: implement oracle helper methods on the ORACLE storage
+        let (mut sample, mut active_size) = ORACLE.get_active_sample_and_size(oracle_id);
 
+        let size = sample.get_oracle_length();
         let last_updated = sample.get_sample_last_update();
-        let first_timestamp = sample.get_sample_last_update();
 
-        let response = OracleParametersResponse {
+        if last_updated == 0 {
+            active_size = 0;
+        }
+
+        let mut first_timestamp = 0u64;
+
+        if active_size > 0 {
+            sample = ORACLE.get_sample(1 + (oracle_id % active_size));
+            first_timestamp = sample.get_sample_last_update();
+        }
+
+        Ok(OracleParametersResponse {
             sample_lifetime,
             size,
+            active_size,
             last_updated,
             first_timestamp,
-        };
-
-        Ok(response)
+        })
     } else {
-        // This happens if the oracle hasn't been used yet.
-        let response = OracleParametersResponse {
+        Ok(OracleParametersResponse {
             sample_lifetime,
-            size,
-            last_updated: 0,
-            first_timestamp: 0,
-        };
-
-        Ok(response)
+            ..Default::default()
+        })
     }
 }
 
@@ -667,21 +669,21 @@ pub fn query_oracle_sample(
         return Err(Error::OracleNotActive);
     }
 
-    let oracle = ORACLE.load(deps.storage, oracle_id)?;
+    let oracle_sample = ORACLE.load(deps.storage, oracle_id)?;
 
     let response = OracleSampleAtResponse {
         sample: OracleSampleResponse {
-            cumulative_id: oracle.0.get_cumulative_id(),
-            cumulative_txns: oracle.0.get_cumulative_txns(),
-            cumulative_volatility: oracle.0.get_cumulative_volatility(),
-            cumulative_bin_crossed: oracle.0.get_cumulative_bin_crossed(),
-            cumulative_volume_x: oracle.0.get_vol_token_x(),
-            cumulative_volume_y: oracle.0.get_vol_token_y(),
-            cumulative_fee_x: oracle.0.get_fee_token_x(),
-            cumulative_fee_y: oracle.0.get_fee_token_y(),
+            cumulative_id: oracle_sample.get_cumulative_id(),
+            cumulative_txns: oracle_sample.get_cumulative_txns(),
+            cumulative_volatility: oracle_sample.get_cumulative_volatility(),
+            cumulative_bin_crossed: oracle_sample.get_cumulative_bin_crossed(),
+            cumulative_volume_x: oracle_sample.get_vol_token_x(),
+            cumulative_volume_y: oracle_sample.get_vol_token_y(),
+            cumulative_fee_x: oracle_sample.get_fee_token_x(),
+            cumulative_fee_y: oracle_sample.get_fee_token_y(),
             oracle_id,
-            lifetime: oracle.0.get_sample_lifetime(),
-            created_at: oracle.0.get_sample_creation(),
+            lifetime: oracle_sample.get_sample_lifetime(),
+            created_at: oracle_sample.get_sample_creation(),
         },
     };
 
@@ -716,17 +718,17 @@ pub fn query_oracle_samples(
         };
 
         // Update response if oracle data is successfully loaded
-        if let Ok(oracle) = ORACLE.load(deps.storage, oracle_id) {
-            sample.cumulative_id = oracle.0.get_cumulative_id();
-            sample.cumulative_txns = oracle.0.get_cumulative_txns();
-            sample.cumulative_volatility = oracle.0.get_cumulative_volatility();
-            sample.cumulative_bin_crossed = oracle.0.get_cumulative_bin_crossed();
-            sample.cumulative_volume_x = oracle.0.get_vol_token_x();
-            sample.cumulative_volume_y = oracle.0.get_vol_token_y();
-            sample.cumulative_fee_x = oracle.0.get_fee_token_x();
-            sample.cumulative_fee_y = oracle.0.get_fee_token_y();
-            sample.lifetime = oracle.0.get_sample_lifetime();
-            sample.created_at = oracle.0.get_sample_creation();
+        if let Ok(oracle_sample) = ORACLE.load(deps.storage, oracle_id) {
+            sample.cumulative_id = oracle_sample.get_cumulative_id();
+            sample.cumulative_txns = oracle_sample.get_cumulative_txns();
+            sample.cumulative_volatility = oracle_sample.get_cumulative_volatility();
+            sample.cumulative_bin_crossed = oracle_sample.get_cumulative_bin_crossed();
+            sample.cumulative_volume_x = oracle_sample.get_vol_token_x();
+            sample.cumulative_volume_y = oracle_sample.get_vol_token_y();
+            sample.cumulative_fee_x = oracle_sample.get_fee_token_x();
+            sample.cumulative_fee_y = oracle_sample.get_fee_token_y();
+            sample.lifetime = oracle_sample.get_sample_lifetime();
+            sample.created_at = oracle_sample.get_sample_creation();
         }
 
         samples.push(sample);
@@ -775,18 +777,18 @@ pub fn query_oracle_samples_after(
         }
 
         let sample = match ORACLE.load(deps.storage, current_oracle_id) {
-            Ok(oracle) => OracleSampleResponse {
-                cumulative_id: oracle.0.get_cumulative_id(),
-                cumulative_txns: oracle.0.get_cumulative_txns(),
-                cumulative_volatility: oracle.0.get_cumulative_volatility(),
-                cumulative_bin_crossed: oracle.0.get_cumulative_bin_crossed(),
-                cumulative_volume_x: oracle.0.get_vol_token_x(),
-                cumulative_volume_y: oracle.0.get_vol_token_y(),
-                cumulative_fee_x: oracle.0.get_fee_token_x(),
-                cumulative_fee_y: oracle.0.get_fee_token_y(),
+            Ok(oracle_sample) => OracleSampleResponse {
+                cumulative_id: oracle_sample.get_cumulative_id(),
+                cumulative_txns: oracle_sample.get_cumulative_txns(),
+                cumulative_volatility: oracle_sample.get_cumulative_volatility(),
+                cumulative_bin_crossed: oracle_sample.get_cumulative_bin_crossed(),
+                cumulative_volume_x: oracle_sample.get_vol_token_x(),
+                cumulative_volume_y: oracle_sample.get_vol_token_y(),
+                cumulative_fee_x: oracle_sample.get_fee_token_x(),
+                cumulative_fee_y: oracle_sample.get_fee_token_y(),
                 oracle_id: current_oracle_id,
-                lifetime: oracle.0.get_sample_lifetime(),
-                created_at: oracle.0.get_sample_creation(),
+                lifetime: oracle_sample.get_sample_lifetime(),
+                created_at: oracle_sample.get_sample_creation(),
             },
             // TODO: should this return an Error instead of all zeroes?
             Err(_) => OracleSampleResponse {

@@ -419,8 +419,21 @@ pub struct VariableFeeParametersResponse {
 pub struct OracleParametersResponse {
     pub sample_lifetime: u8,
     pub size: u16,
+    pub active_size: u16,
     pub last_updated: u64,
     pub first_timestamp: u64,
+}
+
+impl Default for OracleParametersResponse {
+    fn default() -> Self {
+        OracleParametersResponse {
+            sample_lifetime: 0,
+            size: 0,
+            active_size: 0,
+            last_updated: 0,
+            first_timestamp: 0,
+        }
+    }
 }
 
 #[cw_serde]
