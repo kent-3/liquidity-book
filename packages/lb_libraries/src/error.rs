@@ -17,6 +17,8 @@ pub use super::{
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum Error {
+    #[error("{0}")]
+    Generic(String),
     #[error(transparent)]
     BinError(#[from] BinError),
     #[error(transparent)]

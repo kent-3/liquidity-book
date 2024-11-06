@@ -3,13 +3,12 @@
 //!
 //! This library contains functions to calculate fees.
 
+use crate::constants::*;
 use ethnum::U256;
-
-use super::constants::*;
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum FeeError {
-    #[error("Fee Error: Fee too large,Maximum: {max_fee}, Current Fee: {current_fee}")]
+    #[error("Fee Error: Fee too large. Maximum: {max_fee}, Current Fee: {current_fee}")]
     FeeTooLarge { max_fee: u128, current_fee: u128 },
     #[error("Fee Error: Protocol share too large")]
     ProtocolShareTooLarge,

@@ -5,18 +5,18 @@
 
 use super::packed_u128_math::PackedUint128Math;
 use crate::types::Bytes32;
-use cosmwasm_schema::cw_serde;
 use ethnum::U256;
+use serde::{Deserialize, Serialize};
 
 pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum LiquidityConfigurationsError {
-    #[error("Liquidity Configurations Error: Distribution must be less than PRECISION")]
+    #[error("Liquidity Configurations Error: Distribution must be less than {PRECISION}")]
     InvalidConfig,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq)]
 pub struct LiquidityConfigurations {
     pub distribution_x: u64,
     pub distribution_y: u64,

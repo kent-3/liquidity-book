@@ -4,11 +4,9 @@
 //!
 //! Helper library used for power and log calculations.
 
-use ethnum::{I256, U256};
-
-use crate::constants::*;
-
 use super::bit_math::BitMath;
+use crate::constants::*;
+use ethnum::{I256, U256};
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum U128x128MathError {

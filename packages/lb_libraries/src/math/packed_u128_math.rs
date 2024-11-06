@@ -7,10 +7,9 @@
 //! u128 is a 128-bit unsigned integer type, which means that its little-endian byte representation is 16 bytes long.
 //! A `Bytes32` value is a `[u8; 32]` and can hold 256 bits, or two `u128` values.
 
-use ethnum::U256;
-
 use crate::types::Bytes32;
-use cosmwasm_std::StdError;
+use crate::Error;
+use ethnum::U256;
 
 pub const BASIS_POINT_MAX: u128 = 10_000;
 
@@ -338,18 +337,16 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     /// # Panics
     ///
     /// This function will panic if the `multiplier` argument is larger than the constant `BASIS_POINT_MAX`.
-    fn scalar_mul_div_basis_point_round_down(&self, multiplier: u128) -> Result<Self, StdError> {
+    fn scalar_mul_div_basis_point_round_down(&self, multiplier: u128) -> Result<Self, Error> {
         if multiplier == 0 {
             return Ok(Self::min());
         }
 
         if multiplier > BASIS_POINT_MAX {
-            return Err(StdError::GenericErr {
-                msg: format!(
-                    "multiplier: {} > BASIS_POINT_MAX: {}",
-                    multiplier, BASIS_POINT_MAX
-                ),
-            });
+            return Err(Error::Generic(format!(
+                "Multiplier: {} exceeds BASIS_POINT_MAX: {}",
+                multiplier, BASIS_POINT_MAX
+            )));
         }
 
         let (x1, x2) = self.decode();

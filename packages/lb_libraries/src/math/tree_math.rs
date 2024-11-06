@@ -5,15 +5,15 @@
 
 use super::{bit_math::BitMath, u24::U24};
 use crate::types::Bytes32;
-use cosmwasm_schema::cw_serde;
 use ethnum::U256;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // TODO - This module is likely inefficient because we don't have bit ops for Bytes32.
 //      - Other libraries could benefit from Bytes32 bit ops also...
 
 /// Can store 256^3 = 2^24 = 16,777,216 values.
-#[cw_serde]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TreeUint24 {
     pub level0: Bytes32,                   // 256 possible values
     pub level1: HashMap<Bytes32, Bytes32>, // 256^2 possible values
@@ -27,24 +27,6 @@ impl Default for TreeUint24 {
 }
 
 impl TreeUint24 {
-    // I think I was wrong about this!!
-    //
-    // Note about HashMap capacity: HashMap will increase its capacity when it's about 2/3 full, which
-    // requires memory reallocation. It would be better to start with the max size needed, to avoid
-    // that reallocation (which may potentially require a lot of gas).
-    //
-    // The maximum possible number of bins is a function of the basis point parameter.
-    //
-    // For Example:
-    // 0.0001 -> 1,774,544 bins
-    // 0.0010 -> 177,426 bins
-    // 0.0100 -> 17,656 bins
-    //
-    // To handle the 10 basis point scenario:
-    // level0: Bytes32::default(), // 2^10 / 256 = 2^2
-    // level1: HashMap::<Bytes32, Bytes32>::with_capacity(1_024), // 2^18 / 256 = 2^10
-    // level2: HashMap::<Bytes32, Bytes32>::with_capacity(262_144), // 2^18
-
     /// Creates a new empty TreeUint24.
     pub fn new() -> Self {
         TreeUint24 {

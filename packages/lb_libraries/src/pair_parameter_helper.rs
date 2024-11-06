@@ -267,6 +267,7 @@ impl PairParameters {
     pub fn get_total_fee(&self, bin_step: u16) -> Result<u128, PairParametersError> {
         let base_fee = Self::get_base_fee(self, bin_step);
         let variable_fee = Self::get_variable_fee(self, bin_step);
+        // TODO: there must be a better way to express this
         u128::safe128(base_fee + variable_fee, PairParametersError::U128Overflow)
     }
 
