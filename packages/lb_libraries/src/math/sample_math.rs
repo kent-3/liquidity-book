@@ -14,6 +14,7 @@
 
 use super::encoded::*;
 use crate::types::Bytes32;
+use ethnum::U256;
 use serde::{Deserialize, Serialize};
 
 pub const OFFSET_ORACLE_LENGTH: u8 = 0;
@@ -25,6 +26,24 @@ pub const OFFSET_SAMPLE_CREATION: u8 = 216;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq)]
 pub struct OracleSample(pub Bytes32);
+
+impl From<u16> for OracleSample {
+    fn from(value: u16) -> Self {
+        OracleSample(U256::from(value).to_le_bytes())
+    }
+}
+
+impl From<U256> for OracleSample {
+    fn from(value: U256) -> Self {
+        OracleSample(value.to_le_bytes())
+    }
+}
+
+impl From<OracleSample> for U256 {
+    fn from(value: OracleSample) -> Self {
+        U256::from_le_bytes(value.0)
+    }
+}
 
 impl OracleSample {
     /// Encodes a sample.
