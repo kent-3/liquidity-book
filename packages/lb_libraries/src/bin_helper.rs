@@ -94,8 +94,8 @@ impl BinHelper {
     ///
     /// * `shares` - The share of the liquidity book that the user will receive as a Uint256.
     /// * `effective_amounts_in` - The Bytes32 encoded effective amounts of tokens that the user will add.
-    /// This is the amount of tokens that the user will actually add to the liquidity book,
-    /// and will always be less than or equal to the amounts_in.
+    ///   This is the amount of tokens that the user will actually add to the liquidity book,
+    ///   and will always be less than or equal to the amounts_in.
     pub fn get_shares_and_effective_amounts_in(
         bin_reserves: Bytes32,
         mut amounts_in: Bytes32,
@@ -307,7 +307,7 @@ impl BinHelper {
         let total_fee: u128 = parameters.get_total_fee(bin_step)?;
         let max_fee: u128 = FeeHelper::get_fee_amount(max_amount_in, total_fee)?;
 
-        max_amount_in = max_amount_in + max_fee;
+        max_amount_in += max_fee;
 
         let mut amount_in128: u128 = amounts_in_left.decode_alt(swap_for_y);
         let fee128: u128;

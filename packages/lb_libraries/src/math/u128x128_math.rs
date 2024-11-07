@@ -40,7 +40,7 @@ impl U128x128Math {
     /// # Caveats
     ///
     /// - The results are not perfectly accurate to the last decimal, due to the lossy precision of the iterative approximation.
-    /// Also because x is converted to an unsigned 129.127-binary fixed-point number during the operation to optimize the multiplication.
+    ///   Also because x is converted to an unsigned 129.127-binary fixed-point number during the operation to optimize the multiplication.
     ///
     /// # Arguments
     ///
