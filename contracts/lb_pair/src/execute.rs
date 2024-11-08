@@ -17,7 +17,7 @@ use lb_libraries::{
         u256x256_math::U256x256Math,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
-    oracle_helper::Oracle,
+    oracle_helper::OracleMap,
     pair_parameter_helper::PairParameters,
     price_helper::PriceHelper,
     types::Bytes32,
@@ -95,7 +95,7 @@ pub fn try_swap(
     let mut active_id = params.get_active_id();
 
     // updating the volatility
-    params.update_references(&env.block.time)?;
+    params.update_references(env.block.time.seconds())?;
 
     if reward_dis_config.rewards_distribution_algorithm
         == RewardsDistributionAlgorithm::TimeBasedRewards
@@ -188,15 +188,14 @@ pub fn try_swap(
     reserves = reserves.sub(amounts_out);
     volume_tracker = volume_tracker.add(amounts_out);
 
-    //updating the oracle for volume and fee analysis
-    updating_oracles_for_vol_analysis(
-        deps.storage,
-        &env,
-        &mut params,
-        active_id,
-        volume_tracker,
-        total_fees,
-    )?;
+    // updating_oracles_for_vol_analysis(
+    //     deps.storage,
+    //     &env,
+    //     &mut params,
+    //     active_id,
+    //     volume_tracker,
+    //     total_fees,
+    // )?;
 
     STATE.update(deps.storage, |mut state| {
         state.last_swap_timestamp = env.block.time;
@@ -307,36 +306,7 @@ fn update_fee_map_tree(
     Ok(())
 }
 
-fn updating_oracles_for_vol_analysis(
-    storage: &mut dyn Storage,
-    env: &Env,
-    params: &mut PairParameters,
-    active_id: u32,
-    vol: Bytes32,
-    fees: Bytes32,
-) -> Result<()> {
-    //updating oracles
-    let oracle_id = params.get_oracle_id();
-    let mut oracle = ORACLE.load(storage, oracle_id)?;
-
-    let updated_sample;
-    (*params, updated_sample) = oracle.update(
-        env.block.time.seconds(),
-        *params,
-        active_id,
-        Some(vol),
-        Some(fees),
-        DEFAULT_ORACLE_LENGTH,
-    )?;
-
-    if let Some(n_s) = updated_sample {
-        ORACLE.save(storage, params.get_oracle_id(), &Oracle(n_s))?;
-    }
-    Ok(())
-}
-
 fn update_bin_reserves(storage: &mut dyn Storage, env: &Env, ids: Vec<u32>) -> Result<()> {
-    //updating oracles
     BIN_RESERVES_UPDATED.update(storage, env.block.height, |x| -> StdResult<Vec<u32>> {
         if let Some(mut y) = x {
             y.extend(ids);
@@ -555,7 +525,7 @@ fn mint(
 
     let amounts_left = mint_bins(
         &mut deps,
-        &env.block.time,
+        env.block.time.seconds(),
         state.bin_step,
         state.pair_parameters,
         liquidity_configs,
@@ -630,7 +600,7 @@ fn mint(
 /// * `amounts_left` - The amounts left.
 fn mint_bins(
     deps: &mut DepsMut,
-    time: &Timestamp,
+    time: u64,
     bin_step: u16,
     pair_parameters: PairParameters,
     liquidity_configs: Vec<LiquidityConfigurations>,
@@ -710,7 +680,7 @@ fn mint_bins(
 /// * `amounts_in_to_bin` - The amounts in to the bin
 fn update_bin(
     deps: &mut DepsMut,
-    time: &Timestamp,
+    time: u64,
     bin_step: u16,
     active_id: u32,
     id: u32,
@@ -767,13 +737,15 @@ fn update_bin(
 
             let oracle_id = parameters.get_oracle_id();
 
-            let mut oracle = ORACLE.load(deps.storage, oracle_id)?;
-            let new_sample;
-            (parameters, new_sample) =
-                oracle.update(time.seconds(), parameters, id, DEFAULT_ORACLE_LENGTH)?;
-            if let Some(n_s) = new_sample {
-                ORACLE.save(deps.storage, parameters.get_oracle_id(), &Oracle(n_s))?;
-            }
+            // let mut oracle = ORACLE.load(deps.storage, oracle_id)?;
+            // let new_sample;
+            // (parameters, new_sample) =
+            //     oracle.update(time.seconds(), parameters, id, DEFAULT_ORACLE_LENGTH)?;
+            // if let Some(n_s) = new_sample {
+            //     ORACLE.save(deps.storage, parameters.get_oracle_id(), &Oracle(n_s))?;
+            // }
+
+            parameters = ORACLE.update_oracle(deps.storage, time, parameters, id)?;
 
             STATE.update(deps.storage, |mut state| -> StdResult<_> {
                 state.pair_parameters = parameters;

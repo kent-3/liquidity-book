@@ -25,6 +25,7 @@ use super::{
 use crate::types::Bytes32;
 use cosmwasm_std::Timestamp;
 use ethnum::U256;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 const OFFSET_BASE_FACTOR: u8 = 0;
@@ -53,7 +54,7 @@ pub enum PairParametersError {
     U128Overflow,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq, JsonSchema)]
 pub struct PairParameters(pub Bytes32);
 
 impl PairParameters {
@@ -410,12 +411,11 @@ impl PairParameters {
     /// * `current_time` - The current timestamp
     pub fn update_time_of_last_update(
         &mut self,
-        time: &Timestamp,
+        time: u64,
     ) -> Result<&mut Self, PairParametersError> {
-        let current_time = time.seconds();
-        //u40 can contain upto date 2/20/36812
+        // u40 can contain up to date 2/20/36812
         self.0
-            .set(current_time.into(), MASK_UINT40, OFFSET_TIME_LAST_UPDATE);
+            .set(time.into(), MASK_UINT40, OFFSET_TIME_LAST_UPDATE);
         Ok(self)
     }
 
@@ -468,11 +468,8 @@ impl PairParameters {
     /// # Arguments
     ///
     /// * `parameters` - The encoded pair parameters
-    pub fn update_references(
-        &mut self,
-        time: &Timestamp,
-    ) -> Result<&mut Self, PairParametersError> {
-        let dt = time.seconds() - self.get_time_of_last_update();
+    pub fn update_references(&mut self, time: u64) -> Result<&mut Self, PairParametersError> {
+        let dt = time - self.get_time_of_last_update();
 
         if dt >= self.get_filter_period().into() {
             self.update_id_reference();
@@ -496,7 +493,7 @@ impl PairParameters {
     pub fn update_volatility_parameters(
         &mut self,
         active_id: u32,
-        time: &Timestamp,
+        time: u64,
     ) -> Result<&mut Self, PairParametersError> {
         self.update_references(time)?
             .update_volatility_accumulator(active_id)

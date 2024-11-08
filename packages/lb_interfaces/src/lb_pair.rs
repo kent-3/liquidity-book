@@ -252,14 +252,7 @@ pub enum QueryMsg {
     #[returns(OracleParametersResponse)]
     GetOracleParameters {},
     #[returns(OracleSampleAtResponse)]
-    GetOracleSampleAt { oracle_id: u16 },
-    #[returns(OracleSamplesAtResponse)]
-    GetOracleSamplesAt { oracle_ids: Vec<u16> },
-    #[returns(OracleSamplesAfterResponse)]
-    GetOracleSamplesAfter {
-        oracle_id: u16,
-        page_size: Option<u16>,
-    },
+    GetOracleSampleAt { lookup_timestamp: u64 },
     #[returns(PriceFromIdResponse)]
     GetPriceFromId { id: u32 },
     #[returns(IdFromPriceResponse)]
@@ -436,19 +429,22 @@ impl Default for OracleParametersResponse {
     }
 }
 
+// TODO: try to make this simpler. try returning a tuple (u64, u64, u64) instead.
+
 #[cw_serde]
 pub struct OracleSampleResponse {
-    pub oracle_id: u16,
-    pub cumulative_txns: u16,
+    // pub oracle_id: u16,
+    // pub oracle_length: u16,
+    // pub cumulative_txns: u16,
     pub cumulative_id: u64,
     pub cumulative_volatility: u64,
     pub cumulative_bin_crossed: u64,
-    pub cumulative_volume_x: u128,
-    pub cumulative_volume_y: u128,
-    pub cumulative_fee_x: u128,
-    pub cumulative_fee_y: u128,
-    pub lifetime: u8,
-    pub created_at: u64,
+    // pub cumulative_volume_x: u128,
+    // pub cumulative_volume_y: u128,
+    // pub cumulative_fee_x: u128,
+    // pub cumulative_fee_y: u128,
+    // pub lifetime: u8,
+    // pub created_at: u64,
 }
 
 #[cw_serde]
@@ -456,7 +452,6 @@ pub struct OracleSampleAtResponse {
     pub sample: OracleSampleResponse,
 }
 
-// TODO: shouldn't this be Vec<OracleSample> instead?
 #[cw_serde]
 pub struct OracleSamplesAtResponse {
     pub samples: Vec<OracleSampleResponse>,

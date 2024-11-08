@@ -8,7 +8,7 @@ use lb_interfaces::{lb_pair::*, lb_staking, lb_token};
 use lb_libraries::{
     lb_token::state_structs::LbPair,
     math::{sample_math::OracleSample, tree_math::TreeUint24, u24::U24},
-    oracle_helper::Oracle,
+    oracle_helper::OracleMap,
     pair_parameter_helper::PairParameters,
 };
 use shade_protocol::{
@@ -31,7 +31,6 @@ pub fn instantiate(
     const START_ORACLE_ID: u16 = 1;
     const START_REWARDS_EPOCH: u64 = 1;
     let tree: TreeUint24 = TreeUint24::new();
-    let mut oracle = Oracle(OracleSample::default());
 
     // Initializing the Token Contract
     let token_x_symbol = match msg.token_x.clone() {
@@ -148,10 +147,7 @@ pub fn instantiate(
         max_bins_per_swap: msg.max_bins_per_swap.unwrap_or(DEFAULT_MAX_BINS_PER_SWAP),
     };
 
-    oracle.0 = *oracle.0.set_created_at(env.block.time.seconds());
-
     STATE.save(deps.storage, &state)?;
-    ORACLE.save(deps.storage, pair_parameters.get_oracle_id(), &oracle)?;
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
     BIN_TREE.save(deps.storage, &tree)?;
     FEE_MAP_TREE.save(deps.storage, state.rewards_epoch_index, &tree)?;
@@ -385,18 +381,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_params(deps)?),
         QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_params(deps)?),
         QueryMsg::GetOracleParameters {} => to_binary(&query_oracle_params(deps)?),
-        QueryMsg::GetOracleSampleAt { oracle_id } => {
-            to_binary(&query_oracle_sample(deps, env, oracle_id)?)
+        QueryMsg::GetOracleSampleAt { lookup_timestamp } => {
+            to_binary(&query_oracle_sample_at(deps, env, lookup_timestamp)?)
         }
-        QueryMsg::GetOracleSamplesAt { oracle_ids } => {
-            to_binary(&query_oracle_samples(deps, env, oracle_ids)?)
-        }
-        QueryMsg::GetOracleSamplesAfter {
-            oracle_id,
-            page_size,
-        } => to_binary(&query_oracle_samples_after(
-            deps, env, oracle_id, page_size,
-        )?),
         QueryMsg::GetPriceFromId { id } => to_binary(&query_price_from_id(deps, id)?),
         QueryMsg::GetIdFromPrice { price } => to_binary(&query_id_from_price(deps, price)?),
         QueryMsg::GetSwapIn {

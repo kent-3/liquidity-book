@@ -91,6 +91,8 @@ pub enum LbPairError {
     #[error(transparent)]
     CwErr(#[from] StdError),
     #[error(transparent)]
+    LbErr(#[from] lb_libraries::Error),
+    #[error(transparent)]
     BinErr(#[from] BinError),
     #[error(transparent)]
     FeeErr(#[from] FeeError),
