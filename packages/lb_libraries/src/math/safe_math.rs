@@ -2,7 +2,7 @@ use super::{u128x128_math::U128x128MathError, u24::U24, u256x256_math::U256x256M
 use crate::pair_parameter_helper::PairParametersError;
 use ethnum::U256;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum SafeError {
     #[error("Value greater than u24")]
     U24Overflow,

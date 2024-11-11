@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum LiquidityConfigurationsError {
     #[error("Liquidity Configurations Error: Distribution must be less than {PRECISION}")]
     InvalidConfig,

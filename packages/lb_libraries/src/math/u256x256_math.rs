@@ -72,7 +72,7 @@ pub fn addmod(x: U256, y: U256, k: U256) -> U256 {
     z.to_u256()
 }
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum U256x256MathError {
     #[error("Generic {0}")]
     Generic(String),

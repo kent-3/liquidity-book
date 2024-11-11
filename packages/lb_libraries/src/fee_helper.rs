@@ -6,7 +6,7 @@
 use crate::constants::*;
 use ethnum::U256;
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum FeeError {
     #[error("Fee Error: Fee too large. Maximum: {max_fee}, Current Fee: {current_fee}")]
     FeeTooLarge { max_fee: u128, current_fee: u128 },

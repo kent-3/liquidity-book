@@ -20,7 +20,7 @@ use cosmwasm_std::{Storage, Timestamp};
 use ethnum::U256;
 use std::cmp::Ordering::{Equal, Greater, Less};
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum OracleError {
     #[error("Oracle Error: Invalid Oracle ID")]
     InvalidOracleId,
@@ -28,6 +28,14 @@ pub enum OracleError {
     NewLengthTooSmall,
     #[error("Oracle Error: Lookup timestamp too old")]
     LookUpTimestampTooOld,
+}
+
+impl From<OracleError> for StdError {
+    fn from(value: OracleError) -> Self {
+        StdError::GenericErr {
+            msg: value.to_string(),
+        }
+    }
 }
 
 /// This represents a fixed-size storage for 65535 samples,

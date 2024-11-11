@@ -17,7 +17,7 @@ use super::{
 // represents a 24 bit number (u24)
 const REAL_ID_SHIFT: I256 = I256::new(1 << 23);
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum PriceError {
     #[error(transparent)]
     U128MathErr(#[from] U128x128MathError),

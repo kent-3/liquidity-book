@@ -15,7 +15,7 @@ pub use super::{
     price_helper::PriceError,
 };
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum Error {
     #[error("{0}")]
     Generic(String),

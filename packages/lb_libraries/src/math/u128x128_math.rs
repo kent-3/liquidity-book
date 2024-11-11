@@ -8,7 +8,7 @@ use super::bit_math::BitMath;
 use crate::constants::*;
 use ethnum::{I256, U256};
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum U128x128MathError {
     #[error("U128x128 Math Error: LogUnderflow")]
     LogUnderflow,

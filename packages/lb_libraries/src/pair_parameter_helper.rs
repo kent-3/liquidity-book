@@ -44,7 +44,7 @@ const OFFSET_ACTIVE_ID: u8 = 232;
 
 const MASK_STATIC_PARAMETER: u128 = 0xffffffffffffffffffffffffffffu128;
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum PairParametersError {
     #[error("Invalid Parameter")]
     InvalidParameter,
