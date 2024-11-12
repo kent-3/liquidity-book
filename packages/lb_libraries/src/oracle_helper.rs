@@ -368,9 +368,7 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
     /// Modifier to check that the oracle id is valid.
     fn check_oracle_id(oracle_id: u16) -> Result<(), StdError> {
         if oracle_id == 0 {
-            return Err(StdError::generic_err(
-                OracleError::InvalidOracleId.to_string(),
-            ));
+            return Err(OracleError::InvalidOracleId.into());
         }
 
         Ok(())
@@ -380,7 +378,7 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
     fn get_sample(&self, storage: &dyn Storage, oracle_id: u16) -> Result<OracleSample, StdError> {
         Self::check_oracle_id(oracle_id)?;
 
-        self.load(storage, oracle_id - 1)
+        Ok(self.load(storage, oracle_id - 1).unwrap_or_default())
     }
 
     fn get_active_sample_and_size(
@@ -413,7 +411,7 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
 
         // if OracleSample::get_sample_last_update(&self.samples[&(oracle_id % active_size)])
         if self
-            .get_sample(storage, oracle_id % active_size)?
+            .load(storage, oracle_id % active_size)?
             .get_sample_last_update()
             > look_up_timestamp
         {
@@ -435,11 +433,27 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
         }
         let (prev_sample, next_sample) =
             self.binary_search(storage, oracle_id, look_up_timestamp, active_size)?;
+        println!("look_up_timestamp: {:?}", look_up_timestamp);
+        println!(
+            "next_sample last update: {:?}",
+            next_sample.get_sample_last_update()
+        );
+        println!(
+            "prev_sample last update: {:?}",
+            prev_sample.get_sample_last_update()
+        );
+        println!(
+            "prev_sample creation: {:?}",
+            prev_sample.get_sample_creation()
+        );
         let weight_prev = next_sample.get_sample_last_update() - look_up_timestamp;
         let weight_next = look_up_timestamp - prev_sample.get_sample_last_update();
+        println!("weight_prev: {:?}", weight_prev);
+        println!("weight_next: {:?}", weight_next);
 
         let (cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
             OracleSample::get_weighted_average(prev_sample, next_sample, weight_prev, weight_next);
+        println!("cumulative_id: {:?}", cumulative_id);
 
         Ok((
             last_update,
@@ -456,19 +470,20 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
         look_up_timestamp: u64,
         length: u16,
     ) -> Result<(OracleSample, OracleSample), StdError> {
-        let mut low = 0;
-        let mut high = length - 1;
+        let mut low = U256::ZERO;
+        let mut high = U256::from(length - 1);
 
         let mut sample = OracleSample::default();
         let mut sample_last_update = 0;
 
-        let start_id = oracle_id; // oracleId is 1-based
+        let start_id = U256::from(oracle_id); // oracleId is 1-based
         while low <= high {
-            let mid = (low + high) >> 1;
+            let mid: U256 = (low + high) >> 1;
 
-            oracle_id = (start_id.wrapping_add(mid)) % length;
+            // TODO: check if this is the best way to do this
+            oracle_id = addmod(start_id, mid, length.into()).as_u16();
 
-            sample = self.get_sample(storage, oracle_id).unwrap_or_default();
+            sample = self.load(storage, oracle_id).unwrap_or_default();
             sample_last_update = sample.get_sample_last_update();
 
             match sample_last_update.cmp(&look_up_timestamp) {
@@ -483,13 +498,13 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
                 oracle_id = length;
             }
 
-            let prev_sample = self.get_sample(storage, oracle_id - 1).unwrap_or_default();
+            let prev_sample = self.load(storage, oracle_id - 1).unwrap_or_default();
 
             Ok((prev_sample, sample))
         } else {
             oracle_id = addmod(oracle_id.into(), U256::ONE, length.into()).as_u16();
 
-            let next_sample = self.get_sample(storage, oracle_id).unwrap_or_default();
+            let next_sample = self.load(storage, oracle_id).unwrap_or_default();
 
             Ok((sample, next_sample))
         }
@@ -607,8 +622,9 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::encoded_sample::MASK_UINT20;
-    use std::collections::HashMap;
+    use crate::{math::encoded::MASK_UINT20, types::Bytes32};
+    use cosmwasm_std::testing::mock_dependencies;
+    use secret_storage_plus::Map;
 
     // Helper function to bound a value within a range
     fn bound<T: Ord>(value: T, min: T, max: T) -> T {
@@ -623,58 +639,61 @@ mod tests {
 
     #[test]
     fn test_set_and_get_sample() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
-        // Replace with random values for fuzz testing
+        // TODO: Replace with random values for fuzz testing
         let oracle_id: u16 = 1;
-        let sample = OracleSample(EncodedSample([0u8; 32]));
+        let sample = OracleSample([0u8; 32]);
 
-        oracle.set_sample(oracle_id, sample).unwrap();
+        oracle.set_sample(storage, oracle_id, sample).unwrap();
 
-        let retrieved_sample = oracle.get_sample(oracle_id).unwrap();
+        let retrieved_sample = oracle.get_sample(storage, oracle_id).unwrap();
         assert_eq!(retrieved_sample, sample, "test_SetSample::1");
-
-        let internal_sample = oracle.samples.get(&(oracle_id - 1)).unwrap();
-        assert_eq!(*internal_sample, sample, "test_SetSample::2");
     }
 
     #[test]
     fn test_revert_set_and_get_sample() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         let oracle_id: u16 = 0;
-        let sample = OracleSample(EncodedSample([0u8; 32]));
+        let sample = OracleSample([0u8; 32]);
 
-        match oracle.set_sample(oracle_id, sample) {
-            Err(OracleError::InvalidOracleId) => {} // Expected error
-            _ => panic!("test_revert_SetSample failed"),
-        }
+        assert_eq!(
+            oracle.set_sample(storage, oracle_id, sample),
+            Err(StdError::GenericErr {
+                msg: OracleError::InvalidOracleId.to_string()
+            }),
+            "test_revert::SetSample"
+        );
 
-        match oracle.get_sample(oracle_id) {
-            Err(OracleError::InvalidOracleId) => {} // Expected error
-            _ => panic!("test_revert_GetSample failed"),
-        }
+        assert_eq!(
+            oracle.get_sample(storage, oracle_id),
+            Err(StdError::GenericErr {
+                msg: OracleError::InvalidOracleId.to_string()
+            }),
+            "test_revert::GetSample"
+        );
     }
 
     #[test]
     fn test_set_and_get_sample_edge_cases() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // Test with maximum oracle_id value for u16
         let max_oracle_id: u16 = u16::MAX;
-        let sample = OracleSample(EncodedSample([1u8; 32]));
+        let sample = OracleSample([1u8; 32]);
 
         // Set sample with maximum oracle_id
-        oracle.set_sample(max_oracle_id, sample).unwrap();
+        oracle.set_sample(storage, max_oracle_id, sample).unwrap();
 
         // Retrieve and validate
-        let retrieved_sample = oracle.get_sample(max_oracle_id).unwrap();
+        let retrieved_sample = oracle.get_sample(storage, max_oracle_id).unwrap();
         assert_eq!(
             retrieved_sample, sample,
             "test_set_and_get_sample_edge_cases::MaxOracleId"
@@ -682,23 +701,25 @@ mod tests {
 
         // Test with minimum valid oracle_id (1, since 0 is considered invalid)
         let min_valid_oracle_id: u16 = 1;
-        oracle.set_sample(min_valid_oracle_id, sample).unwrap();
+        oracle
+            .set_sample(storage, min_valid_oracle_id, sample)
+            .unwrap();
 
         // Retrieve and validate
-        let retrieved_sample = oracle.get_sample(min_valid_oracle_id).unwrap();
+        let retrieved_sample = oracle.get_sample(storage, min_valid_oracle_id).unwrap();
         assert_eq!(
             retrieved_sample, sample,
             "test_set_and_get_sample_edge_cases::MinValidOracleId"
         );
 
         // Test with an empty sample ([0u8; 32])
-        let empty_sample = OracleSample(EncodedSample([0u8; 32]));
+        let empty_sample = OracleSample([0u8; 32]);
         oracle
-            .set_sample(min_valid_oracle_id, empty_sample)
+            .set_sample(storage, min_valid_oracle_id, empty_sample)
             .unwrap();
 
         // Retrieve and validate
-        let retrieved_sample = oracle.get_sample(min_valid_oracle_id).unwrap();
+        let retrieved_sample = oracle.get_sample(storage, min_valid_oracle_id).unwrap();
         assert_eq!(
             retrieved_sample, empty_sample,
             "test_set_and_get_sample_edge_cases::EmptySample"
@@ -707,74 +728,74 @@ mod tests {
 
     #[test]
     fn test_binary_search_simple() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         let sample1 = OracleSample::encode(3, 1, 2, 3, 0, 0);
         let sample2 = OracleSample::encode(3, 2, 3, 4, 0, 10);
         let sample3 = OracleSample::encode(3, 3, 4, 5, 0, 20);
 
-        oracle.set_sample(1, sample1).unwrap();
-        oracle.set_sample(2, sample2).unwrap();
-        oracle.set_sample(3, sample3).unwrap();
+        oracle.set_sample(storage, 1, sample1).unwrap();
+        oracle.set_sample(storage, 2, sample2).unwrap();
+        oracle.set_sample(storage, 3, sample3).unwrap();
 
-        let (previous, next) = oracle.binary_search(3, 0, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 3, 0, 3).unwrap();
         assert_eq!(previous, sample1, "test_binarySearch::1");
         assert_eq!(next, sample1, "test_binarySearch::2");
 
-        let (previous, next) = oracle.binary_search(3, 1, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 3, 1, 3).unwrap();
         assert_eq!(previous, sample1, "test_binarySearch::3");
         assert_eq!(next, sample2, "test_binarySearch::4");
 
-        let (previous, next) = oracle.binary_search(3, 9, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 3, 9, 3).unwrap();
         assert_eq!(previous, sample1, "test_binarySearch::5");
         assert_eq!(next, sample2, "test_binarySearch::6");
 
-        let (previous, next) = oracle.binary_search(3, 10, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 3, 10, 3).unwrap();
         assert_eq!(previous, sample2, "test_binarySearch::7");
         assert_eq!(next, sample2, "test_binarySearch::8");
 
-        let (previous, next) = oracle.binary_search(3, 11, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 3, 11, 3).unwrap();
         assert_eq!(previous, sample2, "test_binarySearch::9");
         assert_eq!(next, sample3, "test_binarySearch::10");
 
-        let (previous, next) = oracle.binary_search(3, 20, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 3, 20, 3).unwrap();
         assert_eq!(previous, sample3, "test_binarySearch::11");
         assert_eq!(next, sample3, "test_binarySearch::12");
     }
 
     #[test]
     fn test_binary_search_circular() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         let sample1 = OracleSample::encode(3, 1, 2, 3, 3, 30);
         let sample2 = OracleSample::encode(3, 2, 3, 4, 9, 10);
         let sample3 = OracleSample::encode(3, 3, 4, 5, 9, 20);
 
-        oracle.set_sample(1, sample1).unwrap();
-        oracle.set_sample(2, sample2).unwrap();
-        oracle.set_sample(3, sample3).unwrap();
+        oracle.set_sample(storage, 1, sample1).unwrap();
+        oracle.set_sample(storage, 2, sample2).unwrap();
+        oracle.set_sample(storage, 3, sample3).unwrap();
 
-        let (previous, next) = oracle.binary_search(1, 19, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, 19, 3).unwrap();
         assert_eq!(previous, sample2, "test_binarySearch::1");
         assert_eq!(next, sample2, "test_binarySearch::2");
 
-        let (previous, next) = oracle.binary_search(1, 24, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, 24, 3).unwrap();
         assert_eq!(previous, sample2, "test_binarySearch::3");
         assert_eq!(next, sample3, "test_binarySearch::4");
 
-        let (previous, next) = oracle.binary_search(1, 29, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, 29, 3).unwrap();
         assert_eq!(previous, sample3, "test_binarySearch::5");
         assert_eq!(next, sample3, "test_binarySearch::6");
 
-        let (previous, next) = oracle.binary_search(1, 30, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, 30, 3).unwrap();
         assert_eq!(previous, sample3, "test_binarySearch::7");
         assert_eq!(next, sample1, "test_binarySearch::8");
 
-        let (previous, next) = oracle.binary_search(1, 33, 3).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, 33, 3).unwrap();
         assert_eq!(previous, sample1, "test_binarySearch::9");
         assert_eq!(next, sample1, "test_binarySearch::10");
     }
@@ -782,64 +803,84 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_revert_binary_search() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         let sample1 = OracleSample::encode(3, 1, 2, 3, 0, 30);
         let sample2 = OracleSample::encode(3, 2, 3, 4, 5, 10);
 
         // Invalid oracleId
-        match oracle.binary_search(0, 20, 3) {
-            Err(OracleError::InvalidOracleId) => {}
-            _ => panic!("test_revert_BinarySearch::1 failed"),
-        }
+        assert_eq!(
+            oracle.binary_search(storage, 0, 20, 3),
+            Err(StdError::GenericErr {
+                msg: OracleError::InvalidOracleId.to_string()
+            }),
+            "test_revert_BinarySearch::1"
+        );
 
+        // TODO: there is no invalid length error variant
         // Invalid length
-        match oracle.binary_search(1, 20, 0) {
-            Err(OracleError::InvalidOracleId) => {}
-            _ => panic!("test_revert_BinarySearch::2 failed"),
-        }
+        assert_eq!(
+            oracle.binary_search(storage, 1, 20, 0),
+            Err(StdError::GenericErr {
+                msg: OracleError::InvalidOracleId.to_string()
+            }),
+            "test_revert_BinarySearch::2"
+        );
 
-        oracle.set_sample(1, sample1).unwrap();
-        oracle.set_sample(2, sample2).unwrap();
+        oracle.set_sample(storage, 1, sample1).unwrap();
+        oracle.set_sample(storage, 2, sample2).unwrap();
 
         // Invalid oracleId
-        match oracle.binary_search(0, 20, 3) {
-            Err(OracleError::InvalidOracleId) => {}
-            _ => panic!("test_revert_BinarySearch::3 failed"),
-        }
+        assert_eq!(
+            oracle.binary_search(storage, 0, 20, 3),
+            Err(StdError::GenericErr {
+                msg: OracleError::InvalidOracleId.to_string()
+            }),
+            "test_revert_BinarySearch::3"
+        );
 
+        // TODO: there is no invalid length error variant
         // Invalid length
-        match oracle.binary_search(1, 20, 0) {
-            Err(OracleError::InvalidOracleId) => {}
-            _ => panic!("test_revert_BinarySearch::4 failed"),
-        }
+        assert_eq!(
+            oracle.binary_search(storage, 1, 20, 0),
+            Err(StdError::GenericErr {
+                msg: OracleError::InvalidOracleId.to_string()
+            }),
+            "test_revert_BinarySearch::4"
+        );
 
         // Invalid timestamp
-        match oracle.binary_search(1, 9, 2) {
-            Err(OracleError::LookUpTimestampTooOld) => {}
-            _ => panic!("test_revert_BinarySearch::5 failed"),
-        }
+        assert_eq!(
+            oracle.binary_search(storage, 1, 9, 2),
+            Err(StdError::GenericErr {
+                msg: OracleError::LookUpTimestampTooOld.to_string()
+            }),
+            "test_revert_BinarySearch::5"
+        );
 
         // Invalid timestamp
-        match oracle.binary_search(1, 31, 2) {
-            Err(OracleError::LookUpTimestampTooOld) => {}
-            _ => panic!("test_revert_BinarySearch::6 failed"),
-        }
+        assert_eq!(
+            oracle.binary_search(storage, 1, 31, 2),
+            Err(StdError::GenericErr {
+                msg: OracleError::LookUpTimestampTooOld.to_string()
+            }),
+            "test_revert_BinarySearch::6"
+        );
     }
 
     #[test]
     fn test_binary_search_simple_edge_cases() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // 1. Minimum Length
         let sample_min = OracleSample::encode(1, 1, 2, 3, 0, 0);
-        oracle.set_sample(1, sample_min).unwrap();
+        oracle.set_sample(storage, 1, sample_min).unwrap();
 
-        let (previous, next) = oracle.binary_search(1, 0, 1).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, 0, 1).unwrap();
         assert_eq!(
             previous, sample_min,
             "test_binary_search_simple_edge_cases::MinLength1"
@@ -850,17 +891,23 @@ mod tests {
         );
 
         // 2. Maximum Timestamp
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
+
+        // FIXME: needs to be u40::MAX instead
         let max_timestamp: u64 = u64::MAX;
         let sample_max = OracleSample::encode(u16::MAX, 1, 2, 3, 0, 0);
-        oracle.set_sample(u16::MAX - 2, sample_max).unwrap();
-        oracle.set_sample(u16::MAX - 1, sample_max).unwrap();
-        oracle.set_sample(u16::MAX, sample_max).unwrap();
+        oracle
+            .set_sample(storage, u16::MAX - 2, sample_max)
+            .unwrap();
+        oracle
+            .set_sample(storage, u16::MAX - 1, sample_max)
+            .unwrap();
+        oracle.set_sample(storage, u16::MAX, sample_max).unwrap();
 
         let (previous, next) = oracle
-            .binary_search(u16::MAX - 1, max_timestamp, u16::MAX)
+            .binary_search(storage, u16::MAX - 1, max_timestamp, u16::MAX)
             .unwrap();
         assert_eq!(
             previous, sample_max,
@@ -874,10 +921,10 @@ mod tests {
         // 3. Minimum Timestamp
         let min_timestamp: u64 = 0;
         let sample_min_ts = OracleSample::encode(2, 1, 2, 3, 0, 0);
-        oracle.set_sample(1, sample_min_ts).unwrap();
-        oracle.set_sample(2, sample_min_ts).unwrap();
+        oracle.set_sample(storage, 1, sample_min_ts).unwrap();
+        oracle.set_sample(storage, 2, sample_min_ts).unwrap();
 
-        let (previous, next) = oracle.binary_search(1, min_timestamp, 2).unwrap();
+        let (previous, next) = oracle.binary_search(storage, 1, min_timestamp, 2).unwrap();
         assert_eq!(
             previous, sample_min_ts,
             "test_binary_search_simple_edge_cases::MinTimestamp1"
@@ -890,20 +937,20 @@ mod tests {
 
     #[test]
     fn test_get_sample_at_fully_initialized() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
-        let sample1 = OracleSample::encode(3, 40, 50, 60, 3, 30);
+        let sample1 = OracleSample::encode(3, 40, 50, 60, 3, 30); // sample at timestamp 0 got overriden
         let sample2 = OracleSample::encode(3, 20, 30, 40, 5, 10);
         let sample3 = OracleSample::encode(3, 30, 40, 50, 5, 20);
 
-        oracle.set_sample(1, sample1).unwrap();
-        oracle.set_sample(2, sample2).unwrap();
-        oracle.set_sample(3, sample3).unwrap();
+        oracle.set_sample(storage, 1, sample1).unwrap();
+        oracle.set_sample(storage, 2, sample2).unwrap();
+        oracle.set_sample(storage, 3, sample3).unwrap();
 
         let (last_update, cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
-            oracle.get_sample_at(1, 15).unwrap();
+            oracle.get_sample_at(storage, 1, 15).unwrap();
 
         assert_eq!(last_update, 15, "test_GetSampleAt::1");
         assert_eq!(cumulative_id, 20, "test_GetSampleAt::2");
@@ -911,7 +958,7 @@ mod tests {
         assert_eq!(cumulative_bin_crossed, 40, "test_GetSampleAt::4");
 
         let (last_update, cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
-            oracle.get_sample_at(1, 20).unwrap();
+            oracle.get_sample_at(storage, 1, 20).unwrap();
 
         assert_eq!(last_update, 20, "test_GetSampleAt::5");
         assert_eq!(cumulative_id, 25, "test_GetSampleAt::6");
@@ -919,7 +966,7 @@ mod tests {
         assert_eq!(cumulative_bin_crossed, 45, "test_GetSampleAt::8");
 
         let (last_update, cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
-            oracle.get_sample_at(1, 25).unwrap();
+            oracle.get_sample_at(storage, 1, 25).unwrap();
 
         assert_eq!(last_update, 25, "test_GetSampleAt::9");
         assert_eq!(cumulative_id, 30, "test_GetSampleAt::10");
@@ -927,7 +974,7 @@ mod tests {
         assert_eq!(cumulative_bin_crossed, 50, "test_GetSampleAt::12");
 
         let (last_update, cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
-            oracle.get_sample_at(1, 30).unwrap();
+            oracle.get_sample_at(storage, 1, 30).unwrap();
 
         assert_eq!(last_update, 30, "test_GetSampleAt::13");
         assert_eq!(cumulative_id, 36, "test_GetSampleAt::14");
@@ -935,7 +982,7 @@ mod tests {
         assert_eq!(cumulative_bin_crossed, 56, "test_GetSampleAt::16");
 
         let (last_update, cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
-            oracle.get_sample_at(1, 40).unwrap();
+            oracle.get_sample_at(storage, 1, 40).unwrap();
 
         assert_eq!(last_update, 33, "test_GetSampleAt::17");
         assert_eq!(cumulative_id, 40, "test_GetSampleAt::18");
@@ -957,9 +1004,9 @@ mod tests {
 
     #[test]
     fn test_update_delta_ts_lower_than_2_minutes() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // Populate inputs struct (you may want to fuzz these values)
         let mut inputs = UpdateInputs {
@@ -997,9 +1044,11 @@ mod tests {
             inputs.created_at,
         );
 
-        oracle.set_sample(inputs.oracle_id, sample).unwrap();
+        oracle
+            .set_sample(storage, inputs.oracle_id, sample)
+            .unwrap();
 
-        let mut parameters = PairParameters(EncodedSample([0u8; 32]));
+        let mut parameters = PairParameters([0u8; 32]);
 
         parameters.set_oracle_id(inputs.oracle_id);
         parameters.set_active_id(inputs.previous_active_id).unwrap();
@@ -1008,16 +1057,12 @@ mod tests {
             .unwrap();
 
         let new_params = oracle
-            .update(
-                &Timestamp::from_seconds(inputs.timestamp),
-                parameters,
-                inputs.active_id,
-            )
+            .update_oracle(storage, inputs.timestamp, parameters, inputs.active_id)
             .unwrap();
 
         assert_eq!(new_params, parameters, "test_Update::1");
 
-        let sample = oracle.get_sample(inputs.oracle_id).unwrap();
+        let sample = oracle.get_sample(storage, inputs.oracle_id).unwrap();
 
         let dt = inputs.timestamp - inputs.created_at;
 
@@ -1027,8 +1072,8 @@ mod tests {
             inputs.previous_active_id - inputs.active_id
         } as u64;
 
-        let cumulative_id =
-            (inputs.previous_active_id as u64 * inputs.created_at) + (inputs.active_id as u64 * dt);
+        let cumulative_id = (inputs.previous_active_id as u64 * inputs.created_at)
+            + (inputs.previous_active_id as u64 * dt);
         let cumulative_volatility = (inputs.previous_volatility as u64 * inputs.created_at)
             + (inputs.volatility as u64 * dt);
         let cumulative_bin_crossed =
@@ -1054,9 +1099,9 @@ mod tests {
 
     #[test]
     fn test_update_delta_ts_greater_than_2_minutes() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // Populate inputs struct (you may want to fuzz these values)
         let inputs = UpdateInputs {
@@ -1071,7 +1116,6 @@ mod tests {
             timestamp: 140,
         };
 
-        // Your "vm.assume" logic goes here as assertions
         assert!(
             inputs.oracle_id > 0
                 && inputs.oracle_length >= inputs.oracle_id
@@ -1080,8 +1124,6 @@ mod tests {
                 && inputs.volatility <= MASK_UINT20.as_u32()
                 && inputs.previous_volatility <= MASK_UINT20.as_u32()
         );
-
-        // Your "vm.warp" logic should be implemented if needed
 
         let sample = OracleSample::encode(
             inputs.oracle_length,
@@ -1092,9 +1134,11 @@ mod tests {
             inputs.created_at,
         );
 
-        oracle.set_sample(inputs.oracle_id, sample).unwrap();
+        oracle
+            .set_sample(storage, inputs.oracle_id, sample)
+            .unwrap();
 
-        let mut parameters = PairParameters(EncodedSample([0u8; 32]));
+        let mut parameters = PairParameters([0u8; 32]);
 
         parameters.set_oracle_id(inputs.oracle_id);
         parameters.set_active_id(inputs.previous_active_id).unwrap();
@@ -1102,14 +1146,8 @@ mod tests {
             .set_volatility_accumulator(inputs.volatility)
             .unwrap();
 
-        // Your "vm.warp" logic should be implemented if needed
-
         let mut new_params = oracle
-            .update(
-                &Timestamp::from_seconds(inputs.timestamp),
-                parameters,
-                inputs.active_id,
-            )
+            .update_oracle(storage, inputs.timestamp, parameters, inputs.active_id)
             .unwrap();
 
         let next_id = ((inputs.oracle_id as usize % inputs.oracle_length as usize) + 1) as u16;
@@ -1122,13 +1160,13 @@ mod tests {
 
         if inputs.oracle_length > 1 {
             assert_eq!(
-                oracle.get_sample(inputs.oracle_id).unwrap(),
+                oracle.get_sample(storage, inputs.oracle_id).unwrap(),
                 sample,
                 "test_Update::2"
             );
         }
 
-        let sample = oracle.get_sample(next_id).unwrap();
+        let sample = oracle.get_sample(storage, next_id).unwrap();
 
         let dt = inputs.timestamp - inputs.created_at;
 
@@ -1138,8 +1176,8 @@ mod tests {
             inputs.previous_active_id - inputs.active_id
         } as u64;
 
-        let cumulative_id =
-            (inputs.previous_active_id as u64 * inputs.created_at) + (inputs.active_id as u64 * dt);
+        let cumulative_id = (inputs.previous_active_id as u64 * inputs.created_at)
+            + (inputs.previous_active_id as u64 * dt);
         let cumulative_volatility = (inputs.previous_volatility as u64 * inputs.created_at)
             + (inputs.volatility as u64 * dt);
         let cumulative_bin_crossed =
@@ -1165,9 +1203,9 @@ mod tests {
 
     #[test]
     fn test_increase_oracle_length() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // Random lengths, you may want to fuzz these values.
         let length = 3;
@@ -1175,34 +1213,40 @@ mod tests {
 
         let oracle_id = 1;
 
+        oracle.increase_length(storage, oracle_id, length).unwrap();
+
         println!(
             "{:#?}",
-            oracle.get_sample(oracle_id).unwrap().get_oracle_length()
+            oracle
+                .get_sample(storage, oracle_id)
+                .unwrap()
+                .get_oracle_length()
         );
 
-        oracle.increase_length(oracle_id, length).unwrap();
+        oracle
+            .increase_length(storage, oracle_id, new_length)
+            .unwrap();
 
         println!(
             "{:#?}",
-            oracle.get_sample(oracle_id).unwrap().get_oracle_length()
-        );
-
-        oracle.increase_length(oracle_id, new_length).unwrap();
-
-        println!(
-            "{:#?}",
-            oracle.get_sample(oracle_id).unwrap().get_oracle_length()
+            oracle
+                .get_sample(storage, oracle_id)
+                .unwrap()
+                .get_oracle_length()
         );
 
         assert_eq!(
-            oracle.get_sample(oracle_id).unwrap().get_oracle_length(),
+            oracle
+                .get_sample(storage, oracle_id)
+                .unwrap()
+                .get_oracle_length(),
             new_length,
             "test_IncreaseOracleLength::1"
         );
 
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // Random lengths, you may want to fuzz these values.
         let length = u16::MAX - 1;
@@ -1210,11 +1254,16 @@ mod tests {
 
         let oracle_id = 1;
 
-        oracle.increase_length(oracle_id, length).unwrap();
-        oracle.increase_length(oracle_id, new_length).unwrap();
+        oracle.increase_length(storage, oracle_id, length).unwrap();
+        oracle
+            .increase_length(storage, oracle_id, new_length)
+            .unwrap();
 
         assert_eq!(
-            oracle.get_sample(oracle_id).unwrap().get_oracle_length(),
+            oracle
+                .get_sample(storage, oracle_id)
+                .unwrap()
+                .get_oracle_length(),
             new_length,
             "test_IncreaseOracleLength::2"
         );
@@ -1222,9 +1271,9 @@ mod tests {
 
     #[test]
     fn test_revert_increase_oracle_length() {
-        let mut oracle = Oracle {
-            samples: HashMap::new(),
-        };
+        let mut deps = mock_dependencies();
+        let storage = &mut deps.storage;
+        let oracle: Map<u16, OracleSample> = Map::new("oracle");
 
         // Random lengths, you may want to fuzz these values.
         let length = 3;
@@ -1235,10 +1284,12 @@ mod tests {
 
         let oracle_id = 1;
 
-        oracle.increase_length(oracle_id, length).unwrap();
+        oracle.increase_length(storage, oracle_id, length).unwrap();
 
         // Equivalent to vm.expectRevert in Solidity.
         // Replace with your own logic.
-        assert!(oracle.increase_length(oracle_id, new_length).is_err());
+        assert!(oracle
+            .increase_length(storage, oracle_id, new_length)
+            .is_err());
     }
 }
