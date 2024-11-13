@@ -1040,6 +1040,34 @@ pub fn try_collect_protocol_fees(deps: DepsMut, _env: Env, info: MessageInfo) ->
     }
 }
 
+/// Increase the length of the oracle used by the pool.
+///
+/// # Arguments
+///
+/// * `new_length` - The new length of the oracle
+pub fn try_increase_oracle_length(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    new_length: u16,
+) -> Result<Response> {
+    let state = STATE.load(deps.storage)?;
+    let mut params = state.pair_parameters;
+
+    let mut oracle_id = params.get_oracle_id();
+
+    // activate the oracle if it is not active yet
+    if oracle_id == 0 {
+        oracle_id = 1;
+        params.set_oracle_id(oracle_id);
+    }
+
+    ORACLE.increase_length(deps.storage, oracle_id, new_length)?;
+
+    Ok(Response::default()
+        .add_attribute_plaintext("Oracle Length Increased", new_length.to_string()))
+}
+
 /// Sets the static fee parameters of the pool.
 ///
 /// Can only be called by the factory.

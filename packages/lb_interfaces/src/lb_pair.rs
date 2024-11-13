@@ -92,10 +92,9 @@ pub enum ExecuteMsg {
     //     amounts_to_burn: Vec<Uint256>,
     // },
     CollectProtocolFees {},
-    // TODO: where did this go?
-    // IncreaseOracleLength {
-    //     new_length: u16,
-    // },
+    IncreaseOracleLength {
+        new_length: u16,
+    },
     SetStaticFeeParameters {
         base_factor: u16,
         filter_period: u16,
@@ -216,6 +215,8 @@ pub enum QueryMsg {
     GetBinReserves { id: u32 },
     #[returns(BinsResponse)]
     GetBinsReserves { ids: Vec<u32> },
+
+    // unnecessary IMO
     #[returns(AllBinsResponse)]
     GetAllBinsReserves {
         id: Option<u32>,

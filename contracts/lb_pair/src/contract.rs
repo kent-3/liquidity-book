@@ -244,9 +244,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             remove_liquidity_params,
         } => try_remove_liquidity(deps, env, info, remove_liquidity_params),
         ExecuteMsg::CollectProtocolFees {} => try_collect_protocol_fees(deps, env, info),
-        // ExecuteMsg::IncreaseOracleLength { new_length } => {
-        //     try_increase_oracle_length(deps, env, info, new_length)
-        // }
+        ExecuteMsg::IncreaseOracleLength { new_length } => {
+            try_increase_oracle_length(deps, env, info, new_length)
+        }
         ExecuteMsg::SetStaticFeeParameters {
             base_factor,
             filter_period,
