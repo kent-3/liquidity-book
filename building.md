@@ -1,9 +1,7 @@
 # Building the Contracts
 
-The build target and rustflags are set in [`.cargo/config.toml`](.cargo/config.toml). To build the contracts, simply run:
-
 ```sh
-cargo build --lib --release
+RUSTFLAGS='-C link-arg=-s' cargo build --lib --release --target wasm32-unknown-unknown
 ```
 
 After building, you can use the provided script to collect, optimize, and prepare the contract `.wasm` files for deployment:
