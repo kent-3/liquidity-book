@@ -24,6 +24,8 @@ thiserror = { workspace = true }
 secret-toolkit = { workspace = true }
 ethnum = { workspace = true }
 
+cc = { workspace = true }
+
 [dev-dependencies]
 anyhow = { workspace = true }
 serde_json = { workspace = true }

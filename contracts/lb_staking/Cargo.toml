@@ -21,3 +21,5 @@ serde = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 serde_json = { workspace = true }
+
+cc = { workspace = true }

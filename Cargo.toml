@@ -47,9 +47,10 @@ ethnum = { version = "1.4" }
 thiserror = { version = "1.0" }
 anyhow = "1.0"
 primitive-types = { version = "0.12", default-features = false }
-# shadeswap-shared = { git = "https://github.com/securesecrets/shade", branch = "itsHaseebSaeed-LiquidityBook" }
 rand = "0.8"
 snafu = "0.8"
+
+cc = { version = "=1.1.10" }
 
 [workspace.dependencies.cosmwasm-std]
 git = "https://github.com/scrtlabs/cosmwasm"

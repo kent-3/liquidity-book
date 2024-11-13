@@ -22,5 +22,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 cosmwasm-schema = { workspace = true }
 
+cc = { workspace = true }
+
 [dev-dependencies]
 serial_test = "2.0.0"

@@ -25,6 +25,8 @@ ethnum = { workspace = true }
 cw-storage-plus = { workspace = true }
 shade-protocol = { workspace = true }
 
+cc = { workspace = true }
+
 [dev-dependencies]
 anyhow = { workspace = true }
 # cw-multi-test = { workspace = true }
