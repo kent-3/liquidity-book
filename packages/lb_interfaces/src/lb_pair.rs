@@ -1,6 +1,6 @@
 use super::lb_factory::{ContractImplementation, StaticFeeParameters};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, ContractInfo, Decimal256, Uint128, Uint256, Uint64};
+use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256, Uint64};
 use lb_libraries::types::Bytes32;
 use shade_protocol::{
     swap::{
@@ -8,7 +8,6 @@ use shade_protocol::{
         core::{TokenAmount, TokenType},
     },
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
-    Contract,
 };
 use std::fmt::{Debug, Display};
 
@@ -409,24 +408,13 @@ pub struct VariableFeeParametersResponse {
 }
 
 #[cw_serde]
+#[derive(Default)]
 pub struct OracleParametersResponse {
     pub sample_lifetime: u8,
     pub size: u16,
     pub active_size: u16,
     pub last_updated: u64,
     pub first_timestamp: u64,
-}
-
-impl Default for OracleParametersResponse {
-    fn default() -> Self {
-        OracleParametersResponse {
-            sample_lifetime: 0,
-            size: 0,
-            active_size: 0,
-            last_updated: 0,
-            first_timestamp: 0,
-        }
-    }
 }
 
 // TODO: try to make this simpler. try returning a tuple (u64, u64, u64) instead.

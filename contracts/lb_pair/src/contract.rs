@@ -435,7 +435,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                     amm_pair: env.contract.address.to_string(),
                     lb_token: state.lb_token.to_owned().into(),
                     admin_auth: state.admin_auth.into(),
-                    query_auth: emp_storage.query_auth.into(),
+                    query_auth: emp_storage.query_auth,
                     epoch_index: emp_storage.epoch_index,
                     epoch_duration: emp_storage.epoch_duration,
                     expiry_duration: emp_storage.expiry_duration,

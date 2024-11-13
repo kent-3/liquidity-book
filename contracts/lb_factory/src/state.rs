@@ -18,7 +18,6 @@ pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new("contract_status");
 pub const STATE: Item<State> = Item::new("state");
 pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
 
-// pub static ALL_LB_PAIRS: Item<Vec<LbPair>> = Item::new(b"all_lb_pairs");
 pub static ALL_LB_PAIRS: AppendStore<LbPair> = AppendStore::new("all_lb_pairs");
 
 /// Mapping from a (tokenA, tokenB, binStep) to a LbPair.

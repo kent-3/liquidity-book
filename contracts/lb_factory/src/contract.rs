@@ -898,9 +898,8 @@ fn query_number_of_lb_pairs(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * lb_pair - The address of the LbPair at index `index`.
-// TODO: Unsure if this function is necessary. Not sure how to index the Keyset. WAITING: For Front-end to make some decisions about this
-fn query_lb_pair_at_index(_deps: Deps, _index: u32) -> Result<Binary> {
-    let lb_pair = todo!();
+fn query_lb_pair_at_index(deps: Deps, index: u32) -> Result<Binary> {
+    let lb_pair = ALL_LB_PAIRS.get_at(deps.storage, index)?;
 
     let response = LbPairAtIndexResponse { lb_pair };
     to_binary(&response).map_err(Error::CwErr)
@@ -1209,7 +1208,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 // load the different bin_step LbPairs that exist for this pair of tokens, then add the new one
                 let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
                     .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
-                    .unwrap_or(Vec::<u16>::new());
+                    .unwrap_or_default();
                 bin_step_list.push(bin_step);
                 AVAILABLE_LB_PAIR_BIN_STEPS.save(
                     deps.storage,

@@ -749,8 +749,8 @@ mod tests {
         let base_fee = pair_params.get_base_fee(bin_step);
         let variable_fee = pair_params.get_variable_fee(bin_step);
 
-        let BASE_FACTOR = U256::from(pair_params.get_base_factor());
-        let expected_base_fee = BASE_FACTOR * U256::from(bin_step) * U256::from(1e10 as u64);
+        let base_factor = U256::from(pair_params.get_base_factor());
+        let expected_base_fee = base_factor * U256::from(bin_step) * U256::from(1e10 as u64);
         assert_eq!(base_fee, expected_base_fee);
 
         let volatility_accumulator = U256::from(pair_params.get_volatility_accumulator());

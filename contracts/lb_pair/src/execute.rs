@@ -389,7 +389,7 @@ fn add_liquidity_internal(
     let mut distribution_sum_y = 0u64;
     let precison: u64 = PRECISION as u64;
 
-    for i in 0..liquidity_configs.len() {
+    for (i, liquidity_config) in liquidity_configs.iter_mut().enumerate() {
         let id = calculate_id(liquidity_parameters, active_id, i)?;
         deposit_ids.push(id);
 
@@ -404,7 +404,7 @@ fn add_liquidity_internal(
             return Err(Error::DistributionError);
         }
 
-        liquidity_configs[i] = LiquidityConfigurations {
+        *liquidity_config = LiquidityConfigurations {
             distribution_x: liquidity_parameters.distribution_x[i].u64(),
             distribution_y: liquidity_parameters.distribution_y[i].u64(),
             id,
@@ -484,7 +484,7 @@ fn add_liquidity_internal(
 ///
 /// * `to` - The address that will receive the LB tokens
 /// * `liquidity_configs` - The encoded liquidity configurations, each one containing the id of the bin and the
-/// percentage of token X and token Y to add to the bin.
+///   percentage of token X and token Y to add to the bin.
 /// * `refund_to` - The address that will receive the excess amount of tokens
 ///
 /// # Returns
@@ -524,7 +524,7 @@ fn mint(
     let mut messages: Vec<CosmosMsg> = Vec::new();
 
     let amounts_left = mint_bins(
-        &mut deps,
+        deps,
         env.block.time.seconds(),
         state.bin_step,
         state.pair_parameters,
@@ -1202,12 +1202,12 @@ fn calculate_default_distribution(rewards_bins: u32, avg_bin: u32) -> Result<Rew
     let difference = max_bin - min_bin + 1;
 
     let ids: Vec<u32> = (min_bin..=max_bin).collect();
-    let weightages = vec![BASIS_POINT_MAX as u16 / difference as u16; difference as usize];
+    let weightages = vec![BASIS_POINT_MAX / difference as u16; difference as usize];
 
     Ok(RewardsDistribution {
         ids,
         weightages,
-        denominator: BASIS_POINT_MAX as u16,
+        denominator: BASIS_POINT_MAX,
     })
 }
 
@@ -1269,7 +1269,7 @@ fn calculate_volume_based_rewards_distribution(
         total_weight += weightage;
     }
 
-    let reminder = BASIS_POINT_MAX as u16 - total_weight;
+    let reminder = BASIS_POINT_MAX - total_weight;
 
     if reminder > 0 {
         let len = weightages.len() - 1;
@@ -1279,7 +1279,7 @@ fn calculate_volume_based_rewards_distribution(
     let distribution = RewardsDistribution {
         ids,
         weightages,
-        denominator: BASIS_POINT_MAX as u16,
+        denominator: BASIS_POINT_MAX,
     };
 
     Ok(distribution)
@@ -1304,23 +1304,17 @@ pub fn try_reset_rewards_config(
     let reward_stats = REWARDS_STATS_STORE.load(deps.storage, state.rewards_epoch_index)?;
 
     //Eventhough the distribution was changes mid epoch the effects of change will occur after the epoch.
-    match rewards_distribution_algorithm {
-        Some(distribution) => {
-            if reward_stats.rewards_distribution_algorithm != distribution {
-                state.toggle_distributions_algorithm = true;
-            }
+    if let Some(distribution) = rewards_distribution_algorithm {
+        if reward_stats.rewards_distribution_algorithm != distribution {
+            state.toggle_distributions_algorithm = true;
         }
-        None => {}
     };
 
-    match base_reward_bins {
-        Some(b_r_b) => {
-            if b_r_b > U24::MAX {
-                return Err(Error::U24Overflow);
-            }
-            state.base_rewards_bins = Some(b_r_b)
+    if let Some(b_r_b) = base_reward_bins {
+        if b_r_b > U24::MAX {
+            return Err(Error::U24Overflow);
         }
-        None => {}
+        state.base_rewards_bins = Some(b_r_b)
     }
 
     STATE.save(deps.storage, &state)?;

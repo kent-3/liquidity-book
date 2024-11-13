@@ -195,7 +195,6 @@ pub fn query_balance(
                     return Err(StdError::generic_err(
                         "you do have have permission to view balance",
                     ));
-                } else {
                 }
             }
         }

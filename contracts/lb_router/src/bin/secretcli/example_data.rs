@@ -231,10 +231,6 @@ impl ExampleData for RewardsDistribution {
 
 impl ExampleData for TokenPair {
     fn example() -> Self {
-        TokenPair {
-            0: TokenType::example(),
-            1: TokenType::example(),
-            2: false,
-        }
+        TokenPair(TokenType::example(), TokenType::example(), false)
     }
 }

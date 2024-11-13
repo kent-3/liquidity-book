@@ -16,7 +16,7 @@ use crate::{
     math::{sample_math::OracleSample, u256x256_math::addmod},
     pair_parameter_helper::PairParameters,
 };
-use cosmwasm_std::{Storage, Timestamp};
+use cosmwasm_std::Storage;
 use ethnum::U256;
 use std::cmp::Ordering::{Equal, Greater, Less};
 
@@ -622,7 +622,7 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{math::encoded::MASK_UINT20, types::Bytes32};
+    use crate::math::encoded::MASK_UINT20;
     use cosmwasm_std::testing::mock_dependencies;
     use secret_storage_plus::Map;
 

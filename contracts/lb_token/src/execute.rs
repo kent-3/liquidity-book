@@ -1020,13 +1020,10 @@ fn impl_transfer(
     }
 
     // combined error message for no token_id or no permission given in one place to make it harder to identify if token_id already exists
-    match throw_err {
-        true => {
-            return Err(StdError::generic_err(
-                "These tokens do not exist or you have no permission to transfer",
-            ));
-        }
-        false => (),
+    if throw_err {
+        return Err(StdError::generic_err(
+            "These tokens do not exist or you have no permission to transfer",
+        ));
     }
 
     // transfer tokens

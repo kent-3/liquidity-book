@@ -415,13 +415,7 @@ pub fn query_updated_bins_after_height(
         .rev()
         .skip((page * page_size) as usize)
         .take_while(|result| match result {
-            Ok(h) => {
-                if &height >= h {
-                    false
-                } else {
-                    true
-                }
-            }
+            Ok(h) => &height < h,
             Err(_) => todo!(),
         })
         .take(page_size as usize)
