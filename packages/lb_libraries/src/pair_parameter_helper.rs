@@ -23,7 +23,6 @@ use super::{
     math::{encoded::*, safe_math::Safe, u24::U24},
 };
 use crate::types::Bytes32;
-use cosmwasm_std::Timestamp;
 use ethnum::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -354,7 +353,8 @@ impl PairParameters {
         protocol_share: u16,
         max_volatility_accumulator: u32,
     ) -> Result<&mut Self, PairParametersError> {
-        if (filter_period > decay_period) | (decay_period > MASK_UINT12.as_u16())
+        if filter_period > decay_period
+            || decay_period > MASK_UINT12.as_u16()
             || reduction_factor > BASIS_POINT_MAX
             || protocol_share > MAX_PROTOCOL_SHARE
             || max_volatility_accumulator > MASK_UINT20.as_u32()
@@ -503,8 +503,9 @@ impl PairParameters {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::StaticFeeParameters;
     use cosmwasm_std::testing::mock_env;
+    // TODO: make lb-interfaces not depend on lb-libraries
+    use lb_interfaces::lb_factory::StaticFeeParameters;
 
     static MAX_STATIC_FEE_PARAMETER: StaticFeeParameters = StaticFeeParameters {
         base_factor: MASK_UINT16.as_u16(),
@@ -748,8 +749,8 @@ mod tests {
         let base_fee = pair_params.get_base_fee(bin_step);
         let variable_fee = pair_params.get_variable_fee(bin_step);
 
-        let base_factor = U256::from(pair_params.get_base_factor());
-        let expected_base_fee = base_factor * U256::from(bin_step) * U256::from(1e10 as u64);
+        let BASE_FACTOR = U256::from(pair_params.get_base_factor());
+        let expected_base_fee = BASE_FACTOR * U256::from(bin_step) * U256::from(1e10 as u64);
         assert_eq!(base_fee, expected_base_fee);
 
         let volatility_accumulator = U256::from(pair_params.get_volatility_accumulator());
@@ -796,15 +797,12 @@ mod tests {
         let mut pair_params = PairParameters::default();
         let env = mock_env();
 
-        let current_timestamp = env.block.time;
-        let result = pair_params.update_time_of_last_update(&current_timestamp);
+        let current_timestamp = env.block.time.seconds();
+        let result = pair_params.update_time_of_last_update(current_timestamp);
 
         match result {
             Ok(pair_params) => {
-                assert_eq!(
-                    pair_params.get_time_of_last_update(),
-                    current_timestamp.seconds()
-                );
+                assert_eq!(pair_params.get_time_of_last_update(), current_timestamp);
 
                 let mask_not_uint40 = !MASK_UINT40;
                 let shifted_mask = mask_not_uint40 << OFFSET_TIME_LAST_UPDATE;
@@ -897,71 +895,63 @@ mod tests {
 
     #[test]
     fn test_update_references() {
-        let mut pair_params = PairParameters::default();
-
+        let sfp = MAX_STATIC_FEE_PARAMETER.clone();
         let previous_time: u64 = 1000; // Replace with your value
         let time: u64 = 2000; // Replace with your value
-        let sfp = &MAX_STATIC_FEE_PARAMETER;
 
         let env = mock_env();
+        let current_timestamp = env.block.time.seconds();
 
-        let current_timestamp = env.block.time;
+        let mut pair_params = PairParameters::default();
+        println!("{sfp:#?}");
+        pair_params
+            .set_static_fee_parameters(
+                sfp.base_factor,
+                sfp.filter_period,
+                sfp.decay_period,
+                sfp.reduction_factor,
+                sfp.variable_fee_control,
+                sfp.protocol_share,
+                sfp.max_volatility_accumulator,
+            )
+            .unwrap()
+            .update_time_of_last_update(current_timestamp)
+            .unwrap();
 
-        if previous_time <= time {
-            pair_params
-                .set_static_fee_parameters(
-                    sfp.base_factor,
-                    sfp.filter_period,
-                    sfp.decay_period,
-                    sfp.reduction_factor,
-                    sfp.variable_fee_control,
-                    sfp.protocol_share,
-                    sfp.max_volatility_accumulator,
-                )
-                .unwrap()
-                .update_time_of_last_update(&current_timestamp)
-                .unwrap();
+        let delta_time = time - previous_time;
 
-            let delta_time = time - previous_time;
-
-            let id_reference = if delta_time >= sfp.filter_period.into() {
-                pair_params.get_active_id()
-            } else {
-                pair_params.get_id_reference()
-            };
-
-            let mut vol_reference = pair_params.get_volatility_reference();
-            if delta_time >= sfp.filter_period.into() {
-                vol_reference = if delta_time >= sfp.decay_period.into() {
-                    0
-                } else {
-                    pair_params
-                        .update_volatility_reference()
-                        .unwrap()
-                        .get_volatility_reference()
-                };
-            }
-
-            let result = pair_params.update_references(&current_timestamp);
-            match result {
-                Ok(pair_params) => {
-                    assert_eq!(pair_params.get_id_reference(), id_reference);
-                    assert_eq!(pair_params.get_volatility_reference(), vol_reference);
-                    assert_eq!(
-                        pair_params.get_time_of_last_update(),
-                        current_timestamp.seconds()
-                    );
-
-                    let mask = !(U256::from(1u128 << 84u128) - 1u128) << OFFSET_VOL_REF;
-                    let new_params_bits = U256::from_le_bytes(pair_params.0);
-                    let original_params_bits = U256::from_le_bytes(Bytes32::default());
-
-                    assert_eq!(new_params_bits & mask, original_params_bits & mask);
-                }
-                Err(_) => panic!("Update References failed"),
-            }
+        let id_reference = if delta_time >= sfp.filter_period.into() {
+            pair_params.get_active_id()
         } else {
-            panic!("Time condition not met");
+            pair_params.get_id_reference()
+        };
+
+        let mut vol_reference = pair_params.get_volatility_reference();
+        if delta_time >= sfp.filter_period.into() {
+            vol_reference = if delta_time >= sfp.decay_period.into() {
+                0
+            } else {
+                pair_params
+                    .update_volatility_reference()
+                    .unwrap()
+                    .get_volatility_reference()
+            };
+        }
+
+        let result = pair_params.update_references(current_timestamp);
+        match result {
+            Ok(pair_params) => {
+                assert_eq!(pair_params.get_id_reference(), id_reference);
+                assert_eq!(pair_params.get_volatility_reference(), vol_reference);
+                assert_eq!(pair_params.get_time_of_last_update(), current_timestamp);
+
+                let mask = !(U256::from(1u128 << 84u128) - 1u128) << OFFSET_VOL_REF;
+                let new_params_bits = U256::from_le_bytes(pair_params.0);
+                let original_params_bits = U256::from_le_bytes(Bytes32::default());
+
+                assert_eq!(new_params_bits & mask, original_params_bits & mask);
+            }
+            Err(_) => panic!("Update References failed"),
         }
     }
 
@@ -975,7 +965,7 @@ mod tests {
 
         let sfp = &MAX_STATIC_FEE_PARAMETER;
         let env = mock_env();
-        let current_timestamp = env.block.time;
+        let current_timestamp = env.block.time.seconds();
 
         if previous_time <= time {
             pair_params
@@ -989,17 +979,17 @@ mod tests {
                     sfp.max_volatility_accumulator,
                 )
                 .unwrap()
-                .update_time_of_last_update(&current_timestamp)
+                .update_time_of_last_update(current_timestamp)
                 .unwrap();
 
             let trusted_params = *pair_params
-                .update_references(&current_timestamp)
+                .update_references(current_timestamp)
                 .unwrap()
                 .update_volatility_accumulator(active_id)
                 .unwrap();
 
             let new_params = *pair_params
-                .update_volatility_parameters(active_id, &current_timestamp)
+                .update_volatility_parameters(active_id, current_timestamp)
                 .unwrap();
 
             assert_eq!(
@@ -1014,10 +1004,7 @@ mod tests {
                 new_params.get_volatility_accumulator(),
                 trusted_params.get_volatility_accumulator()
             );
-            assert_eq!(
-                new_params.get_time_of_last_update(),
-                current_timestamp.seconds()
-            );
+            assert_eq!(new_params.get_time_of_last_update(), current_timestamp);
 
             let mask = !(U256::from(1u128 << 104u128) - 1u128) << OFFSET_VOL_ACC;
             let new_params_bits = U256::from_le_bytes(new_params.0);
