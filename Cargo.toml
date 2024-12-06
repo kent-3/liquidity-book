@@ -40,9 +40,9 @@ schemars = { version = "0.8" }
 serde = { version = "1.0" }
 serde_json = { version = "1.0" }
 serde-json-wasm = { version = "1.0" }
-cw-storage-plus = { version = "1.1.0", default-features = false, features = [
-  "macro",
-] }
+# cw-storage-plus = { version = "1.1.0", default-features = false, features = [
+#   "macro",
+# ] }
 ethnum = { version = "1.4" }
 thiserror = { version = "1.0" }
 anyhow = "1.0"
@@ -53,19 +53,22 @@ snafu = "0.8"
 cc = { version = "=1.1.10" }
 
 [workspace.dependencies.cosmwasm-std]
-git = "https://github.com/scrtlabs/cosmwasm"
-tag = "v1.1.11-secret"
+# git = "https://github.com/scrtlabs/cosmwasm"
+# tag = "v1.1.11-secret"
+version = "=1.1.11"
 package = "secret-cosmwasm-std"
 features = ["random"]
 
 [workspace.dependencies.cosmwasm-storage]
-git = "https://github.com/scrtlabs/cosmwasm"
-tag = "v1.1.11-secret"
+# git = "https://github.com/scrtlabs/cosmwasm"
+# tag = "v1.1.11-secret"
+version = "=1.1.11"
 package = "secret-cosmwasm-storage"
 
 [workspace.dependencies.secret-toolkit]
-git = "https://github.com/scrtlabs/secret-toolkit"
-tag = "v0.10.0"
+# git = "https://github.com/scrtlabs/secret-toolkit"
+# tag = "v0.10.0"
+version = "0.10.1"
 default-features = false
 features = ["snip20", "storage", "viewing-key", "permit"]
 
@@ -82,12 +85,12 @@ features = ["snip20", "query_auth"]
 [patch.crates-io]
 # These patches are needed to make secret-toolkit compatible with the github versions
 # of secret-cosmwasm-std and secret-cosmwasm-storage, because it depend on the crates.io versions.
-secret-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
-secret-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
+# secret-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
+# secret-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
 
 # These patches are needed to make cw-storage-plus compatible with secret-cosmwasm-std
-cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
-cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
+# cosmwasm-std = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
+# cosmwasm-storage = { git = "https://github.com/scrtlabs/cosmwasm", tag = "v1.1.11-secret" }
 
 # TODO - patch the oracle to be compatible with the latest version of better-secret-math
 # [workspace.patch.'https://github.com/securesecrets/shade-oracle.git']

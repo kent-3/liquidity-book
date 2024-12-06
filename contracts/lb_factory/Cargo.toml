@@ -22,7 +22,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 secret-toolkit = { workspace = true }
 ethnum = { workspace = true }
-cw-storage-plus = { workspace = true }
+# cw-storage-plus = { workspace = true }
 shade-protocol = { workspace = true }
 
 cc = { workspace = true }
