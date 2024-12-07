@@ -210,8 +210,8 @@ fn main() -> io::Result<()> {
     let get_bin_step = QueryMsg::GetBinStep {};
     let get_reserves = QueryMsg::GetReserves {};
     let get_active_id = QueryMsg::GetActiveId {};
-    let get_bin_reserves = QueryMsg::GetBinReserves { id: ACTIVE_ID };
-    let get_bins_reserves = QueryMsg::GetBinsReserves {
+    let get_bin_reserves = QueryMsg::GetBin { id: ACTIVE_ID };
+    let get_bins_reserves = QueryMsg::GetBins {
         ids: vec![ACTIVE_ID - 1, ACTIVE_ID, ACTIVE_ID + 1],
     };
     let get_all_bins_reserves = QueryMsg::GetAllBinsReserves {
@@ -342,33 +342,33 @@ fn main() -> io::Result<()> {
     };
     let get_bin_step_response = BinStepResponse { bin_step: 100 };
     let get_reserves_response = ReservesResponse {
-        reserve_x: 1000,
-        reserve_y: 1000,
+        reserve_x: Uint128::new(1000),
+        reserve_y: Uint128::new(1000),
     };
     let get_active_id_response = ActiveIdResponse {
         active_id: ACTIVE_ID,
     };
     let get_bin_reserves_response = BinResponse {
         bin_id: ACTIVE_ID,
-        bin_reserve_x: 1000,
-        bin_reserve_y: 1000,
+        bin_reserve_x: Uint128::new(1000),
+        bin_reserve_y: Uint128::new(1000),
     };
 
     let bin_responses = vec![
         BinResponse {
             bin_id: ACTIVE_ID - 1,
-            bin_reserve_x: 1000,
-            bin_reserve_y: 0,
+            bin_reserve_x: Uint128::new(1000),
+            bin_reserve_y: Uint128::new(0),
         },
         BinResponse {
             bin_id: ACTIVE_ID,
-            bin_reserve_x: 1000,
-            bin_reserve_y: 1000,
+            bin_reserve_x: Uint128::new(1000),
+            bin_reserve_y: Uint128::new(1000),
         },
         BinResponse {
             bin_id: ACTIVE_ID + 1,
-            bin_reserve_x: 0,
-            bin_reserve_y: 1000,
+            bin_reserve_x: Uint128::new(0),
+            bin_reserve_y: Uint128::new(1000),
         },
     ];
     let get_bins_reserves_response = BinsResponse(bin_responses.clone());

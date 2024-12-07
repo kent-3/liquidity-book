@@ -349,8 +349,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetBinStep {} => to_binary(&query_bin_step(deps)?),
         QueryMsg::GetReserves {} => to_binary(&query_reserves(deps)?),
         QueryMsg::GetActiveId {} => to_binary(&query_active_id(deps)?),
-        QueryMsg::GetBinReserves { id } => to_binary(&query_bin_reserves(deps, id)?),
-        QueryMsg::GetBinsReserves { ids } => to_binary(&query_bins_reserves(deps, ids)?),
+        QueryMsg::GetBin { id } => to_binary(&query_bin_reserves(deps, id)?),
+        QueryMsg::GetBins { ids } => to_binary(&query_bins_reserves(deps, ids)?),
         QueryMsg::GetAllBinsReserves {
             id,
             page,

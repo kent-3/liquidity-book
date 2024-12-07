@@ -235,8 +235,8 @@ pub fn query_reserves(deps: Deps) -> Result<ReservesResponse> {
     reserve_y -= protocol_fee_y;
 
     let response = ReservesResponse {
-        reserve_x,
-        reserve_y,
+        reserve_x: reserve_x.into(),
+        reserve_y: reserve_y.into(),
     };
     Ok(response)
 }
@@ -301,8 +301,8 @@ pub fn query_all_bins_reserves(
         let (bin_reserve_x, bin_reserve_y) =
             BIN_MAP.load(deps.storage, id).unwrap_or_default().decode();
         bin_responses.push(BinResponse {
-            bin_reserve_x,
-            bin_reserve_y,
+            bin_reserve_x: bin_reserve_x.into(),
+            bin_reserve_y: bin_reserve_y.into(),
             bin_id: id,
         });
         counter += 1;
@@ -336,8 +336,8 @@ pub fn query_bins_reserves(deps: Deps, ids: Vec<u32>) -> Result<BinsResponse> {
         let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
         let (bin_reserve_x, bin_reserve_y) = bin.decode();
         bin_responses.push(BinResponse {
-            bin_reserve_x,
-            bin_reserve_y,
+            bin_reserve_x: bin_reserve_x.into(),
+            bin_reserve_y: bin_reserve_y.into(),
             bin_id: id,
         });
     }
@@ -358,8 +358,8 @@ pub fn query_updated_bins_at_height(
         let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
         let (bin_reserve_x, bin_reserve_y) = bin.decode();
         bin_responses.push(BinResponse {
-            bin_reserve_x,
-            bin_reserve_y,
+            bin_reserve_x: bin_reserve_x.into(),
+            bin_reserve_y: bin_reserve_y.into(),
             bin_id: id,
         });
     }
@@ -385,8 +385,8 @@ pub fn query_updated_bins_at_multiple_heights(
                 let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
                 let (bin_reserve_x, bin_reserve_y) = bin.decode();
                 bin_responses.push(BinResponse {
-                    bin_reserve_x,
-                    bin_reserve_y,
+                    bin_reserve_x: bin_reserve_x.into(),
+                    bin_reserve_y: bin_reserve_y.into(),
                     bin_id: id,
                 });
             }
@@ -431,8 +431,8 @@ pub fn query_updated_bins_after_height(
                 let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
                 let (bin_reserve_x, bin_reserve_y) = bin.decode();
                 bin_responses.push(BinResponse {
-                    bin_reserve_x,
-                    bin_reserve_y,
+                    bin_reserve_x: bin_reserve_x.into(),
+                    bin_reserve_y: bin_reserve_y.into(),
                     bin_id: id,
                 });
             }
@@ -482,8 +482,8 @@ pub fn query_bin_reserves(deps: Deps, id: u32) -> Result<BinResponse> {
     let (bin_reserve_x, bin_reserve_y) = bin.decode();
 
     let response = BinResponse {
-        bin_reserve_x,
-        bin_reserve_y,
+        bin_reserve_x: bin_reserve_x.into(),
+        bin_reserve_y: bin_reserve_y.into(),
         bin_id: id,
     };
     Ok(response)

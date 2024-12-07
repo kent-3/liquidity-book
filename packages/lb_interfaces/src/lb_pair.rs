@@ -212,9 +212,9 @@ pub enum QueryMsg {
     #[returns(ActiveIdResponse)]
     GetActiveId {},
     #[returns(BinResponse)]
-    GetBinReserves { id: u32 },
+    GetBin { id: u32 },
     #[returns(BinsResponse)]
-    GetBinsReserves { ids: Vec<u32> },
+    GetBins { ids: Vec<u32> },
 
     // unnecessary IMO
     #[returns(AllBinsResponse)]
@@ -336,8 +336,8 @@ pub struct BinStepResponse {
 
 #[cw_serde]
 pub struct ReservesResponse {
-    pub reserve_x: u128,
-    pub reserve_y: u128,
+    pub reserve_x: Uint128,
+    pub reserve_y: Uint128,
 }
 
 #[cw_serde]
@@ -348,8 +348,8 @@ pub struct ActiveIdResponse {
 #[cw_serde]
 pub struct BinResponse {
     pub bin_id: u32,
-    pub bin_reserve_x: u128,
-    pub bin_reserve_y: u128,
+    pub bin_reserve_x: Uint128,
+    pub bin_reserve_y: Uint128,
 }
 
 #[cw_serde]
