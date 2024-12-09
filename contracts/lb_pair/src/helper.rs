@@ -17,11 +17,7 @@ use shade_protocol::{
 };
 
 pub const INSTANTIATE_LP_TOKEN_REPLY_ID: u64 = 1u64;
-pub const INSTANTIATE_STAKING_CONTRACT_REPLY_ID: u64 = 2u64;
 pub const MINT_REPLY_ID: u64 = 1u64;
-pub const DEFAULT_REWARDS_BINS: u32 = 100;
-pub const DEFAULT_MAX_BINS_PER_SWAP: u32 = 100;
-pub const DEFAULT_ORACLE_LENGTH: u16 = u16::MAX;
 
 // TODO: make a 'bin' type with these methods?
 

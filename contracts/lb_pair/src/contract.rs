@@ -4,7 +4,7 @@ use cosmwasm_std::{
     MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
     WasmMsg,
 };
-use lb_interfaces::{lb_pair::*, lb_staking, lb_token};
+use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
     lb_token::state_structs::LbPair,
     math::{sample_math::OracleSample, tree_math::TreeUint24, u24::U24},
@@ -29,7 +29,6 @@ pub fn instantiate(
     const LB_TOKEN_DECIMALS: u8 = 18;
     // TODO: isn't this supposed to start at 0?
     const START_ORACLE_ID: u16 = 1;
-    const START_REWARDS_EPOCH: u64 = 1;
     let tree: TreeUint24 = TreeUint24::new();
 
     // Initializing the Token Contract
@@ -110,12 +109,6 @@ pub fn instantiate(
         }
     }
 
-    if let Some(t_r_b) = msg.total_reward_bins {
-        if t_r_b >= U24::MAX {
-            return Err(Error::InvalidInput {});
-        }
-    }
-
     // State initialization
     let state = State {
         creator: info.sender,
@@ -132,45 +125,21 @@ pub fn instantiate(
             address: Addr::unchecked(""),
             code_hash: "".to_string(),
         },
-        lb_staking: ContractInfo {
-            address: Addr::unchecked(""),
-            code_hash: "".to_string(),
-        },
-
         viewing_key,
         protocol_fees_recipient: msg.protocol_fee_recipient,
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
         last_swap_timestamp: env.block.time,
-        rewards_epoch_index: START_REWARDS_EPOCH,
-        base_rewards_bins: msg.total_reward_bins,
-        toggle_distributions_algorithm: false,
-        max_bins_per_swap: msg.max_bins_per_swap.unwrap_or(DEFAULT_MAX_BINS_PER_SWAP),
     };
 
     STATE.save(deps.storage, &state)?;
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
     BIN_TREE.save(deps.storage, &tree)?;
-    FEE_MAP_TREE.save(deps.storage, state.rewards_epoch_index, &tree)?;
-    REWARDS_STATS_STORE.save(
-        deps.storage,
-        state.rewards_epoch_index,
-        &RewardDistributionConfig {
-            cumulative_value: Uint256::zero(),
-            cumulative_value_mul_bin_id: Uint256::zero(),
-            rewards_distribution_algorithm: msg.rewards_distribution_algorithm,
-        },
-    )?;
     EPHEMERAL_STORAGE.save(
         deps.storage,
         &EphemeralStruct {
             lb_token_code_hash: msg.lb_token_implementation.code_hash,
-            staking_contract: msg.staking_contract_implementation,
             token_x_symbol,
             token_y_symbol,
-            epoch_index: state.rewards_epoch_index,
-            epoch_duration: msg.epoch_staking_duration,
-            expiry_duration: msg.expiry_staking_duration,
-            recover_funds_receiver: msg.recover_staking_funds_receiver,
             query_auth: msg.query_auth,
         },
     )?;
@@ -268,14 +237,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             max_volatility_accumulator,
         ),
         ExecuteMsg::ForceDecay {} => try_force_decay(deps, env, info),
-        ExecuteMsg::CalculateRewardsDistribution {} => {
-            try_calculate_rewards_distribution(deps, env, info)
-        }
-        ExecuteMsg::ResetRewardsConfig {
-            distribution,
-            base_rewards_bins,
-        } => try_reset_rewards_config(deps, env, info, distribution, base_rewards_bins),
-
         ExecuteMsg::SetContractStatus { contract_status } => {
             let state = STATE.load(deps.storage)?;
             validate_admin(
@@ -342,7 +303,6 @@ pub fn receiver_callback(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::GetPairInfo {} => to_binary(&query_pair_info(deps)?),
         QueryMsg::GetFactory {} => to_binary(&query_factory(deps)?),
         QueryMsg::GetTokenX {} => to_binary(&query_token_x(deps)?),
         QueryMsg::GetTokenY {} => to_binary(&query_token_y(deps)?),
@@ -351,29 +311,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetActiveId {} => to_binary(&query_active_id(deps)?),
         QueryMsg::GetBin { id } => to_binary(&query_bin_reserves(deps, id)?),
         QueryMsg::GetBins { ids } => to_binary(&query_bins_reserves(deps, ids)?),
-        QueryMsg::GetAllBinsReserves {
+        QueryMsg::GetAllBins {
             id,
             page,
             page_size,
         } => to_binary(&query_all_bins_reserves(deps, env, page, page_size, id)?),
-        QueryMsg::GetUpdatedBinAtHeight { height } => {
-            to_binary(&query_updated_bins_at_height(deps, height)?)
-        }
-        QueryMsg::GetUpdatedBinAtMultipleHeights { heights } => {
-            to_binary(&query_updated_bins_at_multiple_heights(deps, heights)?)
-        }
-        QueryMsg::GetUpdatedBinAfterHeight {
-            height,
-            page,
-            page_size,
-        } => to_binary(&query_updated_bins_after_height(
-            deps, env, height, page, page_size,
-        )?),
-
-        QueryMsg::GetBinUpdatingHeights { page, page_size } => {
-            to_binary(&query_bins_updating_heights(deps, page, page_size)?)
-        }
-
         QueryMsg::GetNextNonEmptyBin { swap_for_y, id } => {
             to_binary(&query_next_non_empty_bin(deps, swap_for_y, id)?)
         }
@@ -394,16 +336,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
             amount_in,
             swap_for_y,
         } => to_binary(&query_swap_out(deps, env, amount_in.u128(), swap_for_y)?),
-        QueryMsg::TotalSupply { id } => to_binary(&query_total_supply(deps, id)?),
+        // not in joe-v2
         QueryMsg::GetLbToken {} => to_binary(&query_lb_token(deps)?),
-        QueryMsg::GetStakingContract {} => to_binary(&query_staking(deps)?),
-        QueryMsg::GetTokens {} => to_binary(&query_tokens(deps)?),
-        QueryMsg::SwapSimulation { offer, exclude_fee } => {
-            to_binary(&query_swap_simulation(deps, env, offer, exclude_fee)?)
-        }
-        QueryMsg::GetRewardsDistribution { epoch_id } => {
-            to_binary(&query_rewards_distribution(deps, epoch_id)?)
-        }
+        QueryMsg::GetLbTokenSupply { id } => to_binary(&query_total_supply(deps, id)?),
     }
     .map_err(Error::from)
 }
@@ -431,58 +366,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 let mut response = Response::new();
                 response.data = Some(env.contract.address.to_string().as_bytes().into());
 
-                let instantiate_token_msg = lb_staking::InstantiateMsg {
-                    amm_pair: env.contract.address.to_string(),
-                    lb_token: state.lb_token.to_owned().into(),
-                    admin_auth: state.admin_auth.into(),
-                    query_auth: emp_storage.query_auth,
-                    epoch_index: emp_storage.epoch_index,
-                    epoch_duration: emp_storage.epoch_duration,
-                    expiry_duration: emp_storage.expiry_duration,
-                    recover_funds_receiver: emp_storage.recover_funds_receiver,
-                };
-
-                response = response.add_submessage(SubMsg::reply_on_success(
-                    CosmosMsg::Wasm(WasmMsg::Instantiate {
-                        code_id: emp_storage.staking_contract.id,
-                        code_hash: emp_storage.staking_contract.code_hash.clone(),
-                        msg: to_binary(&instantiate_token_msg)?,
-                        label: format!(
-                            "{}-{}-Staking-Contract-{}-{}",
-                            emp_storage.token_x_symbol,
-                            emp_storage.token_y_symbol,
-                            state.bin_step,
-                            env.block.height
-                        ),
-
-                        funds: vec![],
-                        admin: None,
-                    }),
-                    INSTANTIATE_STAKING_CONTRACT_REPLY_ID,
-                ));
-
-                Ok(response)
-            }
-            None => Err(StdError::generic_err("Unknown reply id")),
-        },
-        (INSTANTIATE_STAKING_CONTRACT_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
-            Some(x) => {
-                let contract_address_string = &String::from_utf8(x.to_vec())?;
-                let trimmed_str = contract_address_string.trim_matches('\"');
-                let contract_address = deps.api.addr_validate(trimmed_str)?;
-                // not the best name but it matches the pair key idea
-                let emp_storage = EPHEMERAL_STORAGE.load(deps.storage)?;
-                let mut state = STATE.load(deps.storage)?;
-
-                state.lb_staking = ContractInfo {
-                    address: contract_address,
-                    code_hash: emp_storage.staking_contract.code_hash,
-                };
-
-                STATE.save(deps.storage, &state)?;
-
-                let mut response = Response::new();
-                response.data = Some(env.contract.address.to_string().as_bytes().into());
                 Ok(response)
             }
             None => Err(StdError::generic_err("Unknown reply id")),

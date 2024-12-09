@@ -7,7 +7,7 @@ use lb_interfaces::{
     lb_factory::*,
     lb_pair::{
         ExecuteMsg as LbPairExecuteMsg, InstantiateMsg as LbPairInstantiateMsg, LbPair,
-        LbPairInformation, RewardsDistributionAlgorithm,
+        LbPairInformation,
     },
 };
 use lb_libraries::{
@@ -46,10 +46,7 @@ pub fn instantiate(
         lb_pair_implementation: ContractImplementation::default(),
         lb_token_implementation: ContractImplementation::default(),
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
-        staking_contract_implementation: ContractImplementation::default(),
-        recover_staking_funds_receiver: msg.recover_staking_funds_receiver,
         query_auth: msg.query_auth.into_valid(deps.api)?,
-        max_bins_per_swap: msg.max_bins_per_swap,
     };
 
     STATE.save(deps.storage, &config)?;
@@ -81,9 +78,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
         ExecuteMsg::SetLbTokenImplementation { implementation } => {
             try_set_lb_token_implementation(deps, env, info, implementation)
         }
-        ExecuteMsg::SetStakingContractImplementation { implementation } => {
-            try_set_staking_contract_implementation(deps, env, info, implementation)
-        }
         ExecuteMsg::CreateLbPair {
             token_x,
             token_y,
@@ -102,12 +96,12 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             viewing_key,
             entropy,
         ),
-        // ExecuteMsg::SetLbPairIgnored {
-        //     token_x,
-        //     token_y,
-        //     bin_step,
-        //     ignored,
-        // } => try_set_lb_pair_ignored(deps, env, info, token_x, token_y, bin_step, ignored),
+        ExecuteMsg::SetLbPairIgnored {
+            token_x,
+            token_y,
+            bin_step,
+            ignored,
+        } => try_set_lb_pair_ignored(deps, env, info, token_x, token_y, bin_step, ignored),
         ExecuteMsg::SetPairPreset {
             bin_step,
             base_factor,
@@ -118,11 +112,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             protocol_share,
             max_volatility_accumulator,
             is_open,
-            total_reward_bins,
-            rewards_distribution_algorithm,
-            epoch_staking_index,
-            epoch_staking_duration,
-            expiry_staking_duration,
         } => try_set_pair_preset(
             deps,
             env,
@@ -136,11 +125,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             protocol_share,
             max_volatility_accumulator,
             is_open,
-            total_reward_bins,
-            rewards_distribution_algorithm,
-            epoch_staking_index,
-            epoch_staking_duration,
-            expiry_staking_duration,
         ),
         ExecuteMsg::SetPresetOpenState { bin_step, is_open } => {
             try_set_preset_open_state(deps, env, info, bin_step, is_open)
@@ -250,40 +234,6 @@ fn try_set_lb_token_implementation(
     Ok(Response::default())
 }
 
-/// Sets the LbPair implementation details.
-///
-/// # Arguments
-///
-/// * `new_lb_pair_implementation` - The code ID and code hash of the implementation.
-fn try_set_staking_contract_implementation(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    new_implementation: ContractImplementation,
-) -> Result<Response> {
-    let config = STATE.load(deps.storage)?;
-    validate_admin(
-        &deps.querier,
-        AdminPermissions::LiquidityBookAdmin,
-        info.sender.to_string(),
-        &config.admin_auth,
-    )?;
-
-    let old_staking_contract_implementation = config.staking_contract_implementation;
-    if old_staking_contract_implementation == new_implementation {
-        return Err(Error::SameImplementation {
-            implementation: old_staking_contract_implementation.id,
-        });
-    }
-
-    STATE.update(deps.storage, |mut config| -> StdResult<_> {
-        config.staking_contract_implementation = new_implementation;
-        Ok(config)
-    })?;
-
-    Ok(Response::default())
-}
-
 /// Creates a liquidity bin LbPair for token_x and token_y.
 ///
 /// # Arguments
@@ -345,8 +295,6 @@ fn try_create_lb_pair(
 
     let config = STATE.load(deps.storage)?;
 
-    let staking_preset = STAKING_PRESETS.load(deps.storage, bin_step)?;
-
     // safety check, making sure that the price can be calculated
     PriceHelper::get_price_from_id(active_id, bin_step)?;
 
@@ -404,14 +352,6 @@ fn try_create_lb_pair(
                 protocol_fee_recipient: config.fee_recipient,
                 admin_auth: config.admin_auth.into(),
                 query_auth: config.query_auth.into(),
-                total_reward_bins: Some(staking_preset.total_reward_bins),
-                rewards_distribution_algorithm: staking_preset.rewards_distribution_algorithm,
-                staking_contract_implementation: config.staking_contract_implementation,
-                epoch_staking_index: staking_preset.epoch_staking_index,
-                epoch_staking_duration: staking_preset.epoch_staking_duration,
-                expiry_staking_duration: staking_preset.expiry_staking_duration,
-                recover_staking_funds_receiver: config.recover_staking_funds_receiver,
-                max_bins_per_swap: None,
             })?,
             code_hash: config.lb_pair_implementation.code_hash.clone(),
             funds: vec![],
@@ -429,6 +369,18 @@ fn try_create_lb_pair(
     })?;
 
     Ok(Response::new().add_submessages(messages))
+}
+
+fn try_set_lb_pair_ignored(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token_x: TokenType,
+    token_y: TokenType,
+    bin_step: u16,
+    ignored: bool,
+) -> Result<Response> {
+    todo!()
 }
 
 /// Sets the preset parameters of a bin step
@@ -457,11 +409,6 @@ fn try_set_pair_preset(
     protocol_share: u16,
     max_volatility_accumulator: u32,
     is_open: bool,
-    total_reward_bins: u32,
-    rewards_distribution_algorithm: RewardsDistributionAlgorithm,
-    epoch_staking_index: u64,
-    epoch_staking_duration: u64,
-    expiry_staking_duration: Option<u64>,
 ) -> Result<Response> {
     let state = STATE.load(deps.storage)?;
     validate_admin(
@@ -499,19 +446,6 @@ fn try_set_pair_preset(
     }
 
     PRESETS.save(deps.storage, bin_step, &preset)?;
-
-    STAKING_PRESETS.save(
-        deps.storage,
-        bin_step,
-        &StakingPreset {
-            total_reward_bins,
-            rewards_distribution_algorithm,
-            epoch_staking_index,
-            epoch_staking_duration,
-            expiry_staking_duration,
-        },
-    )?;
-
     STATE.save(deps.storage, &state)?;
 
     Ok(Response::default().add_attribute_plaintext("set preset", bin_step.to_string()))

@@ -3,16 +3,13 @@
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
 use lb_interfaces::{
     lb_factory::{ContractImplementation, StaticFeeParameters},
-    lb_pair::{
-        LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity, RewardsDistribution,
-        TokenPair,
-    },
+    lb_pair::{LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity},
 };
 use shade_protocol::{
     snip20::Snip20ReceiveMsg,
     swap::{
         amm_pair::SwapResult,
-        core::{TokenAmount, TokenType},
+        core::{TokenAmount, TokenPair, TokenType},
     },
     utils::asset::RawContract,
     Contract,
@@ -204,27 +201,6 @@ impl ExampleData for Snip20ReceiveMsg {
             amount: Uint128::from(100u128),
             memo: None,
             msg: Some(to_binary(&"base64 encoded string").unwrap()),
-        }
-    }
-}
-
-impl ExampleData for RewardsDistribution {
-    fn example() -> Self {
-        RewardsDistribution {
-            ids: vec![
-                ACTIVE_ID - 4,
-                ACTIVE_ID - 3,
-                ACTIVE_ID - 2,
-                ACTIVE_ID - 1,
-                ACTIVE_ID,
-                ACTIVE_ID + 1,
-                ACTIVE_ID + 2,
-                ACTIVE_ID + 3,
-                ACTIVE_ID + 4,
-                ACTIVE_ID + 5,
-            ],
-            weightages: vec![1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000],
-            denominator: 10000,
         }
     }
 }

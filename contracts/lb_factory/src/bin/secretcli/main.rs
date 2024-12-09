@@ -4,7 +4,7 @@ use cosmwasm_std::{Addr, ContractInfo};
 use example_data::{ExampleData, VariousAddr, ACTIVE_ID, BIN_STEP};
 use lb_interfaces::{
     lb_factory::*,
-    lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm},
+    lb_pair::{LbPair, LbPairInformation},
 };
 use shade_protocol::{swap::core::TokenType, utils::asset::RawContract};
 use std::{
@@ -70,9 +70,6 @@ fn main() -> io::Result<()> {
         owner: Some(Addr::owner()),
         fee_recipient: Addr::recipient(),
         query_auth: RawContract::example(),
-
-        recover_staking_funds_receiver: Addr::funds_recipient(),
-        max_bins_per_swap: Some(500),
     };
 
     writeln!(file, "## Instantiate Message\n")?;
@@ -109,11 +106,6 @@ fn main() -> io::Result<()> {
         protocol_share: 100,
         max_volatility_accumulator: 100,
         is_open: true,
-        total_reward_bins: 10,
-        rewards_distribution_algorithm: RewardsDistributionAlgorithm::TimeBasedRewards,
-        epoch_staking_index: 1,
-        epoch_staking_duration: 100,
-        expiry_staking_duration: None,
     };
 
     let set_preset_open_state = ExecuteMsg::SetPresetOpenState {

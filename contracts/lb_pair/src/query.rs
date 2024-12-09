@@ -146,36 +146,6 @@ pub fn query_lb_token(deps: Deps) -> Result<LbTokenResponse> {
     Ok(response)
 }
 
-/// Returns the Liquidity Book Factory.
-///
-/// # Returns
-///
-/// * `factory` - The Liquidity Book Factory
-pub fn query_staking(deps: Deps) -> Result<StakingResponse> {
-    let state = STATE.load(deps.storage)?;
-    let staking_contract = state.lb_staking;
-
-    let response = StakingResponse {
-        contract: staking_contract,
-    };
-    Ok(response)
-}
-
-/// Returns the token X and Y of the Liquidity Book Pair.
-///
-/// # Returns
-///
-/// * `token_x` - The address of the token X
-pub fn query_tokens(deps: Deps) -> Result<TokensResponse> {
-    let state = STATE.load(deps.storage)?;
-
-    let response = TokensResponse {
-        token_x: state.token_x,
-        token_y: state.token_y,
-    };
-    Ok(response)
-}
-
 /// Returns the token X of the Liquidity Book Pair.
 ///
 /// # Returns
@@ -258,7 +228,7 @@ pub fn query_active_id(deps: Deps) -> Result<ActiveIdResponse> {
     Ok(response)
 }
 
-/// Returns the reserves of a bin.
+/// Returns the bins changed after that block height
 ///
 /// # Arguments
 ///
@@ -268,6 +238,45 @@ pub fn query_active_id(deps: Deps) -> Result<ActiveIdResponse> {
 ///
 /// * `bin_reserve_x` - The reserve of token X in the bin
 /// * `bin_reserve_y` - The reserve of token Y in the bin
+
+pub fn query_bin_reserves(deps: Deps, id: u32) -> Result<BinResponse> {
+    let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
+    let (bin_reserve_x, bin_reserve_y) = bin.decode();
+
+    let response = BinResponse {
+        bin_reserve_x: bin_reserve_x.into(),
+        bin_reserve_y: bin_reserve_y.into(),
+        bin_id: id,
+    };
+    Ok(response)
+}
+
+/// Returns the reserves of many bins.
+///
+/// # Arguments
+///
+/// * `ids` - A list of bin ids
+///
+/// # Returns
+///
+/// * `bin_reserve_x` - The reserve of token X in the bin
+/// * `bin_reserve_y` - The reserve of token Y in the bin
+pub fn query_bins_reserves(deps: Deps, ids: Vec<u32>) -> Result<BinsResponse> {
+    let mut bin_responses = Vec::new();
+    for id in ids {
+        let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
+        let (bin_reserve_x, bin_reserve_y) = bin.decode();
+        bin_responses.push(BinResponse {
+            bin_reserve_x: bin_reserve_x.into(),
+            bin_reserve_y: bin_reserve_y.into(),
+            bin_id: id,
+        });
+    }
+
+    let response: BinsResponse = BinsResponse(bin_responses);
+    Ok(response)
+}
+
 pub fn query_all_bins_reserves(
     deps: Deps,
     env: Env,
@@ -290,7 +299,7 @@ pub fn query_all_bins_reserves(
     let state = STATE.load(deps.storage)?;
     let mut counter: u32 = 0;
 
-    for _ in 0..state.max_bins_per_swap {
+    loop {
         let next_id = tree.find_first_left(id);
         id = next_id;
 
@@ -315,176 +324,6 @@ pub fn query_all_bins_reserves(
         reserves: bin_responses,
         last_id: id,
         current_block_height: env.block.height,
-    };
-    Ok(response)
-}
-
-/// Returns the reserves of many bins.
-///
-/// # Arguments
-///
-/// * `id` - The id of the bin
-///
-/// # Returns
-///
-/// * `bin_reserve_x` - The reserve of token X in the bin
-/// * `bin_reserve_y` - The reserve of token Y in the bin
-// TODO: Check type names for consistency. This one, for example, should be BinsReservesResponse.
-pub fn query_bins_reserves(deps: Deps, ids: Vec<u32>) -> Result<BinsResponse> {
-    let mut bin_responses = Vec::new();
-    for id in ids {
-        let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
-        let (bin_reserve_x, bin_reserve_y) = bin.decode();
-        bin_responses.push(BinResponse {
-            bin_reserve_x: bin_reserve_x.into(),
-            bin_reserve_y: bin_reserve_y.into(),
-            bin_id: id,
-        });
-    }
-
-    let response: BinsResponse = BinsResponse(bin_responses);
-    Ok(response)
-}
-
-pub fn query_updated_bins_at_height(
-    deps: Deps,
-    height: u64,
-) -> Result<UpdatedBinsAtHeightResponse> {
-    let ids = BIN_RESERVES_UPDATED.load(deps.storage, height)?;
-
-    let mut bin_responses = Vec::new();
-
-    for id in ids {
-        let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
-        let (bin_reserve_x, bin_reserve_y) = bin.decode();
-        bin_responses.push(BinResponse {
-            bin_reserve_x: bin_reserve_x.into(),
-            bin_reserve_y: bin_reserve_y.into(),
-            bin_id: id,
-        });
-    }
-
-    let response: UpdatedBinsAtHeightResponse = UpdatedBinsAtHeightResponse(bin_responses);
-
-    Ok(response)
-}
-
-pub fn query_updated_bins_at_multiple_heights(
-    deps: Deps,
-    heights: Vec<u64>,
-) -> Result<UpdatedBinsAtMultipleHeightResponse> {
-    let mut bin_responses = Vec::new();
-    let mut processed_ids = HashSet::new();
-
-    for height in heights {
-        let ids = BIN_RESERVES_UPDATED.load(deps.storage, height)?;
-
-        for id in ids {
-            // Check if the id has already been processed
-            if processed_ids.insert(id) {
-                let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
-                let (bin_reserve_x, bin_reserve_y) = bin.decode();
-                bin_responses.push(BinResponse {
-                    bin_reserve_x: bin_reserve_x.into(),
-                    bin_reserve_y: bin_reserve_y.into(),
-                    bin_id: id,
-                });
-            }
-        }
-    }
-
-    let response: UpdatedBinsAtMultipleHeightResponse =
-        UpdatedBinsAtMultipleHeightResponse(bin_responses);
-
-    Ok(response)
-}
-
-pub fn query_updated_bins_after_height(
-    deps: Deps,
-    env: Env,
-    height: u64,
-    page: Option<u32>,
-    page_size: Option<u32>,
-) -> Result<UpdatedBinsAfterHeightResponse> {
-    let page = page.unwrap_or(0);
-    let page_size = page_size.unwrap_or(10);
-    let mut processed_ids = HashSet::new();
-
-    let heights: StdResult<Vec<u64>> = BIN_RESERVES_UPDATED_LOG
-        .iter(deps.storage)?
-        .rev()
-        .skip((page * page_size) as usize)
-        .take_while(|result| match result {
-            Ok(h) => &height < h,
-            Err(_) => todo!(),
-        })
-        .take(page_size as usize)
-        .collect();
-
-    let mut bin_responses = Vec::new();
-
-    for height in heights? {
-        let ids = BIN_RESERVES_UPDATED.load(deps.storage, height)?;
-
-        for id in ids {
-            if processed_ids.insert(id) {
-                let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
-                let (bin_reserve_x, bin_reserve_y) = bin.decode();
-                bin_responses.push(BinResponse {
-                    bin_reserve_x: bin_reserve_x.into(),
-                    bin_reserve_y: bin_reserve_y.into(),
-                    bin_id: id,
-                });
-            }
-        }
-    }
-
-    let response = UpdatedBinsAfterHeightResponse {
-        bins: bin_responses,
-        current_block_height: env.block.height,
-    };
-
-    Ok(response)
-}
-
-pub fn query_bins_updating_heights(
-    deps: Deps,
-    page: Option<u32>,
-    page_size: Option<u32>,
-) -> Result<BinUpdatingHeightsResponse> {
-    let page = page.unwrap_or(0);
-    let page_size = page_size.unwrap_or(10);
-    let txs: StdResult<Vec<u64>> = BIN_RESERVES_UPDATED_LOG
-        .iter(deps.storage)?
-        .rev()
-        .skip((page * page_size) as usize)
-        .take(page_size as usize)
-        .collect();
-
-    let response = BinUpdatingHeightsResponse(txs?);
-
-    Ok(response)
-}
-
-/// Returns the bins changed after that block height
-///
-/// # Arguments
-///
-/// * `id` - The id of the bin
-///
-/// # Returns
-///
-/// * `bin_reserve_x` - The reserve of token X in the bin
-/// * `bin_reserve_y` - The reserve of token Y in the bin
-
-pub fn query_bin_reserves(deps: Deps, id: u32) -> Result<BinResponse> {
-    let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
-    let (bin_reserve_x, bin_reserve_y) = bin.decode();
-
-    let response = BinResponse {
-        bin_reserve_x: bin_reserve_x.into(),
-        bin_reserve_y: bin_reserve_y.into(),
-        bin_id: id,
     };
     Ok(response)
 }
@@ -773,7 +612,7 @@ pub fn query_swap_in(
 
     params.update_references(env.block.time.seconds())?;
 
-    for _ in 0..state.max_bins_per_swap {
+    loop {
         let bin_reserves = BIN_MAP
             .load(deps.storage, id)
             .unwrap_or_default()
@@ -866,7 +705,7 @@ pub fn query_swap_out(
 
     params.update_references(env.block.time.seconds())?;
 
-    for _ in 0..state.max_bins_per_swap {
+    loop {
         let bin_reserves = BIN_MAP.load(deps.storage, id).unwrap_or_default();
         if !BinHelper::is_empty(bin_reserves, !swap_for_y) {
             let price = PriceHelper::get_price_from_id(id, bin_step)?;
@@ -924,7 +763,7 @@ pub fn query_swap_out(
 /// # Returns
 ///
 /// * `factory` - The Liquidity Book Factory
-pub fn query_total_supply(deps: Deps, id: u32) -> Result<TotalSupplyResponse> {
+pub fn query_total_supply(deps: Deps, id: u32) -> Result<LbTokenSupplyResponse> {
     let state = STATE.load(deps.storage)?;
     let _factory = state.factory.address;
 
@@ -932,23 +771,7 @@ pub fn query_total_supply(deps: Deps, id: u32) -> Result<TotalSupplyResponse> {
         _query_total_supply(deps, id, state.lb_token.code_hash, state.lb_token.address)?
             .u256_to_uint256();
 
-    let response = TotalSupplyResponse { total_supply };
-
-    Ok(response)
-}
-
-pub fn query_rewards_distribution(
-    deps: Deps,
-    epoch_id: Option<u64>,
-) -> Result<RewardsDistributionResponse> {
-    let epoch_id = match epoch_id {
-        Some(id) => id,
-        None => STATE.load(deps.storage)?.rewards_epoch_index - 1,
-    };
-
-    let response = RewardsDistributionResponse {
-        distribution: REWARDS_DISTRIBUTION.load(deps.storage, epoch_id)?,
-    };
+    let response = LbTokenSupplyResponse { total_supply };
 
     Ok(response)
 }

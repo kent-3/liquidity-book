@@ -1,4 +1,4 @@
-use super::lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm};
+use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 use shade_protocol::{
@@ -30,8 +30,6 @@ pub struct InstantiateMsg {
     pub query_auth: RawContract,
     pub owner: Option<Addr>,
     pub fee_recipient: Addr,
-    pub recover_staking_funds_receiver: Addr,
-    pub max_bins_per_swap: Option<u32>,
 }
 impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
@@ -45,9 +43,6 @@ pub enum ExecuteMsg {
     SetLbTokenImplementation {
         implementation: ContractImplementation,
     },
-    SetStakingContractImplementation {
-        implementation: ContractImplementation,
-    },
     CreateLbPair {
         token_x: TokenType,
         token_y: TokenType,
@@ -57,12 +52,12 @@ pub enum ExecuteMsg {
         viewing_key: String,
         entropy: String,
     },
-    // SetLbPairIgnored {
-    //     token_x: TokenType,
-    //     token_y: TokenType,
-    //     bin_step: u16,
-    //     ignored: bool,
-    // },
+    SetLbPairIgnored {
+        token_x: TokenType,
+        token_y: TokenType,
+        bin_step: u16,
+        ignored: bool,
+    },
     SetPairPreset {
         bin_step: u16,
         base_factor: u16,
@@ -74,11 +69,6 @@ pub enum ExecuteMsg {
         protocol_share: u16,
         // u24
         max_volatility_accumulator: u32,
-        total_reward_bins: u32,
-        rewards_distribution_algorithm: RewardsDistributionAlgorithm,
-        epoch_staking_index: u64,
-        epoch_staking_duration: u64,
-        expiry_staking_duration: Option<u64>,
         is_open: bool,
     },
     SetPresetOpenState {

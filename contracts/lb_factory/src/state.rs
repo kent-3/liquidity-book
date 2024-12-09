@@ -4,7 +4,7 @@ use cosmwasm_std::{Addr, ContractInfo, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use lb_interfaces::{
     lb_factory::ContractImplementation,
-    lb_pair::{LbPair, LbPairInformation, RewardsDistributionAlgorithm},
+    lb_pair::{LbPair, LbPairInformation},
 };
 use lb_libraries::pair_parameter_helper::PairParameters;
 use shade_protocol::{
@@ -28,9 +28,6 @@ pub const PRESET_HASHSET: Item<HashSet<u16>> = Item::new("preset_hashset");
 
 /// Map of bin_step to preset, which is an encoded Bytes32 set of pair parameters
 pub const PRESETS: Map<u16, PairParameters> = Map::new("presets");
-
-/// Map of bin_step to preset, which is an encoded Bytes32 set of pair parameters
-pub const STAKING_PRESETS: Map<u16, StakingPreset> = Map::new("stkaing_presets");
 
 // Does it need to store ContractInfo or would Addr be enough?
 // pub static QUOTE_ASSET_WHITELIST: Item<Vec<ContractInfo>> = Item::new(b"quote_asset_whitelist");
@@ -59,20 +56,8 @@ pub struct State {
     pub fee_recipient: Addr,
     pub lb_pair_implementation: ContractImplementation,
     pub lb_token_implementation: ContractImplementation,
-    pub staking_contract_implementation: ContractImplementation,
     pub admin_auth: Contract,
     pub query_auth: Contract,
-    pub recover_staking_funds_receiver: Addr,
-    pub max_bins_per_swap: Option<u32>,
-}
-
-#[cw_serde]
-pub struct StakingPreset {
-    pub total_reward_bins: u32,
-    pub rewards_distribution_algorithm: RewardsDistributionAlgorithm,
-    pub epoch_staking_index: u64,
-    pub epoch_staking_duration: u64,
-    pub expiry_staking_duration: Option<u64>,
 }
 
 pub fn ephemeral_storage_w(storage: &mut dyn Storage) -> Singleton<NextPairKey> {

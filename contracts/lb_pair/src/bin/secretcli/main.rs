@@ -1,9 +1,8 @@
 mod example_data;
 
+use cosmwasm_std::{Addr, ContractInfo, Uint128, Uint256};
 use ethnum::U256;
 use example_data::*;
-//TODO: List the imports explicitly.
-use cosmwasm_std::{Addr, ContractInfo, Decimal256, Uint128, Uint256};
 use lb_interfaces::{
     lb_factory::{ContractImplementation, StaticFeeParameters},
     lb_pair::*,
@@ -11,10 +10,7 @@ use lb_interfaces::{
 use lb_libraries::{math::uint256_to_u256::ConvertU256, pair_parameter_helper::PairParameters};
 // TODO: any chance we can do away with these dependencies?
 use shade_protocol::{
-    swap::{
-        amm_pair::SwapResult,
-        core::{TokenAmount, TokenType},
-    },
+    swap::core::{TokenAmount, TokenType},
     utils::asset::RawContract,
 };
 use std::{
@@ -92,12 +88,6 @@ fn main() -> io::Result<()> {
 
     let instantiate_msg = InstantiateMsg {
         admin_auth: RawContract::example(),
-        total_reward_bins: Some(10),
-        rewards_distribution_algorithm: RewardsDistributionAlgorithm::TimeBasedRewards,
-        epoch_staking_index: 1,
-        epoch_staking_duration: 100,
-        expiry_staking_duration: None,
-        recover_staking_funds_receiver: Addr::funds_recipient(),
         factory: ContractInfo::example(),
         token_x: TokenType::example(),
         token_y: TokenType::example(),
@@ -113,12 +103,10 @@ fn main() -> io::Result<()> {
         },
         active_id: ACTIVE_ID,
         lb_token_implementation: ContractImplementation::default(),
-        staking_contract_implementation: ContractImplementation::default(),
         viewing_key: String::from("viewing_key"),
         entropy: String::from("entropy"),
         protocol_fee_recipient: Addr::funds_recipient(),
         query_auth: RawContract::example(),
-        max_bins_per_swap: Some(500),
     };
 
     writeln!(file, "## Instantiate Message\n")?;
@@ -161,13 +149,6 @@ fn main() -> io::Result<()> {
 
     let force_decay = ExecuteMsg::ForceDecay {};
 
-    let calculte_rewards = ExecuteMsg::CalculateRewardsDistribution {};
-
-    let reset_rewards_config = ExecuteMsg::ResetRewardsConfig {
-        distribution: Some(RewardsDistributionAlgorithm::TimeBasedRewards),
-        base_rewards_bins: Some(20),
-    };
-
     let set_contract_status = ExecuteMsg::SetContractStatus {
         contract_status: ContractStatus::FreezeAll,
     };
@@ -181,8 +162,6 @@ fn main() -> io::Result<()> {
         collect_protocol_fees,
         set_static_fee_parameters,
         force_decay,
-        calculte_rewards,
-        reset_rewards_config,
         set_contract_status
     );
 
@@ -196,42 +175,13 @@ fn main() -> io::Result<()> {
         .u256_to_uint256();
     let total_liq = Uint256::from(100_000u128) * price + (Uint256::from(100_000u128) << 128);
 
-    let get_staking_contract = QueryMsg::GetStakingContract {};
-    let get_lb_token = QueryMsg::GetLbToken {};
-    let get_pair_info = QueryMsg::GetPairInfo {};
-    let swap_simulation = QueryMsg::SwapSimulation {
-        offer: TokenAmount::example(),
-        exclude_fee: Some(true),
-    };
     let get_factory = QueryMsg::GetFactory {};
-    let get_tokens = QueryMsg::GetTokens {};
     let get_token_x = QueryMsg::GetTokenX {};
     let get_token_y = QueryMsg::GetTokenY {};
     let get_bin_step = QueryMsg::GetBinStep {};
     let get_reserves = QueryMsg::GetReserves {};
     let get_active_id = QueryMsg::GetActiveId {};
     let get_bin_reserves = QueryMsg::GetBin { id: ACTIVE_ID };
-    let get_bins_reserves = QueryMsg::GetBins {
-        ids: vec![ACTIVE_ID - 1, ACTIVE_ID, ACTIVE_ID + 1],
-    };
-    let get_all_bins_reserves = QueryMsg::GetAllBinsReserves {
-        id: None,
-        page: None,
-        page_size: None,
-    };
-    let get_updated_bin_at_height = QueryMsg::GetUpdatedBinAtHeight { height: 100 };
-    let get_updated_bin_at_multiple_heights = QueryMsg::GetUpdatedBinAtMultipleHeights {
-        heights: vec![100, 200],
-    };
-    let get_updated_bin_after_height = QueryMsg::GetUpdatedBinAfterHeight {
-        height: 100,
-        page: Some(1),
-        page_size: Some(100),
-    };
-    let get_bin_updating_heights = QueryMsg::GetBinUpdatingHeights {
-        page: Some(1),
-        page_size: Some(100),
-    };
     let get_next_non_empty_bin = QueryMsg::GetNextNonEmptyBin {
         swap_for_y: true,
         id: 1,
@@ -254,85 +204,26 @@ fn main() -> io::Result<()> {
         amount_in: Uint128::from(100_000u128),
         swap_for_y: true,
     };
-    let total_supply = QueryMsg::TotalSupply { id: 1 };
-    let get_rewards_distribution = QueryMsg::GetRewardsDistribution { epoch_id: Some(1) };
+
+    // not in joe-v2
+    let get_lb_token = QueryMsg::GetLbToken {};
+    let get_lb_token_supply = QueryMsg::GetLbTokenSupply { id: 1 };
+    let get_bins_reserves = QueryMsg::GetBins {
+        ids: vec![ACTIVE_ID - 1, ACTIVE_ID, ACTIVE_ID + 1],
+    };
+    let get_all_bins = QueryMsg::GetAllBins {
+        id: None,
+        page: None,
+        page_size: None,
+    };
 
     // Responses
 
-    let get_staking_contract_response = StakingResponse {
-        contract: ContractInfo::example(),
-    };
     let get_lb_token_response = LbTokenResponse {
         contract: ContractInfo::example(),
     };
-    let get_pair_info_response = GetPairInfoResponse {
-        liquidity_token: ContractInfo::example(),
-        factory: Some(ContractInfo::example()),
-        pair: TokenPair::example(),
-        amount_0: Uint128::from(12345u128),
-        amount_1: Uint128::from(12345u128),
-        total_liquidity: total_liq,
-        contract_version: 1,
-        fee_info: FeeInfo {
-            shade_dao_address: Addr::recipient(),
-            lp_fee: Fee {
-                nom: 100_00000,
-                denom: 1000,
-            },
-            shade_dao_fee: Fee {
-                nom: 100_00000,
-                denom: 1000,
-            },
-            stable_lp_fee: Fee {
-                nom: 100_00000,
-                denom: 1000,
-            },
-            stable_shade_dao_fee: Fee {
-                nom: 100_00000,
-                denom: 1000,
-            },
-        },
-        stable_info: Some(StablePairInfoResponse {
-            stable_params: StableParams {
-                a: Decimal256::from_str("10").unwrap(),
-                gamma1: Uint256::from(4u32),
-                gamma2: Uint256::from(6u32),
-                oracle: shade_protocol::Contract {
-                    address: Addr::unchecked("ORACLE"),
-                    code_hash: "oracle_hash".into(),
-                },
-                min_trade_size_x_for_y: Decimal256::from_str("0.000000001").unwrap(),
-                min_trade_size_y_for_x: Decimal256::from_str("0.000000001").unwrap(),
-                max_price_impact_allowed: Decimal256::from_str("500").unwrap(),
-                custom_iteration_controls: None,
-            },
-            stable_token0_data: StableTokenData {
-                oracle_key: "oracle_key".to_string(),
-                decimals: 8,
-            },
-            stable_token1_data: StableTokenData {
-                oracle_key: "oracle_key".to_string(),
-                decimals: 8,
-            },
-            p: Some(Decimal256::from_str("123").unwrap()), // TODO: insert correct value
-        }),
-    };
-
-    let swap_simulation_response = SwapSimulationResponse {
-        total_fee_amount: Uint128::from(100u128),
-        lp_fee_amount: Uint128::from(90u128),
-        shade_dao_fee_amount: Uint128::from(10u128),
-        result: SwapResult {
-            return_amount: Uint128::from(100_000u128),
-        },
-        price: price.to_string(),
-    };
     let get_factory_response = FactoryResponse {
         factory: Addr::contract(),
-    };
-    let get_tokens_response = TokensResponse {
-        token_x: TokenType::example(),
-        token_y: TokenType::example(),
     };
     let get_token_x_response = TokenXResponse {
         token_x: TokenType::example(),
@@ -377,14 +268,6 @@ fn main() -> io::Result<()> {
         last_id: ACTIVE_ID + 1,
         current_block_height: 123456,
     };
-    let get_updated_bin_at_height_response = UpdatedBinsAtHeightResponse(bin_responses.clone());
-    let get_updated_bin_at_multiple_heights_response =
-        UpdatedBinsAtMultipleHeightResponse(bin_responses.clone());
-    let get_updated_bin_after_height_response = UpdatedBinsAfterHeightResponse {
-        bins: bin_responses.clone(),
-        current_block_height: 123456,
-    };
-    let get_bin_updating_heights_response = BinUpdatingHeightsResponse(vec![123454, 123455]);
     let get_next_non_empty_bin_response = NextNonEmptyBinResponse {
         next_id: ACTIVE_ID + 1,
     };
@@ -440,21 +323,14 @@ fn main() -> io::Result<()> {
         lp_fees: Uint128::from(10u128),
     };
 
-    let total_supply_response = TotalSupplyResponse {
+    let get_lb_token_supply_response = LbTokenSupplyResponse {
         total_supply: total_liq,
-    };
-    let get_rewards_distribution_response = RewardsDistributionResponse {
-        distribution: RewardsDistribution::example(),
     };
 
     print_query_messages_with_responses!(
         file,
-        (get_staking_contract, get_staking_contract_response),
         (get_lb_token, get_lb_token_response),
-        (get_pair_info, get_pair_info_response),
-        (swap_simulation, swap_simulation_response),
         (get_factory, get_factory_response),
-        (get_tokens, get_tokens_response),
         (get_token_x, get_token_x_response),
         (get_token_y, get_token_y_response),
         (get_bin_step, get_bin_step_response),
@@ -462,20 +338,6 @@ fn main() -> io::Result<()> {
         (get_active_id, get_active_id_response),
         (get_bin_reserves, get_bin_reserves_response),
         (get_bins_reserves, get_bins_reserves_response),
-        (get_all_bins_reserves, get_all_bins_reserves_response),
-        (
-            get_updated_bin_at_height,
-            get_updated_bin_at_height_response
-        ),
-        (
-            get_updated_bin_at_multiple_heights,
-            get_updated_bin_at_multiple_heights_response
-        ),
-        (
-            get_updated_bin_after_height,
-            get_updated_bin_after_height_response
-        ),
-        (get_bin_updating_heights, get_bin_updating_heights_response),
         (get_next_non_empty_bin, get_next_non_empty_bin_response),
         (get_protocol_fees, get_protocol_fees_response),
         (
@@ -492,8 +354,7 @@ fn main() -> io::Result<()> {
         (get_id_from_price, get_id_from_price_response),
         (get_swap_in, get_swap_in_response),
         (get_swap_out, get_swap_out_response),
-        (total_supply, total_supply_response),
-        (get_rewards_distribution, get_rewards_distribution_response),
+        (get_lb_token_supply, get_lb_token_supply_response),
     );
 
     println!("Created {}", file_path.display());
