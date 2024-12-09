@@ -5,7 +5,7 @@ members = [
   "packages/snip1155",
   "contracts/lb_factory",
   "contracts/lb_pair",
-  # "contracts/lb_quoter",
+  "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_staking",
   "contracts/lb_token",
@@ -14,6 +14,7 @@ members = [
 default-members = [
   "contracts/lb_factory",
   "contracts/lb_pair",
+  "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_staking",
   "contracts/lb_token",
