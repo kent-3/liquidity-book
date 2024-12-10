@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, ContractInfo, MessageInfo, StdResult, Uint128, Uint256};
-use lb_libraries::tokens::TokenType;
+use shade_protocol::contract_interfaces::swap::core::TokenType;
 
 #[cw_serde]
 pub struct InstantiateMsg {

@@ -1,118 +1,114 @@
+use crate::{msg::*, prelude::*, state::CONFIG};
 use cosmwasm_std::{
-    to_binary, Binary, Deps, QuerierWrapper, QueryRequest, StdError, StdResult, Uint128, Uint256,
+    to_binary, ContractInfo, Deps, QuerierWrapper, QueryRequest, StdResult, Uint128, Uint256,
     WasmQuery,
 };
-use lb_interfaces::lb_router::{Hop, QueryMsgResponse};
-use shade_protocol::{
-    swap::{
-        amm_pair::{
-            QueryMsg as AMMPairQueryMsg, QueryMsgResponse as AMMPairQueryReponse, SwapResult,
-        },
-        core::TokenAmount,
-    },
-    Contract,
-};
-use std::str::FromStr;
+use lb_interfaces::lb_pair;
 
-pub fn pair_contract_config(
-    querier: &QuerierWrapper,
-    pair_contract_address: Contract,
-) -> StdResult<AMMPairQueryReponse> {
-    let result: AMMPairQueryReponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: pair_contract_address.address.to_string(),
-        code_hash: pair_contract_address.code_hash.clone(),
-        msg: to_binary(&AMMPairQueryMsg::GetPairInfo {})?,
-    }))?;
+// pub fn pair_contract_config(
+//     querier: &QuerierWrapper,
+//     pair_contract_address: ContractInfo,
+// ) -> StdResult<TokensResponse> {
+//     let result: lb_pair::TokensResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+//         contract_addr: pair_contract_address.address.to_string(),
+//         code_hash: pair_contract_address.code_hash,
+//         msg: to_binary(&lb_pair::QueryMsg::GetTokens {})?,
+//     }))?;
+//
+//     Ok(result)
+// }
 
-    return Ok(result);
+pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
+    let state = CONFIG.load(deps.storage)?;
+    Ok(FactoryResponse {
+        factory: state.factory.address,
+    })
 }
 
-pub fn swap_simulation(
+pub fn query_id_from_price(
     deps: Deps,
-    path: Vec<Hop>,
-    offer: TokenAmount,
-    exclude_fee: Option<bool>,
-) -> StdResult<Binary> {
-    let mut sum_total_fee_amount: Uint128 = Uint128::zero();
-    let mut sum_lp_fee_amount: Uint128 = Uint128::zero();
-    let mut sum_shade_dao_fee_amount: Uint128 = Uint128::zero();
-    let mut next_in = offer.clone();
-    let querier = &deps.querier;
+    lb_pair: ContractInfo,
+    price: Uint256,
+) -> Result<IdFromPriceResponse> {
+    let msg = lb_pair::QueryMsg::GetIdFromPrice { price };
+    let lb_pair::IdFromPriceResponse { id } = deps
+        .querier
+        .query_wasm_smart::<lb_pair::IdFromPriceResponse>(
+            lb_pair.code_hash,
+            lb_pair.address.to_string(),
+            &(&msg),
+        )?;
 
-    for hop in path {
-        let contract = Contract {
-            address: deps.api.addr_validate(&hop.addr)?,
-            code_hash: hop.code_hash,
-        };
-        let contract_info: AMMPairQueryReponse =
-            querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                contract_addr: contract.address.to_string(),
-                code_hash: contract.code_hash.clone(),
-                msg: to_binary(&AMMPairQueryMsg::GetPairInfo {})?,
-            }))?;
+    Ok(IdFromPriceResponse { id })
+}
 
-        match contract_info {
-            AMMPairQueryReponse::GetPairInfo {
-                liquidity_token: _,
-                factory: _,
-                pair,
-                amount_0: _,
-                amount_1: _,
-                total_liquidity: _,
-                contract_version: _,
-                fee_info: _,
-                stable_info: _,
-            } => {
-                let result: AMMPairQueryReponse =
-                    querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                        contract_addr: contract.address.to_string(),
-                        code_hash: contract.code_hash.clone(),
-                        msg: to_binary(&AMMPairQueryMsg::SwapSimulation {
-                            offer: next_in.clone(),
-                            exclude_fee,
-                        })?,
-                    }))?;
-                match result {
-                    AMMPairQueryReponse::SwapSimulation {
-                        total_fee_amount,
-                        lp_fee_amount,
-                        shade_dao_fee_amount,
-                        result,
-                        price: _,
-                    } => {
-                        if pair.1 == next_in.token {
-                            next_in = TokenAmount {
-                                token: pair.0,
-                                amount: result.return_amount,
-                            };
-                        } else {
-                            next_in = TokenAmount {
-                                token: pair.1,
-                                amount: result.return_amount,
-                            };
-                        }
-                        sum_total_fee_amount =
-                            total_fee_amount.checked_add(sum_total_fee_amount)?;
-                        sum_lp_fee_amount = lp_fee_amount.checked_add(sum_lp_fee_amount)?;
-                        sum_shade_dao_fee_amount =
-                            shade_dao_fee_amount.checked_add(sum_shade_dao_fee_amount)?;
-                    }
-                    _ => return Err(StdError::generic_err("Failed to complete hop.")),
-                };
-            }
-            _ => return Err(StdError::generic_err("Failed to complete hop.")),
-        }
-    }
+pub fn query_price_from_id(
+    deps: Deps,
+    lb_pair: ContractInfo,
+    id: u32,
+) -> Result<PriceFromIdResponse> {
+    let msg = lb_pair::QueryMsg::GetPriceFromId { id };
+    let lb_pair::PriceFromIdResponse { price } = deps
+        .querier
+        .query_wasm_smart::<lb_pair::PriceFromIdResponse>(
+            lb_pair.code_hash,
+            lb_pair.address.to_string(),
+            &(&msg),
+        )?;
 
-    to_binary(&QueryMsgResponse::SwapSimulation {
-        total_fee_amount: sum_total_fee_amount,
-        lp_fee_amount: sum_lp_fee_amount,
-        shade_dao_fee_amount: sum_shade_dao_fee_amount,
-        result: SwapResult {
-            return_amount: next_in.amount,
-        },
-        price: (Uint256::from_str(&next_in.amount.to_string())?
-            / Uint256::from_str(&offer.amount.to_string())?)
-        .to_string(),
+    Ok(PriceFromIdResponse { price })
+}
+
+pub fn query_swap_in(
+    deps: Deps,
+    lb_pair: ContractInfo,
+    amount_out: Uint128,
+    swap_for_y: bool,
+) -> Result<SwapInResponse> {
+    let msg = lb_pair::QueryMsg::GetSwapIn {
+        amount_out,
+        swap_for_y,
+    };
+    let lb_pair::SwapInResponse {
+        amount_in,
+        amount_out_left,
+        fee,
+    } = deps.querier.query_wasm_smart::<lb_pair::SwapInResponse>(
+        lb_pair.code_hash,
+        lb_pair.address.to_string(),
+        &(&msg),
+    )?;
+
+    Ok(SwapInResponse {
+        amount_in,
+        amount_out_left,
+        fee,
+    })
+}
+
+pub fn query_swap_out(
+    deps: Deps,
+    lb_pair: ContractInfo,
+    amount_in: Uint128,
+    swap_for_y: bool,
+) -> Result<SwapOutResponse> {
+    let msg = lb_pair::QueryMsg::GetSwapOut {
+        amount_in,
+        swap_for_y,
+    };
+    let lb_pair::SwapOutResponse {
+        amount_in_left,
+        amount_out,
+        fee,
+    } = deps.querier.query_wasm_smart::<lb_pair::SwapOutResponse>(
+        lb_pair.code_hash,
+        lb_pair.address.to_string(),
+        &(&msg),
+    )?;
+
+    Ok(SwapOutResponse {
+        amount_in_left,
+        amount_out,
+        fee,
     })
 }

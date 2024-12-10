@@ -1,5 +1,4 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-// TODO: maybe we do have a problem...
 use lb_interfaces::lb_pair::{
     ActiveIdResponse, AllBinsResponse, BinResponse, BinStepResponse, BinsResponse, ExecuteMsg,
     FactoryResponse, IdFromPriceResponse, InstantiateMsg, InvokeMsg, LbTokenResponse,

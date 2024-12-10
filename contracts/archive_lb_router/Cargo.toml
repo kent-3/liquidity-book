@@ -1,31 +1,28 @@
 [package]
 name = "lb-router"
 version = "0.1.0"
+authors = ["Tony <plutonyium@gmail.com>"]
 edition = "2021"
 exclude = ["contract.wasm", "hash.txt"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[[bin]]
-name = "schema"
-
 [features]
 default = []
-backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
+cosmwasm-std = { workspace = true }
+shade-protocol = { workspace = true }
 lb-interfaces = { workspace = true }
 lb-libraries = { workspace = true }
-cosmwasm-std = { workspace = true }
-cosmwasm-storage = { workspace = true }
-cosmwasm-schema = { workspace = true }
+snafu = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true }
-serde-json-wasm = { workspace = true }
-thiserror = { workspace = true }
-secret-toolkit = { workspace = true }
-ethnum = { workspace = true }
+serde_json = { workspace = true }
+cosmwasm-schema = { workspace = true }
+
+cc = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
-# cw-multi-test = { workspace = true }
+serial_test = "2.0.0"

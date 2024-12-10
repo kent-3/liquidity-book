@@ -1,5 +1,5 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use lb_interfaces::lb_router::{ExecuteMsg, InitMsg, InvokeMsg, QueryMsg, QueryMsgResponse};
+use lb_interfaces::lb_router::*;
 use std::{env, fs::create_dir_all, path::PathBuf};
 
 fn main() {
@@ -10,9 +10,10 @@ fn main() {
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 
-    export_schema(&schema_for!(InitMsg), &out_dir);
+    export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(InvokeMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
-    export_schema(&schema_for!(QueryMsgResponse), &out_dir);
+
+    // all the responses
 }

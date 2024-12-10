@@ -339,7 +339,6 @@ pub struct IdFromPriceResponse {
     pub id: u32,
 }
 
-// TODO: shouldn't this also have dao fees and lp fees?
 #[cw_serde]
 pub struct SwapInResponse {
     pub amount_in: Uint128,
@@ -351,9 +350,7 @@ pub struct SwapInResponse {
 pub struct SwapOutResponse {
     pub amount_in_left: Uint128,
     pub amount_out: Uint128,
-    pub total_fees: Uint128,
-    pub shade_dao_fees: Uint128,
-    pub lp_fees: Uint128,
+    pub fee: Uint128,
 }
 
 #[cw_serde]
