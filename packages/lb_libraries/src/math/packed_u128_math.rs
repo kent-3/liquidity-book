@@ -125,7 +125,7 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
         (x1, x2)
     }
 
-    /// Decodes a `Bytes32` value into a `u128` value as either the first or second chunk.
+    /// Decodes a `Bytes32` value into a `u128` value as the first or second `u128`.
     ///
     /// # Arguments
     ///

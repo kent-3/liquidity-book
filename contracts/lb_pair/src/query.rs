@@ -30,6 +30,7 @@ use shade_protocol::{
     Contract,
 };
 use std::collections::HashSet;
+use std::ops::Add;
 
 // TODO - Revisit if this function is necessary. It seems like something that might belong in the
 //        lb-factory contract. It should at least have it's own interface and not use amm_pair's.
@@ -78,48 +79,6 @@ pub fn query_pair_info(deps: Deps) -> Result<QueryMsgResponse> {
     Ok(response)
 }
 
-// TODO - Revisit if this function is necessary. It seems like something that might belong in the
-//        lb-router contract. It should at least have it's own interface and not use amm_pair's.
-pub fn query_swap_simulation(
-    deps: Deps,
-    env: Env,
-    offer: TokenAmount,
-    _exclude_fee: Option<bool>,
-) -> Result<QueryMsgResponse> {
-    let state = STATE.load(deps.storage)?;
-
-    let mut swap_for_y = false;
-    match offer.token {
-        token if token == state.token_x => swap_for_y = true,
-        token if token == state.token_y => {}
-        _ => panic!("No such token"),
-    };
-
-    let res = query_swap_out(deps, env, offer.amount.into(), swap_for_y)?;
-
-    if res.amount_in_left.u128() > 0u128 {
-        return Err(Error::AmountInLeft {
-            amount_left_in: res.amount_in_left,
-            total_amount: offer.amount,
-            swapped_amount: res.amount_out,
-        });
-    }
-
-    let price = Decimal::from_ratio(res.amount_out, offer.amount).to_string();
-
-    let response = SwapSimulation {
-        total_fee_amount: res.total_fees,
-        lp_fee_amount: res.lp_fees,               //TODO lpfee
-        shade_dao_fee_amount: res.shade_dao_fees, // dao fee
-        result: SwapResult {
-            return_amount: res.amount_out,
-        },
-        price,
-    };
-
-    Ok(response)
-}
-
 /// Returns the Liquidity Book Factory.
 ///
 /// # Returns
@@ -133,11 +92,6 @@ pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
     Ok(response)
 }
 
-/// Returns the Liquidity Book Factory.
-///
-/// # Returns
-///
-/// * `factory` - The Liquidity Book Factory
 pub fn query_lb_token(deps: Deps) -> Result<LbTokenResponse> {
     let state = STATE.load(deps.storage)?;
     let lb_token = state.lb_token;
@@ -649,6 +603,7 @@ pub fn query_swap_in(
             break;
         } else {
             let next_id = _get_next_non_empty_bin(&tree, swap_for_y, id);
+
             if next_id == 0 || next_id == U24::MAX {
                 break;
             }
@@ -691,12 +646,8 @@ pub fn query_swap_out(
     let tree = BIN_TREE.load(deps.storage)?;
 
     let mut amounts_in_left = Bytes32::encode_alt(amount_in, swap_for_y);
-    let mut amounts_out = [0u8; 32];
-    let _fee = 0u128;
-    let mut _fee = 0u128;
-    let mut total_fees: [u8; 32] = [0; 32];
-    let mut lp_fees: [u8; 32] = [0; 32];
-    let mut shade_dao_fees: [u8; 32] = [0; 32];
+    let mut amounts_out = 0u128;
+    let mut fee = 0u128;
 
     let mut params = state.pair_parameters;
     let bin_step = state.bin_step;
@@ -712,7 +663,7 @@ pub fn query_swap_out(
 
             params = *params.update_volatility_accumulator(id)?;
 
-            let (amounts_in_with_fees, amounts_out_of_bin, fees) = BinHelper::get_amounts(
+            let (amounts_in_with_fees, amounts_out_of_bin, total_fees) = BinHelper::get_amounts(
                 bin_reserves,
                 params,
                 bin_step,
@@ -723,13 +674,8 @@ pub fn query_swap_out(
 
             if U256::from_le_bytes(amounts_in_with_fees) > U256::ZERO {
                 amounts_in_left = amounts_in_left.sub(amounts_in_with_fees);
-                amounts_out = amounts_out.add(amounts_out_of_bin);
-
-                let p_fees =
-                    fees.scalar_mul_div_basis_point_round_down(params.get_protocol_share().into())?;
-                total_fees = total_fees.add(fees);
-                lp_fees = lp_fees.add(fees.sub(p_fees));
-                shade_dao_fees = shade_dao_fees.add(p_fees);
+                amounts_out += amounts_out_of_bin.decode_alt(!swap_for_y);
+                fee += total_fees.decode_alt(swap_for_y);
             }
         }
 
@@ -750,10 +696,8 @@ pub fn query_swap_out(
 
     let response = SwapOutResponse {
         amount_in_left: Uint128::from(amount_in_left),
-        amount_out: Uint128::from(amounts_out.decode_alt(!swap_for_y)),
-        total_fees: Uint128::from(total_fees.decode_alt(swap_for_y)),
-        shade_dao_fees: Uint128::from(shade_dao_fees.decode_alt(swap_for_y)),
-        lp_fees: Uint128::from(lp_fees.decode_alt(swap_for_y)),
+        amount_out: Uint128::from(amounts_out),
+        fee: Uint128::from(fee),
     };
     Ok(response)
 }

@@ -12,7 +12,7 @@ fn main() {
 
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
-    export_schema(&schema_for!(InvokeMsg), &out_dir);
+    // export_schema(&schema_for!(InvokeMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
 
     // all the responses

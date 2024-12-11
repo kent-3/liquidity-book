@@ -318,9 +318,7 @@ fn main() -> io::Result<()> {
     let get_swap_out_response = SwapOutResponse {
         amount_in_left: Uint128::from(1000u128),
         amount_out: Uint128::from(10u128),
-        total_fees: Uint128::from(100u128),
-        shade_dao_fees: Uint128::from(90u128),
-        lp_fees: Uint128::from(10u128),
+        fee: Uint128::from(100u128),
     };
 
     let get_lb_token_supply_response = LbTokenSupplyResponse {

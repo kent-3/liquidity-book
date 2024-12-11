@@ -1,14 +1,217 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Uint128};
-use shade_protocol::{
-    snip20::Snip20ReceiveMsg,
-    swap::{
-        amm_pair::SwapResult,
-        core::{TokenAmount, TokenType},
+use crate::lb_pair::LiquidityParameters;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256, Uint64};
+use shade_protocol::contract_interfaces::swap::core::TokenType;
+
+#[cw_serde]
+pub struct InstantiateMsg {
+    pub factory: ContractInfo,
+}
+
+#[cw_serde]
+pub enum ExecuteMsg {
+    CreateLbPair {
+        token_x: TokenType,
+        token_y: TokenType,
+        active_id: u32,
+        bin_step: u16,
     },
-    utils::{ExecuteCallback, InstantiateCallback, Query},
-    Contract, BLOCK_SIZE,
-};
+    AddLiquidity {
+        liquidity_parameters: LiquidityParameters,
+    },
+    AddLiquidityNative {
+        liquidity_parameters: LiquidityParameters,
+    },
+    RemoveLiquidity {
+        token_x: ContractInfo,
+        token_y: ContractInfo,
+        bin_step: u16,
+        amount_x_min: Uint128,
+        amount_y_min: Uint128,
+        ids: Vec<u32>,
+        amounts: Vec<Uint256>,
+        to: String,
+        deadline: Uint64,
+    },
+    RemoveLiquidityNative {
+        token: TokenType,
+        bin_step: u16,
+        amount_token_min: Uint128,
+        amount_native_min: Uint128,
+        ids: Vec<u32>,
+        amounts: Vec<Uint256>,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapExactTokensForTokens {
+        amount_in: Uint256,
+        amount_out_min: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapExactTokensForNative {
+        amount_in: Uint256,
+        amount_out_min_native: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapExactNativeforTokens {
+        amount_out_min: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapTokensForExactTokens {
+        amount_out: Uint256,
+        amount_in_max: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapTokensForExactNative {
+        amount_native_out: Uint256,
+        amount_in_max: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapNativeforExactTokens {
+        amount_out: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapExactTokensForTokensSupportingFeeOnTransferTokens {
+        amount_in: Uint256,
+        amount_out_min: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapExactTokensForNativesupportingFeeOnTransferTokens {
+        amount_in: Uint256,
+        amount_out_min_native: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    SwapExactNativeforTokensSupportingFeeOnTransferTokens {
+        amount_out_min: Uint256,
+        path: Path,
+        to: String,
+        deadline: Uint64,
+    },
+    RegisterSnip20 {
+        token_addr: String,
+        token_code_hash: String,
+    },
+    Sweep {
+        token: ContractInfo, // must be a snip20 token
+        to: String,
+        amount: Uint128,
+    },
+    SweepLbToken {
+        token: ContractInfo, // must be an LbToken
+        to: String,
+        ids: Vec<u32>,
+        amounts: Vec<Uint128>,
+    },
+    Receive {
+        from: String,
+        msg: Option<Binary>,
+        amount: Uint128,
+    },
+}
+
+// TODO: decide about the Version stuff. It is very specific to Trader Joe, but we could use this
+// approach to support swaps from other DEXs. For example: V1 = shade_swap, V2 = liquidity_book.
+// Then a path could contain a mix of pair types.
+
+/// This enum represents the version of the pair requested
+/// - V1: Joe V1 pair
+/// - V2: LB pair V2. Also called legacyPair
+/// - V2_1: LB pair V2.1 (current version)
+#[cw_serde]
+pub enum Version {
+    V1,
+    V2,
+    V2_1,
+}
+
+/// The path parameters, such as:
+/// - pair_bin_steps: The list of bin steps of the pairs to go through
+/// - versions: The list of versions of the pairs to go through
+/// - token_path: The list of tokens in the path to go through
+#[cw_serde]
+pub struct Path {
+    pub pair_bin_steps: Vec<u16>,
+    pub versions: Vec<Version>,
+    pub token_path: Vec<ContractInfo>, // contracts that implements the snip20 interface
+}
+
+#[cw_serde]
+#[derive(QueryResponses)]
+pub enum QueryMsg {
+    #[returns(FactoryResponse)]
+    GetFactory {},
+
+    #[returns(IdFromPriceResponse)]
+    GetIdFromPrice {
+        lb_pair: ContractInfo,
+        price: Uint256,
+    },
+
+    #[returns(PriceFromIdResponse)]
+    GetPriceFromId { lb_pair: ContractInfo, id: u32 },
+
+    #[returns(SwapInResponse)]
+    GetSwapIn {
+        lb_pair: ContractInfo,
+        amount_out: Uint128,
+        swap_for_y: bool,
+    },
+
+    #[returns(SwapOutResponse)]
+    GetSwapOut {
+        lb_pair: ContractInfo,
+        amount_in: Uint128,
+        swap_for_y: bool,
+    },
+}
+
+// Add additional helper functions if needed for more complex queries
+
+// We define a custom struct for each query response
+#[cw_serde]
+pub struct FactoryResponse {
+    pub factory: Addr,
+}
+
+#[cw_serde]
+pub struct IdFromPriceResponse {
+    pub id: u32,
+}
+
+#[cw_serde]
+pub struct PriceFromIdResponse {
+    pub price: Uint256,
+}
+
+#[cw_serde]
+pub struct SwapInResponse {
+    pub amount_in: Uint128,
+    pub amount_out_left: Uint128,
+    pub fee: Uint128,
+}
+
+#[cw_serde]
+pub struct SwapOutResponse {
+    pub amount_in_left: Uint128,
+    pub amount_out: Uint128,
+    pub fee: Uint128,
+}
 
 #[cw_serde]
 pub enum ExecuteMsgResponse {
@@ -16,99 +219,4 @@ pub enum ExecuteMsgResponse {
         amount_in: Uint128,
         amount_out: Uint128,
     },
-}
-
-#[cw_serde]
-pub enum InvokeMsg {
-    SwapTokensForExact {
-        path: Vec<Hop>,
-        expected_return: Option<Uint128>,
-        recipient: Option<String>,
-    },
-}
-
-#[cw_serde]
-pub struct InitMsg {
-    pub prng_seed: Binary,
-    pub entropy: Binary,
-    pub admin_auth: Contract,
-    pub airdrop_address: Option<Contract>,
-}
-
-#[cw_serde]
-pub struct Hop {
-    pub addr: String,
-    pub code_hash: String,
-}
-
-#[cw_serde]
-pub enum ExecuteMsg {
-    // SNIP20 receiver interface
-    Receive(Snip20ReceiveMsg),
-    SwapTokensForExact {
-        /// The token type to swap from.
-        offer: TokenAmount,
-        expected_return: Option<Uint128>,
-        path: Vec<Hop>,
-        recipient: Option<String>,
-        padding: Option<String>,
-    },
-    RegisterSNIP20Token {
-        token_addr: String,
-        token_code_hash: String,
-        oracle_key: Option<String>,
-        padding: Option<String>,
-    },
-    RecoverFunds {
-        token: TokenType,
-        amount: Uint128,
-        to: String,
-        msg: Option<Binary>,
-        padding: Option<String>,
-    },
-    SetConfig {
-        admin_auth: Option<Contract>,
-        padding: Option<String>,
-    },
-}
-
-#[cw_serde]
-pub enum QueryMsg {
-    SwapSimulation {
-        offer: TokenAmount,
-        path: Vec<Hop>,
-        exclude_fee: Option<bool>,
-    },
-    GetConfig {},
-    RegisteredTokens {},
-}
-
-#[cw_serde]
-pub enum QueryMsgResponse {
-    SwapSimulation {
-        total_fee_amount: Uint128,
-        lp_fee_amount: Uint128,
-        shade_dao_fee_amount: Uint128,
-        result: SwapResult,
-        price: String,
-    },
-    GetConfig {
-        admin_auth: Contract,
-        airdrop_address: Option<Contract>,
-    },
-    RegisteredTokens {
-        tokens: Vec<Addr>,
-    },
-}
-
-impl InstantiateCallback for InitMsg {
-    const BLOCK_SIZE: usize = BLOCK_SIZE;
-}
-
-impl ExecuteCallback for ExecuteMsg {
-    const BLOCK_SIZE: usize = BLOCK_SIZE;
-}
-
-impl Query for QueryMsg {
-    const BLOCK_SIZE: usize = BLOCK_SIZE;
 }

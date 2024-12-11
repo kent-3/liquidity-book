@@ -4,27 +4,25 @@ use cosmwasm_std::{Addr, CanonicalAddr, ContractInfo, Uint128};
 use shade_protocol::contract_interfaces::swap::core::TokenType;
 use shade_protocol::secret_storage_plus::Item;
 
-use crate::msg::{Hop, TokenAmount};
-
 // TODO: Should I use secret-toolkit-storage instead?
 
-pub const CONFIG: Item<Config> = Item::new("config");
-pub const EPHEMERAL_STORAGE: Item<CurrentSwapInfo> = Item::new("ephemeral_storage");
+pub const FACTORY: Item<ContractInfo> = Item::new("factory");
+// pub const EPHEMERAL_STORAGE: Item<CurrentSwapInfo> = Item::new("ephemeral_storage");
 
 #[cw_serde]
 pub struct Config {
     pub factory: ContractInfo,
-    pub admins: Vec<CanonicalAddr>,
+    // pub admins: Vec<CanonicalAddr>,
     pub viewing_key: String,
 }
 
-#[cw_serde]
-pub struct CurrentSwapInfo {
-    pub(crate) amount: TokenAmount,
-    pub amount_out_min: Option<Uint128>,
-    pub path: Vec<Hop>,
-    pub recipient: Addr,
-    pub current_index: u32,
-    //The next token that will be in the hop
-    pub next_token_in: TokenType,
-}
+// #[cw_serde]
+// pub struct CurrentSwapInfo {
+//     pub(crate) amount: TokenAmount,
+//     pub amount_out_min: Option<Uint128>,
+//     pub path: Vec<Hop>,
+//     pub recipient: Addr,
+//     pub current_index: u32,
+//     //The next token that will be in the hop
+//     pub next_token_in: TokenType,
+// }

@@ -175,7 +175,7 @@ impl ExampleData for RemoveLiquidity {
             amount_y_min: Uint128::from(10u128),
             ids: vec![ACTIVE_ID],
             amounts: vec![Uint256::from_u128(10u128)],
-            deadline: 1701283067,
+            deadline: Uint64::from(1701283067u64),
         }
     }
 }

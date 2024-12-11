@@ -1,27 +1,18 @@
-use crate::{msg::*, prelude::*, state::CONFIG};
+use crate::{msg::*, prelude::*, state::FACTORY};
 use cosmwasm_std::{
     to_binary, ContractInfo, Deps, QuerierWrapper, QueryRequest, StdResult, Uint128, Uint256,
     WasmQuery,
 };
-use lb_interfaces::lb_pair;
-
-// pub fn pair_contract_config(
-//     querier: &QuerierWrapper,
-//     pair_contract_address: ContractInfo,
-// ) -> StdResult<TokensResponse> {
-//     let result: lb_pair::TokensResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-//         contract_addr: pair_contract_address.address.to_string(),
-//         code_hash: pair_contract_address.code_hash,
-//         msg: to_binary(&lb_pair::QueryMsg::GetTokens {})?,
-//     }))?;
-//
-//     Ok(result)
-// }
+use lb_interfaces::lb_pair::{
+    self, FactoryResponse, IdFromPriceResponse, PriceFromIdResponse, SwapInResponse,
+    SwapOutResponse,
+};
 
 pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
-    let state = CONFIG.load(deps.storage)?;
+    let factory = FACTORY.load(deps.storage)?;
+
     Ok(FactoryResponse {
-        factory: state.factory.address,
+        factory: factory.address,
     })
 }
 
@@ -36,7 +27,7 @@ pub fn query_id_from_price(
         .query_wasm_smart::<lb_pair::IdFromPriceResponse>(
             lb_pair.code_hash,
             lb_pair.address.to_string(),
-            &(&msg),
+            &msg,
         )?;
 
     Ok(IdFromPriceResponse { id })
@@ -53,7 +44,7 @@ pub fn query_price_from_id(
         .query_wasm_smart::<lb_pair::PriceFromIdResponse>(
             lb_pair.code_hash,
             lb_pair.address.to_string(),
-            &(&msg),
+            &msg,
         )?;
 
     Ok(PriceFromIdResponse { price })
@@ -76,7 +67,7 @@ pub fn query_swap_in(
     } = deps.querier.query_wasm_smart::<lb_pair::SwapInResponse>(
         lb_pair.code_hash,
         lb_pair.address.to_string(),
-        &(&msg),
+        &msg,
     )?;
 
     Ok(SwapInResponse {
@@ -103,7 +94,7 @@ pub fn query_swap_out(
     } = deps.querier.query_wasm_smart::<lb_pair::SwapOutResponse>(
         lb_pair.code_hash,
         lb_pair.address.to_string(),
-        &(&msg),
+        &msg,
     )?;
 
     Ok(SwapOutResponse {

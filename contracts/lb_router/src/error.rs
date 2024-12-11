@@ -1,29 +1,35 @@
-//! ### Custom Errors for LB_Factory contract.
+//! ### Custom Errors for LB_Router contract.
 
 #![allow(unused)] // For beginning only.
 
 use cosmwasm_std::Uint128;
-use lb_libraries::bin_helper::BinError;
-use lb_libraries::fee_helper::FeeError;
-use lb_libraries::math::liquidity_configurations::LiquidityConfigurationsError;
-use lb_libraries::math::u128x128_math::U128x128MathError;
-use lb_libraries::math::u256x256_math::U256x256MathError;
-use lb_libraries::oracle_helper::OracleError;
-use lb_libraries::pair_parameter_helper::PairParametersError;
+
+// TODO: there are some new error types in LBRouter V2.1
 
 #[derive(thiserror::Error, Debug)]
 pub enum LBRouterError {
     #[error("Generic {0}")]
     Generic(String),
 
-    #[error("The sender is not WNATIVE")]
-    SenderIsNotWNATIVE,
-
     #[error("Unknown reply {id}")]
     UnknownReplyId { id: u64 },
 
+    #[error("Reply data is missing!")]
+    ReplyDataMissing,
+
+    #[error("Pair not created: {token_x}, {token_y}, bin step: {bin_step}")]
+    PairNotCreated {
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+    },
+
+    // error LBRouter__PairNotCreated(address tokenX, address tokenY, uint256 binStep);
+    #[error("The sender is not WNATIVE")]
+    SenderIsNotWNATIVE,
+
     #[error("Wrong amounts. Amount: {amount}, Reserve: {reserve}")]
-    WrongAmounts { amount: u128, reserve: u128 },
+    WrongAmounts { amount: Uint128, reserve: Uint128 },
 
     #[error("Swap overflows for bin id {id}")]
     SwapOverflows { id: u32 },
@@ -35,16 +41,22 @@ pub enum LBRouterError {
     NotFactoryOwner,
 
     #[error("Too many tokens in. Excess: {excess}")]
-    TooManyTokensIn { excess: u128 },
+    TooManyTokensIn { excess: Uint128 },
 
     #[error("Bin reserve overflows for bin id {id}")]
-    BinReserveOverflows { id: u128 },
+    BinReserveOverflows { id: Uint128 },
+
+    #[error("Path lengths mismatch")]
+    LengthsMismatch,
 
     #[error("Failed to send WNATIVE to recipient {recipient}. Amount: {amount}")]
-    FailedToSendNATIVE { recipient: String, amount: u128 },
+    FailedToSendNATIVE { recipient: String, amount: Uint128 },
+
+    #[error("Deadline exceeded: {timestamp} > {deadline}")]
+    DeadlineExceeded { deadline: u64, timestamp: u64 },
 
     #[error("Amount slippage BP too big. Amount slippage: {amount_slippage}")]
-    AmountSlippageBPTooBig { amount_slippage: u128 },
+    AmountSlippageBPTooBig { amount_slippage: Uint128 },
 
     #[error("Insufficient amount out. Amount out min: {amount_out_min}, Amount out: {amount_out}")]
     InsufficientAmountOut {
@@ -54,8 +66,8 @@ pub enum LBRouterError {
 
     #[error("Max amount in exceeded. Amount in max: {amount_in_max}, Amount in: {amount_in}")]
     MaxAmountInExceeded {
-        amount_in_max: u128,
-        amount_in: u128,
+        amount_in_max: Uint128,
+        amount_in: Uint128,
     },
 
     #[error("Invalid token path. Wrong token: {0}")]
@@ -68,41 +80,14 @@ pub enum LBRouterError {
     WrongNativeLiquidityParameters {
         token_x: String,
         token_y: String,
-        amount_x: u128,
-        amount_y: u128,
-        msg_value: u128,
+        amount_x: Uint128,
+        amount_y: Uint128,
+        msg_value: Uint128,
     },
 
     #[error(transparent)]
     CwErr(#[from] cosmwasm_std::StdError),
 
     #[error(transparent)]
-    BinErr(#[from] BinError),
-
-    #[error(transparent)]
-    FeeErr(#[from] FeeError),
-
-    #[error(transparent)]
-    OracleErr(#[from] OracleError),
-
-    #[error(transparent)]
-    ParamsErr(#[from] PairParametersError),
-
-    #[error(transparent)]
-    LiquidityConfigErr(#[from] LiquidityConfigurationsError),
-
-    #[error(transparent)]
-    U128Err(#[from] U128x128MathError),
-
-    #[error(transparent)]
-    U256Err(#[from] U256x256MathError),
-
-    #[error("Sent a non-native token. Should use the receive interface in SNIP20.")]
-    NonNativeTokenErr,
-
-    #[error("Pair not found")]
-    PairNotFound,
-
-    #[error("Current no trade in progress")]
-    NoTradeInProgress,
+    LbError(#[from] lb_libraries::Error),
 }

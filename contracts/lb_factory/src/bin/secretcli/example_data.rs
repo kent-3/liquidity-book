@@ -166,7 +166,7 @@ impl ExampleData for RemoveLiquidity {
             ids: vec![ACTIVE_ID],
             // TODO - understand what "amounts" means. Is that a packed_uint128?
             amounts: vec![Uint256::from_u128(10u128)],
-            deadline: 1701283067,
+            deadline: Uint64::from(1701283067u64),
         }
     }
 }

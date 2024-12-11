@@ -50,7 +50,6 @@ pub struct LiquidityParameters {
     pub delta_ids: Vec<i64>,
     pub distribution_x: Vec<Uint64>,
     pub distribution_y: Vec<Uint64>,
-    // TODO: should this be u64 or Uint64?
     pub deadline: Uint64,
 }
 
@@ -63,8 +62,7 @@ pub struct RemoveLiquidity {
     pub amount_y_min: Uint128,
     pub ids: Vec<u32>,
     pub amounts: Vec<Uint256>,
-    // TODO: should this be u64 or Uint64?
-    pub deadline: u64,
+    pub deadline: Uint64,
 }
 
 #[cw_serde]
