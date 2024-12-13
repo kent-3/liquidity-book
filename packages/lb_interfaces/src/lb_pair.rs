@@ -1,6 +1,8 @@
 use super::lb_factory::{ContractImplementation, StaticFeeParameters};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256, Uint64};
+use cosmwasm_std::{
+    Addr, Binary, ContractInfo, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
+};
 use lb_libraries::hooks::Parameters;
 use lb_libraries::types::{Bytes32, LiquidityConfiguration};
 use shade_protocol::{
@@ -8,6 +10,40 @@ use shade_protocol::{
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
 use std::fmt::{Debug, Display};
+
+pub struct ILbPair(pub ContractInfo);
+
+impl ILbPair {
+    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<ContractInfo> {
+        querier
+            .query_wasm_smart::<TokenXResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenX {},
+            )
+            .map(|response| response.token_x.into_contract_info().unwrap())
+    }
+
+    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<ContractInfo> {
+        querier
+            .query_wasm_smart::<TokenYResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenY {},
+            )
+            .map(|response| response.token_y.into_contract_info().unwrap())
+    }
+
+    pub fn get_active_id(&self, querier: QuerierWrapper) -> StdResult<u32> {
+        querier
+            .query_wasm_smart::<ActiveIdResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenY {},
+            )
+            .map(|response| response.active_id)
+    }
+}
 
 // added this directly to avoid using the "snip20" feature of shade-protocol, which brings in
 // secret-storage-plus as a dependency, which was causing issues.

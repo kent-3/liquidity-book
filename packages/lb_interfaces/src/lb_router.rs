@@ -1,7 +1,31 @@
 use crate::lb_pair::{LbPair, LiquidityParameters};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256, Uint64};
+use cosmwasm_std::{
+    Addr, Binary, ContractInfo, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
+};
 use shade_protocol::contract_interfaces::swap::core::TokenType;
+
+pub struct ILbRouter(pub ContractInfo);
+
+impl ILbRouter {
+    pub fn get_swap_out(
+        &self,
+        querier: QuerierWrapper,
+        lb_pair: ContractInfo,
+        amount_in: Uint128,
+        swap_for_y: bool,
+    ) -> StdResult<SwapOutResponse> {
+        querier.query_wasm_smart::<SwapOutResponse>(
+            self.0.code_hash.clone(),
+            self.0.address.clone(),
+            &QueryMsg::GetSwapOut {
+                lb_pair,
+                amount_in,
+                swap_for_y,
+            },
+        )
+    }
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {
