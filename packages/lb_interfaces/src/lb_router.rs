@@ -153,7 +153,8 @@ pub struct RemoveLiquidityResponse {
 /// This enum represents the version of the pair requested
 /// - V1: Joe V1 pair
 /// - V2: LB pair V2. Also called legacyPair
-/// - V2_1: LB pair V2.1 (current version)
+/// - V2_1: LB pair V2.1
+/// - V2_2: LB pair V2.2 (current version)
 #[cw_serde]
 pub enum Version {
     V1,
@@ -170,6 +171,7 @@ pub enum Version {
 pub struct Path {
     pub pair_bin_steps: Vec<u16>,
     pub versions: Vec<Version>,
+    // TODO: Does this need to be Vec<RawContract> instead?
     pub token_path: Vec<ContractInfo>, // contracts that implements the snip20 interface
 }
 

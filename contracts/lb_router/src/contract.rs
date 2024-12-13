@@ -44,7 +44,7 @@ pub fn only_factory_owner(deps: Deps, env: Env, info: MessageInfo) -> Result<()>
     Ok(())
 }
 
-pub fn ensure(env: Env, deadline: u64) -> Result<()> {
+pub fn ensure(env: &Env, deadline: u64) -> Result<()> {
     if env.block.time.seconds() > deadline {
         return Err(Error::DeadlineExceeded {
             deadline,

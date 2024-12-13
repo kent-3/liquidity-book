@@ -4,7 +4,7 @@ use crate::{
     contract::{
         ensure, BURN_REPLY_ID, CREATE_LB_PAIR_REPLY_ID, MINT_REPLY_ID, ROUTER_KEY, SWAP_REPLY_ID,
     },
-    helper::_get_lb_pair_information,
+    helper::{_get_lb_pair_information, _get_pairs},
     prelude::*,
     state::{
         EphemeralAddLiquidity, EphemeralRemoveLiquidity, EPHEMERAL_ADD_LIQUIDITY,
@@ -18,7 +18,7 @@ use cosmwasm_std::{
 use lb_interfaces::{
     lb_factory,
     lb_pair::{self, LiquidityParameters},
-    lb_router::{self, Path},
+    lb_router::{self, Path, Version},
 };
 use lb_libraries::types::LiquidityConfiguration;
 use shade_protocol::{
@@ -57,13 +57,14 @@ pub fn add_liquidity(
     info: MessageInfo,
     liquidity_parameters: LiquidityParameters,
 ) -> Result<Response> {
-    ensure(env, liquidity_parameters.deadline.u64())?;
+    ensure(&env, liquidity_parameters.deadline.u64())?;
 
     let pair = _get_lb_pair_information(
         deps.as_ref(),
         liquidity_parameters.token_x.clone(),
         liquidity_parameters.token_y.clone(),
         liquidity_parameters.bin_step,
+        Version::V2_2,
     )?;
 
     let lb_pair::TokenXResponse { token_x } =
@@ -197,6 +198,7 @@ pub fn remove_liquidity(
         token_x.clone().into(),
         token_y.clone().into(),
         bin_step.clone(),
+        Version::V2_2,
     )?;
 
     let lb_pair::TokenXResponse {
@@ -264,37 +266,6 @@ pub fn _remove_liquidity(
     Ok(response)
 }
 
-// TODO: rewrite this old function from lb_pair
-// fn remove_liquidity(
-//     deps: DepsMut,
-//     env: Env,
-//     info: MessageInfo,
-//     _to: Addr,
-//     amount_x_min: Uint128,
-//     amount_y_min: Uint128,
-//     ids: Vec<u32>,
-//     amounts: Vec<Uint256>,
-// ) -> Result<(Uint128, Uint128, Response)> {
-//     let (amounts_burned, response) = burn(deps, env, info, ids, amounts)?;
-//     let mut amount_x: Uint128 = Uint128::zero();
-//     let mut amount_y: Uint128 = Uint128::zero();
-//     for amount_burned in amounts_burned {
-//         amount_x += Uint128::from(amount_burned.decode_x());
-//         amount_y += Uint128::from(amount_burned.decode_y());
-//     }
-//
-//     if amount_x < amount_x_min || amount_y < amount_y_min {
-//         return Err(Error::AmountSlippageCaught {
-//             amount_x_min,
-//             amount_x,
-//             amount_y_min,
-//             amount_y,
-//         });
-//     }
-//
-//     Ok((amount_x, amount_y, response))
-// }
-
 pub fn remove_liquidity_native() {
     unimplemented!()
 }
@@ -309,8 +280,125 @@ pub fn swap_exact_tokens_for_tokens(
     to: String,
     deadline: Uint64,
 ) -> Result<Response> {
+    ensure(&env, deadline.u64())?;
+
+    let pairs = _get_pairs(
+        deps.as_ref(),
+        path.pair_bin_steps,
+        path.versions.clone(),
+        path.token_path.clone(),
+    )?;
+
+    // TODO: transfer received tokens to the lb_pair contract
+
+    _swap_exact_tokens_for_tokens(
+        deps,
+        &env,
+        info,
+        amount_in,
+        pairs,
+        path.versions,
+        path.token_path,
+        to,
+    )
+
+    // TODO: store amount_out_min in ephemeral storage
+
+    // TODO: add this check in the submsg reply
+    //     if (amountOutMin > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMin, amountOut);
+}
+
+pub fn _swap_exact_tokens_for_tokens(
+    deps: DepsMut,
+    env: &Env,
+    info: MessageInfo,
+    amount_in: Uint256,
+    pairs: Vec<ContractInfo>,
+    versions: Vec<Version>,
+    token_path: Vec<ContractInfo>,
+    to: String,
+) -> Result<Response> {
     todo!()
 }
+
+// function _swapExactTokensForTokens(
+//     uint256 amountIn,
+//     address[] memory pairs,
+//     Version[] memory versions,
+//     IERC20[] memory tokenPath,
+//     address to
+// ) private returns (uint256 amountOut) {
+//     IERC20 token;
+//     Version version;
+//     address recipient;
+//     address pair;
+//
+//     IERC20 tokenNext = tokenPath[0];
+//     amountOut = amountIn;
+//
+//     unchecked {
+//         for (uint256 i; i < pairs.length; ++i) {
+//             pair = pairs[i];
+//             version = versions[i];
+//
+//             token = tokenNext;
+//             tokenNext = tokenPath[i + 1];
+//
+//             recipient = i + 1 == pairs.length ? to : pairs[i + 1];
+//
+//             if (version == Version.V1) {
+//                 (uint256 reserve0, uint256 reserve1,) = IJoePair(pair).getReserves();
+//
+//                 if (token < tokenNext) {
+//                     amountOut = amountOut.getAmountOut(reserve0, reserve1);
+//                     IJoePair(pair).swap(0, amountOut, recipient, "");
+//                 } else {
+//                     amountOut = amountOut.getAmountOut(reserve1, reserve0);
+//                     IJoePair(pair).swap(amountOut, 0, recipient, "");
+//                 }
+//             } else if (version == Version.V2) {
+//                 bool swapForY = tokenNext == ILBLegacyPair(pair).tokenY();
+//
+//                 (uint256 amountXOut, uint256 amountYOut) = ILBLegacyPair(pair).swap(swapForY, recipient);
+//
+//                 if (swapForY) amountOut = amountYOut;
+//                 else amountOut = amountXOut;
+//             } else {
+//                 bool swapForY = tokenNext == ILBPair(pair).getTokenY();
+//
+//                 (uint256 amountXOut, uint256 amountYOut) = ILBPair(pair).swap(swapForY, recipient).decode();
+//
+//                 if (swapForY) amountOut = amountYOut;
+//                 else amountOut = amountXOut;
+//             }
+//         }
+//     }
+// }
+
+/**
+ * @notice Swaps exact tokens for tokens while performing safety checks
+ * @param amountIn The amount of token to send
+ * @param amountOutMin The min amount of token to receive
+ * @param path The path of the swap
+ * @param to The address of the recipient
+ * @param deadline The deadline of the tx
+ * @return amountOut Output amount of the swap
+ */
+// function swapExactTokensForTokens(
+//     uint256 amountIn,
+//     uint256 amountOutMin,
+//     Path memory path,
+//     address to,
+//     uint256 deadline
+// ) external override ensure(deadline) verifyPathValidity(path) returns (uint256 amountOut) {
+//     address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);
+//
+//     _safeTransferFrom(path.tokenPath[0], msg.sender, pairs[0], amountIn);
+//
+//     amountOut = _swapExactTokensForTokens(amountIn, pairs, path.versions, path.tokenPath, to);
+//
+//     if (amountOutMin > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMin, amountOut);
+// }
 
 pub fn swap_exact_tokens_for_native() {
     unimplemented!()
