@@ -17,21 +17,23 @@ use cosmwasm_std::{
 };
 use ethnum::U256;
 use lb_interfaces::{
-    lb_factory,
-    lb_router::{Path, Version},
+    lb_factory, lb_pair,
+    lb_router::{self, Path, Version},
 };
 use lb_libraries::{
     bin_helper::BinHelper,
     math::{encoded::Encoded, packed_u128_math::PackedUint128Math, u24::U24},
-    types::{Bytes32, LiquidityConfigurations},
+    types::{Bytes32, LiquidityConfiguration},
 };
 use shade_protocol::{contract_interfaces::swap::core::TokenType, utils::ExecuteCallback};
 
-const BLOCK_SIZE: usize = 256;
+pub const BLOCK_SIZE: usize = 256;
 pub const ROUTER_KEY: &str = "lb_router";
+
 pub const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
-pub const MINT_REPLY_ID: u64 = 99u64;
-pub const SWAP_REPLY_ID: u64 = 2u64;
+pub const MINT_REPLY_ID: u64 = 2u64;
+pub const BURN_REPLY_ID: u64 = 3u64;
+pub const SWAP_REPLY_ID: u64 = 10u64;
 
 // TODO: Need to be able to query the factory contract to check who the owner/admin is.
 // if (msg.sender != Ownable(address(_factory)).owner()) revert LBRouter__NotFactoryOwner();
@@ -100,7 +102,20 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             amounts,
             to,
             deadline,
-        } => todo!(),
+        } => remove_liquidity(
+            deps,
+            env,
+            info,
+            token_x,
+            token_y,
+            bin_step,
+            amount_x_min,
+            amount_y_min,
+            ids,
+            amounts,
+            to,
+            deadline,
+        ),
         ExecuteMsg::RemoveLiquidityNative {
             token,
             bin_step,
@@ -117,7 +132,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             path,
             to,
             deadline,
-        } => todo!(),
+        } => swap_exact_tokens_for_tokens(
+            deps,
+            env,
+            info,
+            amount_in,
+            amount_out_min,
+            path,
+            to,
+            deadline,
+        ),
         ExecuteMsg::SwapExactTokensForNative {
             amount_in,
             amount_out_min_native,
@@ -137,7 +161,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             path,
             to,
             deadline,
-        } => todo!(),
+        } => swap_tokens_for_exact_tokens(
+            deps,
+            env,
+            info,
+            amount_out,
+            amount_in_max,
+            path,
+            to,
+            deadline,
+        ),
         ExecuteMsg::SwapTokensForExactNative {
             amount_native_out,
             amount_in_max,
@@ -171,19 +204,19 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             to,
             deadline,
         } => unimplemented!(),
-        ExecuteMsg::Sweep { token, to, amount } => todo!(),
+        ExecuteMsg::Sweep { token, to, amount } => sweep(deps, env, info, token, to, amount),
         ExecuteMsg::SweepLbToken {
             token,
             to,
             ids,
             amounts,
-        } => todo!(),
+        } => sweep_lb_token(deps, env, info, token, to, ids, amounts),
         // TODO: Are these necessary?
         ExecuteMsg::RegisterSnip20 {
             token_addr,
             token_code_hash,
-        } => todo!(),
-        ExecuteMsg::Receive { from, msg, amount } => todo!(),
+        } => unimplemented!(),
+        ExecuteMsg::Receive { from, msg, amount } => unimplemented!(),
     }
 }
 
@@ -203,24 +236,102 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
             None => Err(Error::ReplyDataMissing),
         },
         (MINT_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
-            Some(x) => {
-                // let data: lb_pair::??? = from_binary(&x)?;
-                //
-                // let amount_x_added = Uint128::from(data.amounts_received.decode_x());
-                // let amount_y_added = Uint128::from(data.amounts_received.decode_y());
-                //
-                // let amount_x_left = Uint128::from(data.amounts_left.decode_x());
-                // let amount_y_left = Uint128::from(data.amounts_left.decode_y());
-                // let deposit_ids = serde_json_wasm::to_string(&data.deposit_ids);
-                // let liquidity_minted = serde_json_wasm::to_string(&data.liquidity_minted);
+            Some(data) => {
+                let lb_pair::MintResponse {
+                    amounts_received,
+                    amounts_left,
+                    liquidity_minted,
+                } = from_binary(&data)?;
+                let liq = EPHEMERAL_ADD_LIQUIDITY.load(deps.storage)?;
 
-                Ok(Response::new())
-                // .add_attribute("amount_x_added", amount_x_added)
-                // .add_attribute("amount_y_added", amount_y_added)
-                // .add_attribute("amount_x_left", amount_x_left)
-                // .add_attribute("amount_y_left", amount_y_left)
-                // .add_attribute("liquidity_minted", liquidity_minted.unwrap())
-                // .add_attribute("deposit_ids", deposit_ids.unwrap()))
+                let amounts_added = amounts_received.sub(amounts_left);
+
+                let amount_x_added = Uint128::from(amounts_added.decode_x());
+                let amount_y_added = Uint128::from(amounts_added.decode_y());
+
+                if (amount_x_added < liq.amount_x_min || amount_y_added < liq.amount_y_min) {
+                    return Err(Error::AmountSlippageCaught {
+                        amount_x_min: liq.amount_x_min,
+                        amount_x: amount_x_added,
+                        amount_y_min: liq.amount_y_min,
+                        amount_y: amount_y_added,
+                    });
+                }
+
+                let amount_x_left = Uint128::from(amounts_left.decode_x());
+                let amount_y_left = Uint128::from(amounts_left.decode_y());
+
+                let data = lb_router::AddLiquidityResponse {
+                    amount_x_added: amount_x_added.into(),
+                    amount_y_added: amount_y_added.into(),
+                    amount_x_left: amount_x_left.into(),
+                    amount_y_left: amount_y_left.into(),
+                    deposit_ids: liq.deposit_ids,
+                    liquidity_minted,
+                };
+
+                // TODO: Decide between response attributes vs response data.
+                Ok(
+                    Response::new()
+                        .set_data(to_binary(&data)?)
+                        .add_attribute("amount_x_added", amount_x_added)
+                        .add_attribute("amount_y_added", amount_y_added)
+                        .add_attribute("amount_x_left", amount_x_left)
+                        .add_attribute("amount_y_left", amount_y_left), // .add_attribute("deposit_ids", deposit_ids)
+                                                                        // .add_attribute("liquidity_minted", liquidity_minted)
+                )
+            }
+            None => Err(Error::ReplyDataMissing),
+        },
+        (BURN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
+            Some(data) => {
+                let lb_pair::BurnResponse {
+                    amounts: amounts_burned,
+                } = from_binary(&data)?;
+                let liq = EPHEMERAL_REMOVE_LIQUIDITY.load(deps.storage)?;
+
+                // let mut amount_x_burned: Uint128 = Uint128::zero();
+                // let mut amount_y_burned: Uint128 = Uint128::zero();
+                //
+                // for amount_burned in amounts_burned {
+                //     amount_x_burned += Uint128::from(amount_burned.decode_x());
+                //     amount_y_burned += Uint128::from(amount_burned.decode_y());
+                // }
+
+                let mut amount_x_burned = 0u128;
+                let mut amount_y_burned = 0u128;
+
+                for amount_burned in amounts_burned {
+                    amount_x_burned += amount_burned.decode_x();
+                    amount_y_burned += amount_burned.decode_y();
+                }
+
+                let amount_x_burned = Uint128::from(amount_x_burned);
+                let amount_y_burned = Uint128::from(amount_y_burned);
+
+                if amount_x_burned < liq.amount_x_min || amount_y_burned < liq.amount_y_min {
+                    return Err(Error::AmountSlippageCaught {
+                        amount_x_min: liq.amount_x_min,
+                        amount_x: amount_x_burned,
+                        amount_y_min: liq.amount_y_min,
+                        amount_y: amount_y_burned,
+                    });
+                }
+
+                let data = lb_router::RemoveLiquidityResponse {
+                    amount_x: amount_x_burned,
+                    amount_y: amount_y_burned,
+                };
+
+                let response = Response::new().set_data(to_binary(&data)?);
+
+                Ok(response)
+            }
+            None => Err(Error::ReplyDataMissing),
+        },
+        (SWAP_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
+            Some(data) => {
+                todo!()
             }
             None => Err(Error::ReplyDataMissing),
         },

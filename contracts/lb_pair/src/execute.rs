@@ -1,16 +1,19 @@
 use crate::{helper::*, prelude::*, state::*};
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    StdResult, Storage, Timestamp, Uint128, Uint256,
+    to_binary, Addr, Attribute, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult, Timestamp, Uint128, Uint256,
 };
 use ethnum::U256;
-use lb_interfaces::{lb_pair::*, lb_token};
+use lb_interfaces::{
+    lb_pair::{self, *},
+    lb_token,
+};
 use lb_libraries::{
     bin_helper::BinHelper,
     constants::{BASIS_POINT_MAX, MAX_FEE, PRECISION, SCALE_OFFSET},
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
     math::{
-        liquidity_configurations::LiquidityConfigurations,
+        liquidity_configurations::LiquidityConfiguration,
         packed_u128_math::PackedUint128Math,
         tree_math::TreeUint24,
         u24::U24,
@@ -22,6 +25,7 @@ use lb_libraries::{
     price_helper::PriceHelper,
     types::Bytes32,
 };
+use secret_toolkit::snip20::{self, query::Balance};
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},
     swap::{core::TokenType, router::ExecuteMsgResponse},
@@ -216,147 +220,6 @@ pub fn try_swap(
         })?))
 }
 
-pub fn try_add_liquidity(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    liquidity_parameters: LiquidityParameters,
-) -> Result<Response> {
-    // Add liquidity while performing safety checks
-    // transfering funds and checking one's already send
-    // Main function -> add_liquidity_internal
-    // Preparing txn output
-
-    // TODO: Check for token allowance first, to return early without wasting gas.
-
-    // 1- Add liquidity while performing safety checks
-    // 1.1- Proceed only if deadline has not exceeded
-    if env.block.time.seconds() > liquidity_parameters.deadline.u64() {
-        return Err(Error::DeadlineExceeded {
-            deadline: liquidity_parameters.deadline.u64(),
-            current_timestamp: env.block.time.seconds(),
-        });
-    }
-    let config = STATE.load(deps.storage)?;
-    let response = Response::new();
-    // 1.2- Checking token order
-    if liquidity_parameters.token_x != config.token_x
-        || liquidity_parameters.token_y != config.token_y
-        || liquidity_parameters.bin_step != config.bin_step
-    {
-        return Err(Error::WrongPair);
-    }
-
-    // response = response.add_messages(transfer_messages);
-
-    //3- Main function -> add_liquidity_internal
-    let response =
-        add_liquidity_internal(deps, env, info, &config, &liquidity_parameters, response)?;
-
-    Ok(response)
-}
-
-fn add_liquidity_internal(
-    mut deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    config: &State,
-    liquidity_parameters: &LiquidityParameters,
-    response: Response,
-) -> Result<Response> {
-    match_lengths(liquidity_parameters)?;
-    check_ids_bounds(liquidity_parameters)?;
-
-    let state = STATE.load(deps.storage)?;
-
-    let mut liquidity_configs = vec![
-        LiquidityConfigurations {
-            distribution_x: 0,
-            distribution_y: 0,
-            id: 0
-        };
-        liquidity_parameters.delta_ids.len()
-    ];
-    let mut deposit_ids = Vec::with_capacity(liquidity_parameters.delta_ids.len());
-
-    let active_id = state.pair_parameters.get_active_id();
-    check_active_id_slippage(liquidity_parameters, active_id)?;
-
-    let mut distribution_sum_x = 0u64;
-    let mut distribution_sum_y = 0u64;
-    let precison: u64 = PRECISION as u64;
-
-    for (i, liquidity_config) in liquidity_configs.iter_mut().enumerate() {
-        let id = calculate_id(liquidity_parameters, active_id, i)?;
-        deposit_ids.push(id);
-
-        distribution_sum_x += liquidity_parameters.distribution_x[i].u64();
-        distribution_sum_y += liquidity_parameters.distribution_y[i].u64();
-
-        if liquidity_parameters.distribution_x[i].u64() > precison
-            || liquidity_parameters.distribution_y[i].u64() > precison
-            || distribution_sum_x > precison
-            || distribution_sum_y > precison
-        {
-            return Err(Error::DistributionError);
-        }
-
-        *liquidity_config = LiquidityConfigurations {
-            distribution_x: liquidity_parameters.distribution_x[i].u64(),
-            distribution_y: liquidity_parameters.distribution_y[i].u64(),
-            id,
-        };
-    }
-
-    let (amounts_deposited, amounts_left, _liquidity_minted, response) = mint(
-        &mut deps,
-        &env,
-        info.clone(),
-        config,
-        info.sender.clone(),
-        liquidity_configs,
-        info.sender,
-        liquidity_parameters.amount_x,
-        liquidity_parameters.amount_y,
-        response,
-    )?;
-
-    //4- Preparing txn output logs
-    let amount_x_added = Uint128::from(amounts_deposited.decode_x());
-    let amount_y_added = Uint128::from(amounts_deposited.decode_y());
-    let amount_x_min = liquidity_parameters.amount_x_min;
-    let amount_y_min = liquidity_parameters.amount_y_min;
-
-    if amount_x_added < amount_x_min || amount_y_added < amount_y_min {
-        return Err(Error::AmountSlippageCaught {
-            amount_x_min,
-            amount_x: amount_x_added,
-            amount_y_min,
-            amount_y: amount_y_added,
-        });
-    }
-    let _amount_x_left = Uint128::from(amounts_left.decode_x());
-    let _amount_y_left = Uint128::from(amounts_left.decode_y());
-
-    // let liq_minted: Vec<Uint256> = liquidity_minted
-    //     .iter()
-    //     .map(|&liq| liq.u256_to_uint256())
-    //     .collect();
-
-    // let _deposit_ids_string = serialize_or_err(&deposit_ids)?;
-    // let _liquidity_minted_string = serialize_or_err(&liq_minted)?;
-
-    // response = response
-    //     .add_attribute("amount_x_added", amount_x_added)
-    //     .add_attribute("amount_y_added", amount_y_added)
-    //     .add_attribute("amount_x_left", amount_x_left)
-    //     .add_attribute("amount_y_left", amount_y_left)
-    //     .add_attribute("liquidity_minted", liquidity_minted_string)
-    //     .add_attribute("deposit_ids", deposit_ids_string);
-
-    Ok(response)
-}
-
 /// Mint liquidity tokens by depositing tokens into the pool.
 ///
 /// It will mint Liquidity Book (LB) tokens for each bin where the user adds liquidity.
@@ -379,39 +242,60 @@ fn add_liquidity_internal(
 /// * `amounts_received` - The amounts of token X and token Y received by the pool
 /// * `amounts_left` - The amounts of token X and token Y that were not added to the pool and were sent to to
 /// * `liquidity_minted` - The amounts of LB tokens minted for each bin
-#[allow(clippy::too_many_arguments)]
-fn mint(
-    mut deps: &mut DepsMut,
-    env: &Env,
+pub fn mint(
+    mut deps: DepsMut,
+    env: Env,
     info: MessageInfo,
-    config: &State,
-    to: Addr,
-    liquidity_configs: Vec<LiquidityConfigurations>,
-    _refund_to: Addr,
-    amount_received_x: Uint128,
-    amount_received_y: Uint128,
-    mut response: Response,
-) -> Result<(Bytes32, Bytes32, Vec<U256>, Response)> {
-    let state = STATE.load(deps.storage)?;
-
-    let _token_x = state.token_x;
-    let _token_y = state.token_y;
-
+    to: String,
+    liquidity_configs: Vec<LiquidityConfiguration>,
+    refund_to: String,
+) -> Result<Response> {
     if liquidity_configs.is_empty() {
         return Err(Error::EmptyMarketConfigs);
     }
 
+    let to = deps.api.addr_validate(&to)?;
+    let refund_to = deps.api.addr_validate(&refund_to)?;
+
+    // let refund_to = refund_to
+    //     .map(|to| deps.api.addr_validate(&to))
+    //     .transpose()?;
+
+    let state = STATE.load(deps.storage)?;
+
+    let Balance {
+        amount: token_x_balance,
+    } = deps.querier.query_wasm_smart::<Balance>(
+        state.token_x.code_hash(),
+        state.token_x.address(),
+        &snip20::QueryMsg::Balance {
+            address: env.contract.address.to_string(),
+            key: state.viewing_key.to_string(),
+        },
+    )?;
+    let Balance {
+        amount: token_y_balance,
+    } = deps.querier.query_wasm_smart::<Balance>(
+        state.token_y.code_hash(),
+        state.token_y.address(),
+        &snip20::QueryMsg::Balance {
+            address: env.contract.address.to_string(),
+            key: state.viewing_key.to_string(),
+        },
+    )?;
+
     let mut mint_arrays = MintArrays {
-        ids: (vec![U256::MIN; liquidity_configs.len()]),
+        ids: (vec![U256::ZERO; liquidity_configs.len()]),
         amounts: (vec![[0u8; 32]; liquidity_configs.len()]),
-        liquidity_minted: (vec![U256::MIN; liquidity_configs.len()]),
+        liquidity_minted: (vec![U256::ZERO; liquidity_configs.len()]),
     };
 
-    let amounts_received = BinHelper::received(amount_received_x, amount_received_y);
+    let amounts_received = BinHelper::received(state.reserves, token_x_balance, token_y_balance);
+
     let mut messages: Vec<CosmosMsg> = Vec::new();
 
     let amounts_left = mint_bins(
-        deps,
+        &mut deps,
         env.block.time.seconds(),
         state.bin_step,
         state.pair_parameters,
@@ -429,16 +313,18 @@ fn mint(
 
     let (amount_left_x, amount_left_y) = amounts_left.decode();
 
+    // TODO: is this for the refund? rewrite this to not be an iterator...
+
     let mut transfer_messages = Vec::new();
     // 2- tokens checking and transfer
     for (token, amount) in [
         (
-            config.token_x.clone(),
-            amount_received_x - Uint128::from(amount_left_x),
+            state.token_x.clone(),
+            Uint128::from(amounts_received.decode_x() - amount_left_x),
         ),
         (
-            config.token_y.clone(),
-            amount_received_y - Uint128::from(amount_left_y),
+            state.token_y.clone(),
+            Uint128::from(amounts_received.decode_y() - amount_left_y),
         ),
     ]
     .iter()
@@ -461,16 +347,24 @@ fn mint(
         }
     }
 
-    response = response
+    let liquidity_minted = mint_arrays
+        .liquidity_minted
+        .into_iter()
+        .map(|el| el.u256_to_uint256())
+        .collect();
+
+    let data = lb_pair::MintResponse {
+        amounts_received,
+        amounts_left,
+        liquidity_minted,
+    };
+
+    let response = Response::new()
+        .set_data(to_binary(&data)?)
         .add_messages(messages)
         .add_messages(transfer_messages);
 
-    Ok((
-        amounts_received,
-        amounts_left,
-        mint_arrays.liquidity_minted,
-        response,
-    ))
+    Ok(response)
 }
 
 /// Helper function to mint liquidity in each bin in the liquidity configurations.
@@ -490,7 +384,7 @@ fn mint_bins(
     time: u64,
     bin_step: u16,
     pair_parameters: PairParameters,
-    liquidity_configs: Vec<LiquidityConfigurations>,
+    liquidity_configs: Vec<LiquidityConfiguration>,
     amounts_received: Bytes32,
     to: Addr,
     mint_arrays: &mut MintArrays,
@@ -659,84 +553,6 @@ fn update_bin(
     Ok((shares, amounts_in, amounts_in_to_bin))
 }
 
-pub fn try_remove_liquidity(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    remove_liquidity_params: RemoveLiquidity,
-) -> Result<Response> {
-    let config = STATE.load(deps.storage)?;
-
-    let is_wrong_order = config.token_x != remove_liquidity_params.token_x;
-
-    let (amount_x_min, amount_y_min) = if is_wrong_order {
-        if remove_liquidity_params.token_x != config.token_y
-            || remove_liquidity_params.token_y != config.token_x
-            || remove_liquidity_params.bin_step != config.bin_step
-        {
-            return Err(Error::WrongPair);
-        }
-        (
-            remove_liquidity_params.amount_y_min,
-            remove_liquidity_params.amount_x_min,
-        )
-    } else {
-        if remove_liquidity_params.token_x != config.token_x
-            || remove_liquidity_params.token_y != config.token_y
-            || remove_liquidity_params.bin_step != config.bin_step
-        {
-            return Err(Error::WrongPair);
-        }
-        (
-            remove_liquidity_params.amount_x_min,
-            remove_liquidity_params.amount_y_min,
-        )
-    };
-
-    let (_amount_x, _amount_y, response) = remove_liquidity(
-        deps,
-        env,
-        info.clone(),
-        info.sender,
-        amount_x_min,
-        amount_y_min,
-        remove_liquidity_params.ids,
-        remove_liquidity_params.amounts,
-    )?;
-
-    Ok(response)
-}
-
-fn remove_liquidity(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    _to: Addr,
-    amount_x_min: Uint128,
-    amount_y_min: Uint128,
-    ids: Vec<u32>,
-    amounts: Vec<Uint256>,
-) -> Result<(Uint128, Uint128, Response)> {
-    let (amounts_burned, response) = burn(deps, env, info, ids, amounts)?;
-    let mut amount_x: Uint128 = Uint128::zero();
-    let mut amount_y: Uint128 = Uint128::zero();
-    for amount_burned in amounts_burned {
-        amount_x += Uint128::from(amount_burned.decode_x());
-        amount_y += Uint128::from(amount_burned.decode_y());
-    }
-
-    if amount_x < amount_x_min || amount_y < amount_y_min {
-        return Err(Error::AmountSlippageCaught {
-            amount_x_min,
-            amount_x,
-            amount_y_min,
-            amount_y,
-        });
-    }
-
-    Ok((amount_x, amount_y, response))
-}
-
 /// Burn Liquidity Book (LB) tokens and withdraw tokens from the pool.
 ///
 /// This function will burn the tokens directly from the caller.
@@ -751,13 +567,15 @@ fn remove_liquidity(
 /// # Returns
 ///
 /// * `amounts` - The amounts of token X and token Y received by the user
-fn burn(
+pub fn burn(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    from: String,
+    to: String,
     ids: Vec<u32>,
     amounts_to_burn: Vec<Uint256>,
-) -> Result<(Vec<[u8; 32]>, Response)> {
+) -> Result<Response> {
     let mut config = STATE.load(deps.storage)?;
 
     let token_x = config.token_x;
@@ -845,20 +663,29 @@ fn burn(
 
     messages.push(msg);
 
-    config.reserves = config.reserves.sub(amounts_out);
-
     let raw_msgs = bin_transfer(amounts_out, token_x, token_y, info.sender);
 
+    // TODO: is it better to use `update` here or `save`?
     STATE.update(deps.storage, |mut state| -> StdResult<State> {
         state.reserves = state.reserves.sub(amounts_out);
         Ok(state)
     })?;
 
+    // config.reserves = config.reserves.sub(amounts_out);
+    // STATE.save(deps.storage, &config)?;
+
     if let Some(msgs) = raw_msgs {
         messages.extend(msgs)
     }
 
-    Ok((amounts, Response::default().add_messages(messages)))
+    let response_data = to_binary(&BurnResponse { amounts })?;
+
+    Ok(Response::default()
+        .set_data(response_data)
+        .add_messages(messages))
+
+    // the burn and transfer messages are "fire and forget"
+    // the amounts burned go back to the router contract that called this execute message
 }
 
 // Administrative functions

@@ -1,7 +1,8 @@
 use super::lb_factory::{ContractImplementation, StaticFeeParameters};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256, Uint64};
-use lb_libraries::types::Bytes32;
+use lb_libraries::hooks::Parameters;
+use lb_libraries::types::{Bytes32, LiquidityConfiguration};
 use shade_protocol::{
     swap::core::{TokenAmount, TokenType},
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
@@ -50,6 +51,8 @@ pub struct LiquidityParameters {
     pub delta_ids: Vec<i64>,
     pub distribution_x: Vec<Uint64>,
     pub distribution_y: Vec<Uint64>,
+    pub to: String,
+    pub refund_to: String,
     pub deadline: Uint64,
 }
 
@@ -77,6 +80,7 @@ pub struct InstantiateMsg {
     pub viewing_key: String,
     pub entropy: String,
     pub protocol_fee_recipient: Addr,
+    // TODO: Decide about getting rid of these.
     pub admin_auth: RawContract,
     pub query_auth: RawContract,
 }
@@ -87,26 +91,25 @@ impl InstantiateCallback for InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    SwapTokens {
+    Swap {
         offer: TokenAmount,
         expected_return: Option<Uint128>,
         to: Option<String>,
         padding: Option<String>,
     },
-    Receive(Snip20ReceiveMsg),
-    AddLiquidity {
-        liquidity_parameters: LiquidityParameters,
-    },
-    RemoveLiquidity {
-        remove_liquidity_params: RemoveLiquidity,
-    },
     FlashLoan {},
-    // Burn {
-    //     from: Addr,
-    //     to: Addr,
-    //     ids: Vec<u32>,
-    //     amounts_to_burn: Vec<Uint256>,
-    // },
+    Mint {
+        to: String,
+        // TODO: Change to the new encoded Bytes32 approach.
+        liquidity_configs: Vec<LiquidityConfiguration>,
+        refund_to: String,
+    },
+    Burn {
+        from: String,
+        to: String,
+        ids: Vec<u32>,
+        amounts_to_burn: Vec<Uint256>,
+    },
     CollectProtocolFees {},
     IncreaseOracleLength {
         new_length: u16,
@@ -121,9 +124,12 @@ pub enum ExecuteMsg {
         max_volatility_accumulator: u32,
     },
     ForceDecay {},
+
+    // not in joe-v2
     SetContractStatus {
         contract_status: ContractStatus,
     },
+    Receive(Snip20ReceiveMsg),
 }
 
 #[cw_serde]
@@ -164,6 +170,11 @@ pub struct MintResponse {
 }
 
 #[cw_serde]
+pub struct BurnResponse {
+    pub amounts: Vec<Bytes32>,
+}
+
+#[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(FactoryResponse)]
@@ -186,6 +197,8 @@ pub enum QueryMsg {
     GetProtocolFees {},
     #[returns(StaticFeeParametersResponse)]
     GetStaticFeeParameters {},
+    #[returns(LbHooksParametersResponse)]
+    GetLbHooksParameters {},
     #[returns(VariableFeeParametersResponse)]
     GetVariableFeeParameters {},
     #[returns(OracleParametersResponse)]
@@ -287,6 +300,11 @@ pub struct StaticFeeParametersResponse {
 }
 
 #[cw_serde]
+pub struct LbHooksParametersResponse {
+    pub hooks_parameters: Parameters,
+}
+
+#[cw_serde]
 pub struct VariableFeeParametersResponse {
     pub volatility_accumulator: u32,
     pub volatility_reference: u32,
@@ -308,18 +326,17 @@ pub struct OracleParametersResponse {
 
 #[cw_serde]
 pub struct OracleSampleResponse {
-    // pub oracle_id: u16,
-    // pub oracle_length: u16,
-    // pub cumulative_txns: u16,
     pub cumulative_id: u64,
     pub cumulative_volatility: u64,
     pub cumulative_bin_crossed: u64,
-    // pub cumulative_volume_x: u128,
-    // pub cumulative_volume_y: u128,
-    // pub cumulative_fee_x: u128,
-    // pub cumulative_fee_y: u128,
-    // pub lifetime: u8,
-    // pub created_at: u64,
+}
+
+// TODO: Make a second oracle to track fee averages over time. To calculate APY.
+#[cw_serde]
+pub struct OracleSampleResponse2 {
+    pub cumulative_id: u64,
+    pub cumulative_provider_fee: u64,
+    pub cumulative_protocol_fee: u64,
 }
 
 #[cw_serde]

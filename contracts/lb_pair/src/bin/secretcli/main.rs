@@ -114,15 +114,7 @@ fn main() -> io::Result<()> {
 
     writeln!(file, "## Execute Messages\n")?;
 
-    let add_liquidity = ExecuteMsg::AddLiquidity {
-        liquidity_parameters: LiquidityParameters::example(),
-    };
-
-    let remove_liquidity = ExecuteMsg::RemoveLiquidity {
-        remove_liquidity_params: RemoveLiquidity::example(),
-    };
-
-    let swap_tokens = ExecuteMsg::SwapTokens {
+    let swap_tokens = ExecuteMsg::Swap {
         offer: TokenAmount::example(),
         expected_return: None,
         to: Some(Addr::recipient().to_string()),
@@ -155,8 +147,6 @@ fn main() -> io::Result<()> {
 
     print_execute_messages!(
         file,
-        add_liquidity,
-        remove_liquidity,
         swap_tokens,
         swap_tokens_invoke,
         collect_protocol_fees,

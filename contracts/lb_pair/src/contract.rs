@@ -138,9 +138,6 @@ pub fn instantiate(
         deps.storage,
         &EphemeralStruct {
             lb_token_code_hash: msg.lb_token_implementation.code_hash,
-            token_x_symbol,
-            token_y_symbol,
-            query_auth: msg.query_auth,
         },
     )?;
 
@@ -158,16 +155,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 
     match contract_status {
         ContractStatus::FreezeAll => match msg {
-            ExecuteMsg::AddLiquidity { .. }
-            | ExecuteMsg::SwapTokens { .. }
-            | ExecuteMsg::RemoveLiquidity { .. }
+            ExecuteMsg::Mint { .. }
+            | ExecuteMsg::Swap { .. }
+            | ExecuteMsg::Burn { .. }
             | ExecuteMsg::Receive(..) => {
                 return Err(Error::TransactionBlock());
             }
             _ => {}
         },
         ContractStatus::LpWithdrawOnly => match msg {
-            ExecuteMsg::AddLiquidity { .. } | ExecuteMsg::SwapTokens { .. } => {
+            ExecuteMsg::Mint { .. } | ExecuteMsg::Swap { .. } => {
                 return Err(Error::TransactionBlock());
             }
             _ => {}
@@ -180,7 +177,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             let checked_addr = deps.api.addr_validate(&msg.from)?;
             receiver_callback(deps, env, info, checked_addr, msg.amount, msg.msg)
         }
-        ExecuteMsg::SwapTokens {
+        ExecuteMsg::Swap {
             to,
             offer,
             expected_return: _,
@@ -206,12 +203,17 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             try_swap(deps, env, info, swap_for_y, checked_to, offer.amount)
         }
         ExecuteMsg::FlashLoan {} => todo!(),
-        ExecuteMsg::AddLiquidity {
-            liquidity_parameters,
-        } => try_add_liquidity(deps, env, info, liquidity_parameters),
-        ExecuteMsg::RemoveLiquidity {
-            remove_liquidity_params,
-        } => try_remove_liquidity(deps, env, info, remove_liquidity_params),
+        ExecuteMsg::Mint {
+            to,
+            liquidity_configs,
+            refund_to,
+        } => mint(deps, env, info, to, liquidity_configs, refund_to),
+        ExecuteMsg::Burn {
+            from,
+            to,
+            ids,
+            amounts_to_burn,
+        } => burn(deps, env, info, from, to, ids, amounts_to_burn),
         ExecuteMsg::CollectProtocolFees {} => try_collect_protocol_fees(deps, env, info),
         ExecuteMsg::IncreaseOracleLength { new_length } => {
             try_increase_oracle_length(deps, env, info, new_length)
@@ -321,6 +323,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         }
         QueryMsg::GetProtocolFees {} => to_binary(&query_protocol_fees(deps)?),
         QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_params(deps)?),
+        QueryMsg::GetLbHooksParameters {} => todo!(),
         QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_params(deps)?),
         QueryMsg::GetOracleParameters {} => to_binary(&query_oracle_params(deps)?),
         QueryMsg::GetOracleSampleAt { lookup_timestamp } => {
@@ -340,7 +343,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetLbToken {} => to_binary(&query_lb_token(deps)?),
         QueryMsg::GetLbTokenSupply { id } => to_binary(&query_total_supply(deps, id)?),
     }
-    .map_err(Error::from)
+    .map_err(Error::CwErr)
 }
 
 #[entry_point]
@@ -352,7 +355,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 let trimmed_str = contract_address_string.trim_matches('\"');
                 let contract_address = deps.api.addr_validate(trimmed_str)?;
 
-                // // not the best name but it matches the pair key idea
                 let emp_storage = EPHEMERAL_STORAGE.load(deps.storage)?;
                 let mut state = STATE.load(deps.storage)?;
 

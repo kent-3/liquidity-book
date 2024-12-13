@@ -7,11 +7,10 @@ use lb_libraries::{
 // TODO: sort out viewing key strategy
 use shade_protocol::swap::core::ViewingKey;
 use shade_protocol::{
-    c_std::{Addr, ContractInfo, Timestamp, Uint128, Uint256},
+    c_std::{Addr, ContractInfo, Timestamp},
     cosmwasm_schema::cw_serde,
-    secret_storage_plus::{AppendStore, Bincode2, Item, Map},
+    secret_storage_plus::{Bincode2, Item, Map},
     swap::core::TokenType,
-    utils::asset::RawContract,
     Contract,
 };
 
@@ -22,6 +21,7 @@ pub const BIN_TREE: Item<TreeUint24, Bincode2> = Item::new("bin_tree");
 pub const ORACLE: Map<u16, OracleSample> = Map::new("oracle");
 pub const EPHEMERAL_STORAGE: Item<EphemeralStruct> = Item::new("ephemeral_storage");
 
+// TODO: store some of these things under separate keys? especially reserves
 #[cw_serde]
 pub struct State {
     // Contract and creator information
@@ -48,11 +48,5 @@ pub struct State {
 
 #[cw_serde]
 pub struct EphemeralStruct {
-    // Contract information
     pub lb_token_code_hash: String,
-    pub query_auth: RawContract,
-
-    // Token symbols
-    pub token_x_symbol: String,
-    pub token_y_symbol: String,
 }

@@ -1,4 +1,4 @@
-use crate::lb_pair::LiquidityParameters;
+use crate::lb_pair::{LbPair, LiquidityParameters};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, ContractInfo, Uint128, Uint256, Uint64};
 use shade_protocol::contract_interfaces::swap::core::TokenType;
@@ -125,6 +125,27 @@ pub enum ExecuteMsg {
     },
 }
 
+#[cw_serde]
+pub struct CreateLbPairResponse {
+    pub lb_pair: LbPair,
+}
+
+#[cw_serde]
+pub struct AddLiquidityResponse {
+    pub amount_x_added: Uint128,
+    pub amount_y_added: Uint128,
+    pub amount_x_left: Uint128,
+    pub amount_y_left: Uint128,
+    pub deposit_ids: Vec<u32>,
+    pub liquidity_minted: Vec<Uint256>,
+}
+
+#[cw_serde]
+pub struct RemoveLiquidityResponse {
+    pub amount_x: Uint128,
+    pub amount_y: Uint128,
+}
+
 // TODO: decide about the Version stuff. It is very specific to Trader Joe, but we could use this
 // approach to support swaps from other DEXs. For example: V1 = shade_swap, V2 = liquidity_book.
 // Then a path could contain a mix of pair types.
@@ -138,6 +159,7 @@ pub enum Version {
     V1,
     V2,
     V2_1,
+    V2_2,
 }
 
 /// The path parameters, such as:
@@ -181,9 +203,6 @@ pub enum QueryMsg {
     },
 }
 
-// Add additional helper functions if needed for more complex queries
-
-// We define a custom struct for each query response
 #[cw_serde]
 pub struct FactoryResponse {
     pub factory: Addr,
@@ -211,12 +230,4 @@ pub struct SwapOutResponse {
     pub amount_in_left: Uint128,
     pub amount_out: Uint128,
     pub fee: Uint128,
-}
-
-#[cw_serde]
-pub enum ExecuteMsgResponse {
-    SwapResult {
-        amount_in: Uint128,
-        amount_out: Uint128,
-    },
 }

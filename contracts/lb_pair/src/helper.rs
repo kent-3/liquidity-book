@@ -215,8 +215,6 @@ pub fn calculate_id(
     active_id: u32,
     i: usize,
 ) -> Result<u32> {
-    // let id: u32;
-
     let id: i64 = active_id as i64 + liquidity_parameters.delta_ids[i];
 
     if id < 0 || id as u32 > U24::MAX {

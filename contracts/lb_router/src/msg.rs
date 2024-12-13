@@ -1,1 +1,1 @@
-pub use lb_interfaces::lb_router::{ExecuteMsg, ExecuteMsgResponse, InstantiateMsg, QueryMsg};
+pub use lb_interfaces::lb_router::{ExecuteMsg, InstantiateMsg, QueryMsg};

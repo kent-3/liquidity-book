@@ -6,6 +6,7 @@
 use super::packed_u128_math::PackedUint128Math;
 use crate::types::Bytes32;
 use ethnum::U256;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
@@ -16,14 +17,14 @@ pub enum LiquidityConfigurationsError {
     InvalidConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq)]
-pub struct LiquidityConfigurations {
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Copy, PartialEq, JsonSchema)]
+pub struct LiquidityConfiguration {
     pub distribution_x: u64,
     pub distribution_y: u64,
     pub id: u32,
 }
 
-impl LiquidityConfigurations {
+impl LiquidityConfiguration {
     /// Get the amounts and id from a config and amounts_in.
     ///
     /// # Arguments
@@ -68,7 +69,7 @@ mod tests {
     use super::*;
     use ethnum::U256;
 
-    impl LiquidityConfigurations {
+    impl LiquidityConfiguration {
         pub fn new(
             distribution_x: u64,
             distribution_y: u64,
@@ -77,7 +78,7 @@ mod tests {
             if (distribution_x > PRECISION) || (distribution_y > PRECISION) {
                 Err(LiquidityConfigurationsError::InvalidConfig)
             } else {
-                Ok(LiquidityConfigurations {
+                Ok(LiquidityConfiguration {
                     distribution_x,
                     distribution_y,
                     id,
@@ -102,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_get_amounts_and_id_normal_case() {
-        let lc: LiquidityConfigurations = LiquidityConfigurations {
+        let lc: LiquidityConfiguration = LiquidityConfiguration {
             distribution_x: (0.1 * PRECISION as f64) as u64,
             distribution_y: (0.1 * PRECISION as f64) as u64,
             id: 1,
@@ -127,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_get_amounts_and_id_zero_case() {
-        let lc = LiquidityConfigurations {
+        let lc = LiquidityConfiguration {
             distribution_x: 0,
             distribution_y: 0,
             id: 0,
@@ -142,26 +143,26 @@ mod tests {
 
     #[test]
     fn test_new_valid_config() {
-        let lc = LiquidityConfigurations::new(500_000_000_000_000_000, 500_000_000_000_000_000, 1);
+        let lc = LiquidityConfiguration::new(500_000_000_000_000_000, 500_000_000_000_000_000, 1);
         assert!(lc.is_ok());
     }
 
     #[test]
     fn test_new_invalid_config_x() {
-        let lc = LiquidityConfigurations::new(PRECISION + 1, 500_000_000_000_000_000, 1);
+        let lc = LiquidityConfiguration::new(PRECISION + 1, 500_000_000_000_000_000, 1);
         assert_eq!(lc, Err(LiquidityConfigurationsError::InvalidConfig));
     }
 
     #[test]
     fn test_new_invalid_config_y() {
-        let lc = LiquidityConfigurations::new(500_000_000_000_000_000, PRECISION + 1, 1);
+        let lc = LiquidityConfiguration::new(500_000_000_000_000_000, PRECISION + 1, 1);
         assert_eq!(lc, Err(LiquidityConfigurationsError::InvalidConfig));
     }
 
     #[test]
     fn test_update_distribution_valid() {
         let mut lc =
-            LiquidityConfigurations::new(300_000_000_000_000_000, 300_000_000_000_000_000, 1)
+            LiquidityConfiguration::new(300_000_000_000_000_000, 300_000_000_000_000_000, 1)
                 .unwrap();
         let result = lc.update_distribution(400_000_000_000_000_000, 400_000_000_000_000_000);
         assert!(result.is_ok());
@@ -172,7 +173,7 @@ mod tests {
     #[test]
     fn test_update_distribution_invalid_x() {
         let mut lc =
-            LiquidityConfigurations::new(300_000_000_000_000_000, 300_000_000_000_000_000, 1)
+            LiquidityConfiguration::new(300_000_000_000_000_000, 300_000_000_000_000_000, 1)
                 .unwrap();
         let result = lc.update_distribution(PRECISION + 1, 400_000_000_000_000_000);
         assert_eq!(result, Err(LiquidityConfigurationsError::InvalidConfig));
@@ -181,28 +182,28 @@ mod tests {
     #[test]
     fn test_update_distribution_invalid_y() {
         let mut lc =
-            LiquidityConfigurations::new(300_000_000_000_000_000, 300_000_000_000_000_000, 1)
+            LiquidityConfiguration::new(300_000_000_000_000_000, 300_000_000_000_000_000, 1)
                 .unwrap();
         let result = lc.update_distribution(400_000_000_000_000_000, PRECISION + 1);
         assert_eq!(result, Err(LiquidityConfigurationsError::InvalidConfig));
     }
     #[test]
     fn test_equality() {
-        let config1 = LiquidityConfigurations::new(100, 200, 1).unwrap();
-        let config2 = LiquidityConfigurations::new(100, 200, 1).unwrap();
+        let config1 = LiquidityConfiguration::new(100, 200, 1).unwrap();
+        let config2 = LiquidityConfiguration::new(100, 200, 1).unwrap();
         assert_eq!(config1, config2);
     }
 
     #[test]
     fn test_debug_format() {
-        let config = LiquidityConfigurations::new(100, 200, 1).unwrap();
+        let config = LiquidityConfiguration::new(100, 200, 1).unwrap();
         let debug_string = format!("{:?}", config);
         assert!(!debug_string.is_empty());
     }
 
     #[test]
     fn test_clone() {
-        let config = LiquidityConfigurations::new(100, 200, 1).unwrap();
+        let config = LiquidityConfiguration::new(100, 200, 1).unwrap();
         let cloned_config = config.clone();
         assert_eq!(config, cloned_config);
     }

@@ -1,8 +1,5 @@
-use crate::{msg::*, prelude::*, state::FACTORY};
-use cosmwasm_std::{
-    to_binary, ContractInfo, Deps, QuerierWrapper, QueryRequest, StdResult, Uint128, Uint256,
-    WasmQuery,
-};
+use crate::{prelude::*, state::FACTORY};
+use cosmwasm_std::{ContractInfo, Deps, Uint128, Uint256};
 use lb_interfaces::lb_pair::{
     self, FactoryResponse, IdFromPriceResponse, PriceFromIdResponse, SwapInResponse,
     SwapOutResponse,
