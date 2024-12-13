@@ -1,10 +1,6 @@
 use crate::{prelude::*, query::*, state::*};
-use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, Deps, DepsMut, Env,
-    MessageInfo, Response, StdError, StdResult, Uint128, Uint256,
-};
-use lb_interfaces::{lb_factory, lb_pair, lb_quoter::*, lb_router};
-use lb_libraries::lb_token::state_structs::LbPair;
+use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo};
+use lb_interfaces::lb_quoter::*;
 
 #[entry_point]
 pub fn instantiate(deps: DepsMut, env: Env, info: MessageInfo, msg: InstantiateMsg) -> Result<()> {
@@ -18,8 +14,8 @@ pub fn instantiate(deps: DepsMut, env: Env, info: MessageInfo, msg: InstantiateM
         .map(|raw_contract| raw_contract.valid(deps.api))
         .transpose()?;
 
-    FACTORY_V2_2.save(deps.storage, &factory_v2_2);
-    ROUTER_V2_2.save(deps.storage, &router_v2_2);
+    FACTORY_V2_2.save(deps.storage, &factory_v2_2)?;
+    ROUTER_V2_2.save(deps.storage, &router_v2_2)?;
 
     Ok(())
 }
@@ -44,10 +40,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
             to_binary(&response)
         }
         QueryMsg::FindBestPathFromAmountIn { route, amount_in } => {
-            to_binary(&find_best_path_from_amount_in(deps)?)
+            to_binary(&find_best_path_from_amount_in(deps, route, amount_in)?)
         }
         QueryMsg::FindBestPathFromAmountOut { route, amount_out } => {
-            to_binary(&find_best_path_from_amount_out(deps)?)
+            to_binary(&find_best_path_from_amount_out(deps, route, amount_out)?)
         }
     }
     .map_err(Error::CwErr)

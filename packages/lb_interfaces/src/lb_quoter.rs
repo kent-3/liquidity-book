@@ -3,12 +3,15 @@ use cosmwasm_std::{ContractInfo, Uint128};
 // TODO: copy these instead of using shade_protocol as a dependency
 use shade_protocol::utils::{asset::RawContract, InstantiateCallback, Query};
 
+use crate::lb_router::Version;
+
 #[cw_serde]
+#[derive(Default)]
 pub struct Quote {
-    pub route: Vec<String>,
-    pub pairs: Vec<String>,
+    pub route: Vec<ContractInfo>,
+    pub pairs: Vec<ContractInfo>,
     pub bin_steps: Vec<u16>,
-    pub versions: Vec<String>,
+    pub versions: Vec<Version>,
     pub amounts: Vec<Uint128>,
     pub virtual_amounts_without_slippage: Vec<Uint128>,
     pub fees: Vec<Uint128>,
