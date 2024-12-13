@@ -16,8 +16,8 @@ pub struct Quote {
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub factory_v1: Option<RawContract>,
-    pub router_v1: Option<RawContract>,
+    pub factory_v2_2: Option<RawContract>,
+    pub router_v2_2: Option<RawContract>,
 }
 
 impl InstantiateCallback for InstantiateMsg {
@@ -30,10 +30,10 @@ pub struct ExecuteMsg {}
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(FactoryV1Response)]
-    GetFactoryV1,
-    #[returns(RouterV1Response)]
-    GetRouterV1,
+    #[returns(FactoryV2_2Response)]
+    GetFactoryV2_2,
+    #[returns(RouterV2_2Response)]
+    GetRouterV2_2,
     #[returns(QuoteResponse)]
     FindBestPathFromAmountIn {
         route: Vec<ContractInfo>,
@@ -51,13 +51,13 @@ impl Query for QueryMsg {
 }
 
 #[cw_serde]
-pub struct FactoryV1Response {
-    pub factory_v1: Option<ContractInfo>,
+pub struct FactoryV2_2Response {
+    pub factory_v2_2: Option<ContractInfo>,
 }
 
 #[cw_serde]
-pub struct RouterV1Response {
-    pub router_v1: Option<ContractInfo>,
+pub struct RouterV2_2Response {
+    pub router_v2_2: Option<ContractInfo>,
 }
 
 #[cw_serde]
