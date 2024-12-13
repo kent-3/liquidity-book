@@ -134,6 +134,8 @@ impl ExampleData for LiquidityParameters {
             delta_ids: vec![-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
             distribution_x: vec![Uint64::new(10u64); 11],
             distribution_y: vec![Uint64::new(10u64); 11],
+            to: Addr::sender().to_string(),
+            refund_to: Addr::sender().to_string(),
             deadline: Uint64::new(1701283067u64),
         }
     }
