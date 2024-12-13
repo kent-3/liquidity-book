@@ -936,6 +936,7 @@ fn _get_lb_pair_information(
             deps.storage,
             (token_a.unique_key(), token_b.unique_key(), bin_step),
         )
+        // FIXME: return the LbPairNotCreated error instead of unwrapping!
         .unwrap();
 
     Ok(info)
