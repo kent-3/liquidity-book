@@ -18,7 +18,7 @@ use cosmwasm_std::{
 use ethnum::U256;
 use lb_interfaces::{
     lb_factory, lb_pair,
-    lb_router::{self, Path, Version},
+    lb_router::{self, CreateLbPairResponse, Path, Version},
 };
 use lb_libraries::{
     bin_helper::BinHelper,
@@ -224,12 +224,11 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
     match (msg.id.into(), msg.result) {
         (CREATE_LB_PAIR_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
-            Some(x) => {
-                // TODO: create a response type for CreateLbPair that returns the contract address
-                // and whatever else about the newly created pair.
-                // let data: lb_factory::CreateLbPairResponse = from_binary(&x)?;
-
-                let data = [0u8; 32];
+            Some(data) => {
+                let lb_pair: lb_pair::LbPair = from_binary(&data)?;
+                // TODO: does it make sense to return a nested response like this that only
+                // contains one value?
+                let data = CreateLbPairResponse { lb_pair };
 
                 Ok(Response::new().set_data(to_binary(&data)?))
             }
