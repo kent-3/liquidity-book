@@ -263,26 +263,61 @@ pub fn mint(
 
     let state = STATE.load(deps.storage)?;
 
-    let Balance {
-        amount: token_x_balance,
-    } = deps.querier.query_wasm_smart::<Balance>(
-        state.token_x.code_hash(),
-        state.token_x.address(),
-        &snip20::QueryMsg::Balance {
-            address: env.contract.address.to_string(),
-            key: state.viewing_key.to_string(),
-        },
-    )?;
-    let Balance {
-        amount: token_y_balance,
-    } = deps.querier.query_wasm_smart::<Balance>(
-        state.token_y.code_hash(),
-        state.token_y.address(),
-        &snip20::QueryMsg::Balance {
-            address: env.contract.address.to_string(),
-            key: state.viewing_key.to_string(),
-        },
-    )?;
+    let res = deps
+        .querier
+        .query_wasm_smart::<snip20::query::AuthenticatedQueryResponse>(
+            state.token_x.code_hash(),
+            state.token_x.address(),
+            &snip20::QueryMsg::Balance {
+                address: env.contract.address.to_string(),
+                key: state.viewing_key.to_string(),
+            },
+        )?;
+
+    let token_x_balance = match res {
+        snip20::query::AuthenticatedQueryResponse::Balance { amount } => amount,
+        snip20::query::AuthenticatedQueryResponse::ViewingKeyError { msg } => panic!("{msg}"),
+        _ => panic!("idk lol"),
+    };
+
+    let res = deps
+        .querier
+        .query_wasm_smart::<snip20::query::AuthenticatedQueryResponse>(
+            state.token_y.code_hash(),
+            state.token_y.address(),
+            &snip20::QueryMsg::Balance {
+                address: env.contract.address.to_string(),
+                key: state.viewing_key.to_string(),
+            },
+        )?;
+
+    let token_y_balance = match res {
+        snip20::query::AuthenticatedQueryResponse::Balance { amount } => amount,
+        snip20::query::AuthenticatedQueryResponse::ViewingKeyError { msg } => panic!("{msg}"),
+        _ => panic!("idk lol"),
+    };
+
+    // let Balance {
+    //     amount: token_x_balance,
+    // } = deps.querier.query_wasm_smart::<Balance>(
+    //     state.token_x.code_hash(),
+    //     state.token_x.address(),
+    //     &snip20::QueryMsg::Balance {
+    //         address: env.contract.address.to_string(),
+    //         key: state.viewing_key.to_string(),
+    //     },
+    // )?;
+
+    // let Balance {
+    //     amount: token_y_balance,
+    // } = deps.querier.query_wasm_smart::<Balance>(
+    //     state.token_y.code_hash(),
+    //     state.token_y.address(),
+    //     &snip20::QueryMsg::Balance {
+    //         address: env.contract.address.to_string(),
+    //         key: state.viewing_key.to_string(),
+    //     },
+    // )?;
 
     let mut mint_arrays = MintArrays {
         ids: (vec![U256::ZERO; liquidity_configs.len()]),
