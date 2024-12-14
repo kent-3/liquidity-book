@@ -31,11 +31,11 @@ While both Liquidity Book and Uniswap V3 operate as concentrated liquidity AMMs,
 
 This repository contains the Liquidity Book contracts, as well as tests and deploy scripts.
 
-- The [LBPair](./contracts/LbPair/src/contract.rs) contract contains all the logic of the actual pair for swaps, adds, removals of liquidity and fee claiming. This contract should never be deployed directly, and the factory should always be used for that matter.
-- The [LBToken](./contracts/LbToken/src/contract.rs) contract is used to calculate the shares of a user. The LBToken is a new token standard that is similar to SNIP-1155.
-- The [LBFactory](./contracts/LbFactory/src/contract.rs) contract is used to deploy the different pairs and acts as a registry for all the pairs already created. There are also privileged functions such as setting the parameters of the fees, the flashloan fee, setting the pair implementation, set if a pair should be ignored by the quoter, and add new presets.
-- The [LBRouter](./contracts/LbRouter/src/contract.rs) is the main contract that user will interact LbPair when swapping and managing liquidity.
-- The [LBQuoter](./contracts/LbQuoter/src/contract.rs) is used to return the best route for a given token path. This should be used before a swap to get the best return on a swap.
+- The [LBPair](./contracts/lb_pair) contract contains all the logic of the actual pair for swaps, adds, removals of liquidity and fee claiming. This contract should never be deployed directly, and the factory should always be used for that matter.
+- The [LBToken](./contracts/lb_token) contract is used to calculate the shares of a user. The LBToken is a new token standard that is similar to SNIP-1155.
+- The [LBFactory](./contracts/lb_factory) contract is used to deploy the different pairs and acts as a registry for all the pairs already created. There are also privileged functions such as setting the parameters of the fees, the flashloan fee, setting the pair implementation, set if a pair should be ignored by the quoter, and add new presets.
+- The [LBRouter](./contracts/lb_router) is the main contract that user will interact LbPair when swapping and managing liquidity.
+- The [LBQuoter](./contracts/lb_quoter) is used to return the best route for a given token path. This should be used before a swap to get the best return on a swap.
 
 ```mermaid
 flowchart LR
