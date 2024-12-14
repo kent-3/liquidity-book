@@ -1,14 +1,10 @@
-//! ### Custom Errors for LB_Pair contract.
+//! ### Custom Errors for LB_Quoter contract.
 
 use cosmwasm_std::StdError;
 use lb_libraries::math::{u128x128_math::U128x128MathError, u256x256_math::U256x256MathError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbQuoterError {
-    // Generic Errors
-    #[error("Generic {0}")]
-    Generic(String),
-
     #[error("InvalidLength")]
     InvalidLength,
 

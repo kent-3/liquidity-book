@@ -15,6 +15,7 @@ pub fn _get_v2_quote(
     if swap_for_y {
         let x = PriceHelper::get_price_from_id(active_id, bin_step)?;
         let y = ethnum::U256::new(amount.u128());
+        // TODO: this would make more sense as a method on U256 (extension trait)
         let quote = U256x256Math::mul_shift_round_down(x, y, SCALE_OFFSET)?.as_u128();
 
         Ok(Uint128::from(quote))
