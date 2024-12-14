@@ -1,31 +1,15 @@
 #![allow(unused)] // For beginning only.
 
-use crate::{
-    execute::{
-        add_liquidity, create_lb_pair, remove_liquidity, swap_exact_tokens_for_tokens,
-        swap_tokens_for_exact_tokens, sweep, sweep_lb_token,
-    },
-    msg::*,
-    prelude::*,
-    query::*,
-    state::*,
-};
+use crate::{execute::*, msg::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Timestamp, Uint128,
-    Uint256, WasmMsg,
+    entry_point, from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    StdResult, SubMsgResult, Uint128,
 };
-use ethnum::U256;
 use lb_interfaces::{
-    lb_factory, lb_pair,
-    lb_router::{self, CreateLbPairResponse, Path, Version},
+    lb_pair,
+    lb_router::{self, CreateLbPairResponse, Path},
 };
-use lb_libraries::{
-    bin_helper::BinHelper,
-    math::{encoded::Encoded, packed_u128_math::PackedUint128Math, u24::U24},
-    types::{Bytes32, LiquidityConfiguration},
-};
-use shade_protocol::{contract_interfaces::swap::core::TokenType, utils::ExecuteCallback};
+use lb_libraries::math::packed_u128_math::PackedUint128Math;
 
 pub const BLOCK_SIZE: usize = 256;
 pub const ROUTER_KEY: &str = "lb_router";
@@ -69,7 +53,7 @@ pub fn verify_path_validity(path: &Path) -> Result<()> {
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     FACTORY.save(deps.storage, &msg.factory)?;
@@ -248,7 +232,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                 let amount_x_added = Uint128::from(amounts_added.decode_x());
                 let amount_y_added = Uint128::from(amounts_added.decode_y());
 
-                if (amount_x_added < liq.amount_x_min || amount_y_added < liq.amount_y_min) {
+                if amount_x_added < liq.amount_x_min || amount_y_added < liq.amount_y_min {
                     return Err(Error::AmountSlippageCaught {
                         amount_x_min: liq.amount_x_min,
                         amount_x: amount_x_added,

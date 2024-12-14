@@ -1,31 +1,22 @@
-#![allow(unused)]
+// #![allow(unused)]
 
 use crate::{
-    contract::{
-        ensure, BURN_REPLY_ID, CREATE_LB_PAIR_REPLY_ID, MINT_REPLY_ID, ROUTER_KEY, SWAP_REPLY_ID,
-    },
-    helper::{_get_lb_pair_information, _get_pairs},
+    contract::{ensure, BURN_REPLY_ID, CREATE_LB_PAIR_REPLY_ID, MINT_REPLY_ID, ROUTER_KEY},
+    helper::*,
     prelude::*,
-    state::{
-        EphemeralAddLiquidity, EphemeralRemoveLiquidity, EPHEMERAL_ADD_LIQUIDITY,
-        EPHEMERAL_REMOVE_LIQUIDITY, FACTORY,
-    },
+    state::*,
 };
 use cosmwasm_std::{
-    to_binary, Addr, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg,
-    Uint128, Uint256, Uint64,
+    to_binary, Addr, ContractInfo, CosmosMsg, DepsMut, Env, MessageInfo, Response, SubMsg, Uint128,
+    Uint256, Uint64,
 };
 use lb_interfaces::{
     lb_factory,
-    lb_pair::{self, LiquidityParameters},
-    lb_router::{self, Path, Version},
+    lb_pair::{self, ILbPair, LiquidityParameters},
+    lb_router::{Path, Version},
 };
 use lb_libraries::types::LiquidityConfiguration;
-use shade_protocol::{
-    snip20::helpers::{register_receive, set_viewing_key_msg},
-    swap::core::TokenType,
-    utils::ExecuteCallback,
-};
+use shade_protocol::{swap::core::TokenType, utils::ExecuteCallback};
 
 pub fn create_lb_pair(
     deps: DepsMut,
@@ -59,35 +50,66 @@ pub fn add_liquidity(
 ) -> Result<Response> {
     ensure(&env, liquidity_parameters.deadline.u64())?;
 
-    let pair = _get_lb_pair_information(
+    // TODO: the LiquidityParameters token inputs should really be ContractInfo instead
+    let token_x = liquidity_parameters
+        .token_x
+        .clone()
+        .into_contract_info()
+        .unwrap();
+    let token_y = liquidity_parameters
+        .token_y
+        .clone()
+        .into_contract_info()
+        .unwrap();
+
+    let pair = ILbPair(_get_lb_pair_information(
         deps.as_ref(),
-        liquidity_parameters.token_x.clone(),
-        liquidity_parameters.token_y.clone(),
+        token_x,
+        token_y,
         liquidity_parameters.bin_step,
         Version::V2_2,
-    )?;
+    )?);
 
-    let lb_pair::TokenXResponse { token_x } =
-        deps.querier.query_wasm_smart::<lb_pair::TokenXResponse>(
-            pair.code_hash.clone(),
-            pair.address.clone(),
-            &lb_pair::QueryMsg::GetTokenX {},
-        )?;
+    let token_x = pair.get_token_x(deps.querier)?;
 
-    if liquidity_parameters.token_x != token_x {
+    if liquidity_parameters.token_x != token_x.into() {
         return Err(Error::WrongTokenOrder);
     }
 
     // NOTE: Router requires token allowance before this function can be called.
-    // TODO: Transfer tokens from sender to the pair contract.
+    // Could increasing allowances be done via submessages? I don't think so, because the message
+    // sender would be this contract, not the user.
 
-    _add_liquidity(deps, liquidity_parameters, pair)
+    // TODO: Transfer tokens from sender to the pair contract.
+    let transfer_x_msg = secret_toolkit::snip20::transfer_msg(
+        pair.0.address.to_string(),
+        liquidity_parameters.amount_x,
+        None,
+        None,
+        32,
+        pair.0.code_hash.clone(),
+        pair.0.address.to_string(),
+    )?;
+    let transfer_y_msg = secret_toolkit::snip20::transfer_msg(
+        pair.0.address.to_string(),
+        liquidity_parameters.amount_y,
+        None,
+        None,
+        32,
+        pair.0.code_hash.clone(),
+        pair.0.address.to_string(),
+    )?;
+
+    let response = Response::new().add_messages(vec![transfer_x_msg, transfer_y_msg]);
+
+    _add_liquidity(deps, response, liquidity_parameters, pair)
 }
 
 pub fn _add_liquidity(
     deps: DepsMut,
+    response: Response,
     liq: LiquidityParameters,
-    pair: ContractInfo,
+    pair: ILbPair,
 ) -> Result<Response> {
     if liq.delta_ids.len() != liq.distribution_x.len()
         || liq.delta_ids.len() != liq.distribution_y.len()
@@ -107,12 +129,7 @@ pub fn _add_liquidity(
     let mut liquidity_configs = vec![LiquidityConfiguration::default(); liq.delta_ids.len()];
     let mut deposit_ids = Vec::with_capacity(liq.delta_ids.len());
 
-    let lb_pair::ActiveIdResponse { active_id } =
-        deps.querier.query_wasm_smart::<lb_pair::ActiveIdResponse>(
-            pair.code_hash.clone(),
-            pair.address.clone(),
-            &lb_pair::QueryMsg::GetActiveId {},
-        )?;
+    let active_id = pair.get_active_id(deps.querier)?;
 
     if liq.active_id_desired + liq.id_slippage < active_id
         || active_id + liq.id_slippage < liq.active_id_desired
@@ -146,16 +163,19 @@ pub fn _add_liquidity(
         },
     )?;
 
-    let msg = lb_pair::ExecuteMsg::Mint {
-        to: liq.to,
-        liquidity_configs,
-        refund_to: liq.refund_to,
-    }
-    .to_cosmos_msg(&pair, vec![])?;
+    // TODO: add ExecuteMsg methods to ILbPair?
 
-    let response = Response::new().add_submessage(SubMsg::reply_on_success(msg, MINT_REPLY_ID));
+    let lb_pair_mint_msg = SubMsg::reply_on_success(
+        lb_pair::ExecuteMsg::Mint {
+            to: liq.to,
+            liquidity_configs,
+            refund_to: liq.refund_to,
+        }
+        .to_cosmos_msg(&pair.0, vec![])?,
+        MINT_REPLY_ID,
+    );
 
-    Ok(response)
+    Ok(response.add_submessage(lb_pair_mint_msg))
 }
 
 pub fn add_liquidity_native() {

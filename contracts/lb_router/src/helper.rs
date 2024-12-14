@@ -1,9 +1,6 @@
-use crate::prelude::*;
-use crate::state::FACTORY;
+use crate::{prelude::*, state::FACTORY};
 use cosmwasm_std::{Addr, ContractInfo, Deps, Uint128};
-use lb_interfaces::lb_factory::{self, LbPairInformationResponse};
-use lb_interfaces::lb_router::Version;
-use shade_protocol::swap::core::TokenType;
+use lb_interfaces::{lb_factory::ILbFactory, lb_router::Version};
 
 // NOTE: We are following the joe-v2 versioning, starting from V2_2.
 
@@ -12,8 +9,8 @@ use shade_protocol::swap::core::TokenType;
 /// Revert if the pair is not created yet
 pub fn _get_lb_pair_information(
     deps: Deps,
-    token_x: TokenType,
-    token_y: TokenType,
+    token_x: ContractInfo,
+    token_y: ContractInfo,
     bin_step: u16,
     version: Version,
 ) -> Result<ContractInfo> {
@@ -24,19 +21,26 @@ pub fn _get_lb_pair_information(
     } else {
         let factory = FACTORY.load(deps.storage)?;
 
-        let msg = lb_factory::QueryMsg::GetLbPairInformation {
+        let lb_pair_information = ILbFactory(factory).get_lb_pair_information(
+            deps.querier,
             token_x,
             token_y,
             bin_step,
-        };
-
-        let LbPairInformationResponse {
-            lb_pair_information,
-        } = deps.querier.query_wasm_smart::<LbPairInformationResponse>(
-            factory.code_hash,
-            factory.address,
-            &msg,
         )?;
+
+        // let msg = lb_factory::QueryMsg::GetLbPairInformation {
+        //     token_x,
+        //     token_y,
+        //     bin_step,
+        // };
+        //
+        // let LbPairInformationResponse {
+        //     lb_pair_information,
+        // } = deps.querier.query_wasm_smart::<LbPairInformationResponse>(
+        //     factory.code_hash,
+        //     factory.address,
+        //     &msg,
+        // )?;
 
         Ok(lb_pair_information.lb_pair.contract)
     }
@@ -50,8 +54,8 @@ pub fn _get_lb_pair_information(
 
 pub fn _get_pair(
     deps: Deps,
-    token_x: TokenType,
-    token_y: TokenType,
+    token_x: ContractInfo,
+    token_y: ContractInfo,
     bin_step: u16,
     version: Version,
 ) -> Result<ContractInfo> {
@@ -81,11 +85,10 @@ pub fn _get_pairs(
         token = token_next;
         token_next = token_path[i + 1].clone();
 
-        // TODO: someday, maybe, change message inputs from TokenType to a simple ContractInfo
         pairs[i] = _get_pair(
             deps,
-            token.clone().into(),
-            token_next.clone().into(),
+            token.clone(),
+            token_next.clone(),
             pair_bin_steps[i].clone(),
             versions[i].clone(),
         )?;

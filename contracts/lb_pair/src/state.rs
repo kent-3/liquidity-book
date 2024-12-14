@@ -1,4 +1,4 @@
-use lb_interfaces::{lb_factory::ContractImplementation, lb_pair::ContractStatus};
+use lb_interfaces::lb_pair::ContractStatus;
 use lb_libraries::{
     math::{sample_math::OracleSample, tree_math::TreeUint24},
     pair_parameter_helper::PairParameters,
