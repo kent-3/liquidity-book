@@ -5,6 +5,7 @@ pub mod constants;
 pub mod error;
 pub mod fee_helper;
 // TODO: this module should really not be part of this crate...
+pub mod hooks;
 pub mod lb_token;
 pub mod math;
 pub mod oracle_helper;
