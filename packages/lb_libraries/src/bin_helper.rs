@@ -40,6 +40,65 @@ pub enum BinError {
     ParamsErr(#[from] PairParametersError),
 }
 
+// TODO: This should be a trait for Bytes32, or it's own type called `Bin`.
+
+// pub trait BinHelper {
+//     /// Returns the amount of tokens that will be received when burning the given amount of liquidity.
+//     fn get_amount_out_of_bin(
+//         &self,
+//         amount_to_burn: U256,
+//         total_supply: U256,
+//     ) -> Result<(u128, u128), BinError>;
+//
+//     /// Returns the share and the effective amounts in when adding liquidity.
+//     fn get_shares_and_effective_amounts_in(
+//         &self,
+//         amounts_in: Bytes32,
+//         price: U256,
+//         total_supply: U256,
+//     ) -> Result<(U256, Bytes32), BinError>;
+//
+//     /// Returns the amount of liquidity following the constant sum formula `L = price * x + y`.
+//     fn get_liquidity(amounts: [u8; 32], price: U256) -> Result<U256, BinError>;
+//
+//     /// Verify that the amounts are correct and that the composition factor is not flawed.
+//     fn verify_amounts(amounts: [u8; 32], active_id: u32, id: u32) -> Result<(), BinError>;
+//
+//     /// Returns the composition fees when adding liquidity to the active bin with a different
+//     /// composition factor than the bin's one, as it does an implicit swap.
+//     fn get_composition_fees(
+//         &self,
+//         parameters: PairParameters,
+//         bin_step: u16,
+//         amounts_in: Bytes32,
+//         total_supply: U256,
+//         shares: U256,
+//     ) -> Result<Bytes32, BinError>;
+//
+//     /// Returns whether the bin is empty (true) or not (false).
+//     fn is_empty(&self, is_x: bool) -> bool;
+//
+//     /// Returns the amounts of tokens that will be added and removed from the bin during a swap
+//     /// along with the fees that will be charged.
+//     fn get_amounts(
+//         &self,
+//         parameters: PairParameters,
+//         bin_step: u16,
+//         swap_for_y: bool,
+//         amounts_in_left: Bytes32,
+//         price: U256,
+//     ) -> Result<(Bytes32, Bytes32, Bytes32), BinError>;
+//
+//     /// Returns the encoded amounts that were transferred to the contract for both tokens.
+//     fn received(&self, token_x: Uint128, token_y: Uint128) -> Bytes32;
+//
+//     /// Returns the encoded amounts that were transferred to the contract, only for token X.
+//     fn received_x(&self, token_x: Uint128) -> Bytes32;
+//
+//     /// Returns the encoded amounts that were transferred to the contract, only for token Y.
+//     fn received_y(&self, token_y: Uint128) -> Bytes32;
+// }
+
 pub struct BinHelper;
 
 impl BinHelper {
@@ -357,6 +416,7 @@ impl BinHelper {
     // we will just calculate the amount received from the send message
 
     /// Returns the encoded amounts that were transferred to the contract for both tokens.
+    /// Determined by subtracting the contract's reserves from the contract's token balances.
     ///
     /// # Arguments
     ///
@@ -369,11 +429,8 @@ impl BinHelper {
     /// * `amounts` - The amounts, encoded as follows:
     ///     * [0 - 128[: amount_x
     ///     * [128 - 256[: amount_y
-    pub fn received(amount_received_x: Uint128, amount_received_y: Uint128) -> Bytes32 {
-        let balance_x = amount_received_x.u128();
-        let balance_y = amount_received_y.u128();
-
-        Bytes32::encode(balance_x, balance_y)
+    pub fn received(reserves: Bytes32, token_x: Uint128, token_y: Uint128) -> Bytes32 {
+        Bytes32::encode(token_x.u128(), token_y.u128()).sub(reserves)
     }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token X.
@@ -391,6 +448,10 @@ impl BinHelper {
     pub fn received_x(amount_received: Uint128) -> Bytes32 {
         Bytes32::encode_first(amount_received.u128())
     }
+    // TODO: replace with this version when ready
+    // pub fn received_x(reserves: Bytes32, token_x: Uint128) -> Bytes32 {
+    //     Bytes32::encode_first(token_x.u128()).sub(reserves)
+    // }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token Y.
     ///
@@ -407,6 +468,10 @@ impl BinHelper {
     pub fn received_y(amount_received: Uint128) -> Bytes32 {
         Bytes32::encode_second(amount_received.u128())
     }
+    // TODO: replace with this version when ready
+    // pub fn received_y(reserves: Bytes32, token_y: Uint128) -> Bytes32 {
+    //     Bytes32::encode_second(token_y.u128()).sub(reserves)
+    // }
 
     // TODO: (maybe) move the transfer helper methods into an impl module inside of
     // shade_protocol/contract_interfaces/liquidity_book
