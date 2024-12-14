@@ -1,6 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use shade_protocol::swap::core::TokenType;
 
+// TODO: hmm
+
 #[cw_serde]
 pub struct NextPairKey {
     pub token_a: TokenType,

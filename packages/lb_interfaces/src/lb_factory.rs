@@ -1,6 +1,6 @@
 use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, ContractInfo, QuerierWrapper, StdResult};
+use cosmwasm_std::{Addr, ContractInfo, QuerierWrapper, StdResult, Uint128};
 use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
@@ -218,7 +218,7 @@ pub enum ExecuteMsg {
         bin_step: u16,
         ignored: bool,
     },
-    SetPairPreset {
+    SetPreset {
         bin_step: u16,
         base_factor: u16,
         filter_period: u16,
@@ -252,10 +252,12 @@ pub enum ExecuteMsg {
         // u24
         max_volatility_accumulator: u32,
     },
+    SetLBHooksParametersOnPair,
+    RemoveLBHooksOnPair,
     SetFeeRecipient {
         fee_recipient: Addr,
     },
-
+    SetFlashLoanFee,
     AddQuoteAsset {
         asset: TokenType,
     },
@@ -278,10 +280,10 @@ pub enum QueryMsg {
     GetMinBinStep {},
     #[returns(FeeRecipientResponse)]
     GetFeeRecipient {},
-    // #[returns(MaxFlashLoanFeeResponse)]
-    // GetMaxFlashLoanFee {},
-    // #[returns(FlashLoanFeeResponse)]
-    // GetFlashLoanFee {},
+    #[returns(MaxFlashLoanFeeResponse)]
+    GetMaxFlashLoanFee {},
+    #[returns(FlashLoanFeeResponse)]
+    GetFlashLoanFee {},
     #[returns(LbPairImplementationResponse)]
     GetLbPairImplementation {},
     #[returns(LbTokenImplementationResponse)]
@@ -319,7 +321,6 @@ impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-// We define a custom struct for each query response
 #[cw_serde]
 pub struct MinBinStepResponse {
     pub min_bin_step: u8,
@@ -328,6 +329,16 @@ pub struct MinBinStepResponse {
 #[cw_serde]
 pub struct FeeRecipientResponse {
     pub fee_recipient: Addr,
+}
+
+#[cw_serde]
+pub struct MaxFlashLoanFeeResponse {
+    pub max_flash_loan_fee: Uint128,
+}
+
+#[cw_serde]
+pub struct FlashLoanFeeResponse {
+    pub flash_loan_fee: Uint128,
 }
 
 #[cw_serde]

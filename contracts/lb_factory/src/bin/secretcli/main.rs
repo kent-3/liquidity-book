@@ -96,7 +96,7 @@ fn main() -> io::Result<()> {
     };
 
     // TODO - find out what are more reasonable example values
-    let set_pair_preset = ExecuteMsg::SetPairPreset {
+    let set_pair_preset = ExecuteMsg::SetPreset {
         bin_step: BIN_STEP,
         base_factor: 100,
         filter_period: 100,
