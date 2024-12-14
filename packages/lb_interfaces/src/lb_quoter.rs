@@ -23,10 +23,6 @@ pub struct InstantiateMsg {
     pub router_v2_2: Option<RawContract>,
 }
 
-impl InstantiateCallback for InstantiateMsg {
-    const BLOCK_SIZE: usize = 256;
-}
-
 #[cw_serde]
 pub struct ExecuteMsg {}
 
@@ -37,12 +33,12 @@ pub enum QueryMsg {
     GetFactoryV2_2,
     #[returns(RouterV2_2Response)]
     GetRouterV2_2,
-    #[returns(QuoteResponse)]
+    #[returns(Quote)]
     FindBestPathFromAmountIn {
         route: Vec<ContractInfo>,
         amount_in: Uint128,
     },
-    #[returns(QuoteResponse)]
+    #[returns(Quote)]
     FindBestPathFromAmountOut {
         route: Vec<ContractInfo>,
         amount_out: Uint128,
@@ -61,9 +57,4 @@ pub struct FactoryV2_2Response {
 #[cw_serde]
 pub struct RouterV2_2Response {
     pub router_v2_2: Option<ContractInfo>,
-}
-
-#[cw_serde]
-pub struct QuoteResponse {
-    pub quote: Quote,
 }
