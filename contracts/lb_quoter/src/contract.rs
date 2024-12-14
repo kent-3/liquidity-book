@@ -3,7 +3,7 @@ use crate::{
     query::{find_best_path_from_amount_in, find_best_path_from_amount_out},
     state::{FACTORY_V2_2, ROUTER_V2_2},
 };
-use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo};
+use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use lb_interfaces::lb_quoter::{FactoryV2_2Response, InstantiateMsg, QueryMsg, RouterV2_2Response};
 
 #[entry_point]
@@ -12,7 +12,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<()> {
+) -> Result<Response> {
     let factory_v2_2 = msg
         .factory_v2_2
         .map(|raw_contract| raw_contract.valid(deps.api))
@@ -26,7 +26,7 @@ pub fn instantiate(
     FACTORY_V2_2.save(deps.storage, &factory_v2_2)?;
     ROUTER_V2_2.save(deps.storage, &router_v2_2)?;
 
-    Ok(())
+    Ok(Response::new())
 }
 
 // TODO: see what happens if I remove this
