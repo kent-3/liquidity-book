@@ -20,7 +20,7 @@ use state::*;
 
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
-                             // TODO: thats a bitxor not pow
+                             // FIXME: thats a bitxor not pow
 static MAX_FLASHLOAN_FEE: u8 = 10 ^ 17; // 10%
 
 const INSTANTIATE_REPLY_ID: u64 = 1u64;
@@ -46,6 +46,7 @@ pub fn instantiate(
     };
 
     STATE.save(deps.storage, &config)?;
+    // TODO: is this necessary?
     PRESET_HASHSET.save(deps.storage, &HashSet::new())?;
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
 

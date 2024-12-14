@@ -14,32 +14,35 @@ use shade_protocol::{
 };
 use std::collections::HashSet;
 
+// TODO: unify const vs static. use secret-toolkit storage types?
+
 pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new("contract_status");
 pub const STATE: Item<State> = Item::new("state");
-pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
 
 pub static ALL_LB_PAIRS: AppendStore<LbPair> = AppendStore::new("all_lb_pairs");
 
-/// Mapping from a (tokenA, tokenB, binStep) to a LbPair.
-/// The tokens are ordered to save gas, but they can be in the reverse order in the actual pair.
+/// Mapping from a (tokenA, tokenB, binStep) to a LBPair. The tokens are ordered to save gas, but they can be
+/// in the reverse order in the actual pair.
+/// Always query one of the 2 tokens of the pair to assert the order of the 2 tokens.
 pub const LB_PAIRS_INFO: Map<(String, String, u16), LbPairInformation> = Map::new("lb_pairs_info");
 
+// TODO: is this necessary? it's not in the original
 pub const PRESET_HASHSET: Item<HashSet<u16>> = Item::new("preset_hashset");
 
-/// Map of bin_step to preset, which is an encoded Bytes32 set of pair parameters
 pub const PRESETS: Map<u16, PairParameters> = Map::new("presets");
-
-// Does it need to store ContractInfo or would Addr be enough?
-// pub static QUOTE_ASSET_WHITELIST: Item<Vec<ContractInfo>> = Item::new(b"quote_asset_whitelist");
+// TODO: Would a HashSet would be better for this?
 pub static QUOTE_ASSET_WHITELIST: AppendStore<TokenType> =
     AppendStore::new("quote_asset_whitelist");
+
+// TODO: use a HashSet instead?
+// The Vec<u16> will represent the "EnumerableSet.UintSet" from the solidity code.
+// The primary purpose of EnumerableSet.UintSet is to provide a convenient way to store, iterate, and retrieve
+// elements in a set, while ensuring that they remain unique.
 
 /// Mapping from a (tokenA, tokenB) to a set of available bin steps, this is used to keep track of the
 /// bin steps that are already used for a pair.
 /// The tokens are ordered to save gas, but they can be in the reverse order in the actual pair.
-///
-// The Vec<u16> will represent the "EnumerableSet.UintSet" from the solidity code.
-// The primary purpose of EnumerableSet.UintSet is to provide a convenient way to store, iterate, and retrieve elements in a set, while ensuring that they remain unique.
+/// Always query one of the 2 tokens of the pair to assert the order of the 2 tokens.
 pub const AVAILABLE_LB_PAIR_BIN_STEPS: Map<(String, String), Vec<u16>> =
     Map::new("available_lb_pair_bin_steps");
 
@@ -59,6 +62,10 @@ pub struct State {
     pub admin_auth: Contract,
     pub query_auth: Contract,
 }
+
+// TODO: Be consistent with the storage types used. Other contracts use Item.
+
+pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
 
 pub fn ephemeral_storage_w(storage: &mut dyn Storage) -> Singleton<NextPairKey> {
     singleton(storage, EPHEMERAL_STORAGE_KEY)

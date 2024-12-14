@@ -252,6 +252,7 @@ pub enum ExecuteMsg {
         // u24
         max_volatility_accumulator: u32,
     },
+    // TODO: Hooks
     SetLBHooksParametersOnPair,
     RemoveLBHooksOnPair,
     SetFeeRecipient {
