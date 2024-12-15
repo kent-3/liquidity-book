@@ -1,10 +1,104 @@
 use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, ContractInfo, QuerierWrapper, StdResult, Uint128};
+use cosmwasm_std::{Addr, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256};
 use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
+
+pub trait LbFactoryEventExt {
+    fn lb_pair_created(
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+        lb_pair: String,
+        pid: Uint256,
+    ) -> Event {
+        Event::new("lb_pair_created")
+            .add_attribute_plaintext("token_x", token_x)
+            .add_attribute_plaintext("token_y", token_y)
+            .add_attribute_plaintext("bin_step", bin_step.to_string())
+            .add_attribute_plaintext("lb_pair", lb_pair)
+            .add_attribute_plaintext("pid", pid)
+    }
+
+    fn fee_recipient_set(old_recipient: Addr, new_recipient: Addr) -> Event {
+        Event::new("fee_recipient_set")
+            .add_attribute_plaintext("old_recipient", old_recipient)
+            .add_attribute_plaintext("new_recipient", new_recipient)
+    }
+
+    fn flash_loan_fee_set(old_flash_loan_fee: Uint128, new_flash_loan_fee: Uint128) -> Event {
+        Event::new("flash_loan_fee_set")
+            .add_attribute_plaintext("old_flash_loan_fee", old_flash_loan_fee)
+            .add_attribute_plaintext("new_flash_loan_fee", new_flash_loan_fee)
+    }
+
+    fn lb_pair_implementation_set(
+        old_lb_pair_implementation: u64,
+        new_lb_pair_implementation: u64,
+    ) -> Event {
+        Event::new("lb_pair_implementation_set")
+            .add_attribute_plaintext(
+                "old_lb_pair_implementation",
+                old_lb_pair_implementation.to_string(),
+            )
+            .add_attribute_plaintext(
+                "new_lb_pair_implementation",
+                new_lb_pair_implementation.to_string(),
+            )
+    }
+
+    fn lb_pair_ignored_state_changed(lb_pair: String, ignored: bool) -> Event {
+        Event::new("lb_pair_ignored_state_changed")
+            .add_attribute_plaintext("lb_pair", lb_pair)
+            .add_attribute_plaintext("ignored", ignored.to_string())
+    }
+
+    fn preset_set(
+        bin_step: u16,
+        base_factor: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        variable_fee_control: u32,
+        protocol_share: u16,
+        max_volatility_accumulator: u32,
+    ) -> Event {
+        Event::new("preset_set")
+            .add_attribute_plaintext("bin_step", bin_step.to_string())
+            .add_attribute_plaintext("base_factor", base_factor.to_string())
+            .add_attribute_plaintext("filter_period", filter_period.to_string())
+            .add_attribute_plaintext("decay_period", decay_period.to_string())
+            .add_attribute_plaintext("reduction_factor", reduction_factor.to_string())
+            .add_attribute_plaintext("variable_fee_control", variable_fee_control.to_string())
+            .add_attribute_plaintext("protocol_share", protocol_share.to_string())
+            .add_attribute_plaintext(
+                "max_volatility_accumulator",
+                max_volatility_accumulator.to_string(),
+            )
+    }
+
+    fn preset_open_state_changed(bin_step: u16, is_open: bool) -> Event {
+        Event::new("preset_open_state_changed")
+            .add_attribute_plaintext("bin_step", bin_step.to_string())
+            .add_attribute_plaintext("is_open", is_open.to_string())
+    }
+
+    fn preset_removed(bin_step: u16) -> Event {
+        Event::new("preset_removed").add_attribute_plaintext("bin_step", bin_step.to_string())
+    }
+
+    fn quote_asset_added(quote_asset: String) -> Event {
+        Event::new("quote_asset_added").add_attribute_plaintext("quote_asset", quote_asset)
+    }
+
+    fn quote_asset_removed(quote_asset: String) -> Event {
+        Event::new("quote_asset_removed").add_attribute_plaintext("quote_asset", quote_asset)
+    }
+}
+
+impl LbFactoryEventExt for Event {}
 
 pub struct ILbFactory(pub ContractInfo);
 

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdError, StdResult, SubMsgResult, Uint128,
+    entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, Event, MessageInfo, Reply,
+    Response, StdError, StdResult, SubMsgResult, Uint128, Uint256,
 };
 use lb_interfaces::{
     lb_factory::*,
@@ -247,10 +247,22 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 )?;
 
                 EPHEMERAL_STORAGE.remove(deps.storage);
+
+                use lb_interfaces::lb_factory::LbFactoryEventExt;
+
+                // TODO: see what this pid is about
+                let pid = Uint256::one();
+                let event = Event::lb_pair_created(
+                    token_a.unique_key(),
+                    token_b.unique_key(),
+                    bin_step,
+                    lb_pair.contract.address.to_string(),
+                    pid,
+                );
+
                 Ok(Response::default()
                     .set_data(to_binary(&lb_pair)?)
-                    .add_attribute("lb_pair_address", lb_pair.contract.address)
-                    .add_attribute("lb_pair_hash", lb_pair.contract.code_hash))
+                    .add_event(event))
             }
             None => Err(StdError::generic_err("Expecting contract id")),
         },
