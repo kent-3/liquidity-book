@@ -279,12 +279,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetReserves {} => to_binary(&query_reserves(deps)?),
         QueryMsg::GetActiveId {} => to_binary(&query_active_id(deps)?),
         QueryMsg::GetBin { id } => to_binary(&query_bin_reserves(deps, id)?),
-        QueryMsg::GetBins { ids } => to_binary(&query_bins_reserves(deps, ids)?),
-        QueryMsg::GetAllBins {
-            id,
-            page,
-            page_size,
-        } => to_binary(&query_all_bins_reserves(deps, env, page, page_size, id)?),
         QueryMsg::GetNextNonEmptyBin { swap_for_y, id } => {
             to_binary(&query_next_non_empty_bin(deps, swap_for_y, id)?)
         }
@@ -306,9 +300,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
             amount_in,
             swap_for_y,
         } => to_binary(&query_swap_out(deps, env, amount_in.u128(), swap_for_y)?),
+
         // not in joe-v2
         QueryMsg::GetLbToken {} => to_binary(&query_lb_token(deps)?),
         QueryMsg::GetLbTokenSupply { id } => to_binary(&query_total_supply(deps, id)?),
+        QueryMsg::GetBins { ids } => to_binary(&query_bins_reserves(deps, ids)?),
+        QueryMsg::GetAllBins {
+            id,
+            page,
+            page_size,
+        } => to_binary(&query_all_bins_reserves(deps, env, page, page_size, id)?),
     }
     .map_err(Error::CwErr)
 }
