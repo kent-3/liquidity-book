@@ -28,7 +28,7 @@ use lb_libraries::{
 use secret_toolkit::snip20::{self, query::Balance};
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},
-    swap::{core::TokenType, router::ExecuteMsgResponse},
+    swap::core::TokenType,
 };
 
 #[derive(Clone, Debug)]
@@ -58,14 +58,16 @@ pub struct MintArrays {
 /// # Returns
 ///
 /// * `amounts_out` - The encoded amounts of token X and token Y sent to `to`
-pub fn try_swap(
+pub fn swap(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
     swap_for_y: bool,
-    to: Addr,
-    amounts_received: Uint128, //Will get this parameter from router contract
+    to: String,
+    // amounts_received: Uint128, //Will get this parameter from router contract
 ) -> Result<Response> {
+    let to = deps.api.addr_validate(&to)?;
+
     let state = STATE.load(deps.storage)?;
     let tree = BIN_TREE.load(deps.storage)?;
     let token_x = &state.token_x;
@@ -81,10 +83,41 @@ pub fn try_swap(
     let mut shade_dao_fees: [u8; 32] = [0; 32];
 
     let mut amounts_out: [u8; 32] = [0; 32];
+
+    // TODO: SOMEDAY we could support NativeToken types by querying the denom from bank module.
+
+    // TODO: This could be written much better. Have the BinHelper::received* functions take in
+    // the ContractInfo and viewing_key, and check the balances there. However, that means the
+    // library now has to know about cosmwasm...
+
+    // NOTE: These should never fail because the pair contract has it's viewing_key saved.
+
+    let Balance {
+        amount: token_x_balance,
+    } = deps.querier.query_wasm_smart::<Balance>(
+        state.token_x.code_hash(),
+        state.token_x.address(),
+        &snip20::QueryMsg::Balance {
+            address: env.contract.address.to_string(),
+            key: state.viewing_key.to_string(),
+        },
+    )?;
+
+    let Balance {
+        amount: token_y_balance,
+    } = deps.querier.query_wasm_smart::<Balance>(
+        state.token_y.code_hash(),
+        state.token_y.address(),
+        &snip20::QueryMsg::Balance {
+            address: env.contract.address.to_string(),
+            key: state.viewing_key.to_string(),
+        },
+    )?;
+
     let mut amounts_left: [u8; 32] = if swap_for_y {
-        BinHelper::received_x(amounts_received)
+        BinHelper::received_x(reserves, token_x_balance.u128())
     } else {
-        BinHelper::received_y(amounts_received)
+        BinHelper::received_y(reserves, token_y_balance.u128())
     };
     if amounts_left == [0; 32] {
         return Err(Error::InsufficientAmountIn);
@@ -197,27 +230,26 @@ pub fn try_swap(
         messages.push(message);
     }
 
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_attributes(vec![
-            Attribute::new("amount_in", amounts_received),
-            Attribute::new("amount_out", amount_out.to_string()),
-            Attribute::new("lp_fee_amount", lp_fees.decode_alt(swap_for_y).to_string()),
-            Attribute::new(
-                "total_fee_amount",
-                total_fees.decode_alt(swap_for_y).to_string(),
-            ),
-            Attribute::new(
-                "shade_dao_fee_amount",
-                shade_dao_fees.decode_alt(swap_for_y).to_string(),
-            ),
-            Attribute::new("token_in_key", token_x.unique_key()),
-            Attribute::new("token_out_key", token_y.unique_key()),
-        ])
-        .set_data(to_binary(&ExecuteMsgResponse::SwapResult {
-            amount_in: amounts_received,
-            amount_out: Uint128::from(amount_out),
-        })?))
+    Ok(Response::new().add_messages(messages))
+    // TODO: rethink attributes and data
+    // .add_attributes(vec![
+    //     Attribute::new("amount_in", amounts_received),
+    //     Attribute::new("amount_out", amount_out.to_string()),
+    //     Attribute::new("lp_fee_amount", lp_fees.decode_alt(swap_for_y).to_string()),
+    //     Attribute::new(
+    //         "total_fee_amount",
+    //         total_fees.decode_alt(swap_for_y).to_string(),
+    //     ),
+    //     Attribute::new(
+    //         "shade_dao_fee_amount",
+    //         shade_dao_fees.decode_alt(swap_for_y).to_string(),
+    //     ),
+    //     Attribute::new("token_in_key", token_x.unique_key()),
+    //     Attribute::new("token_out_key", token_y.unique_key()),
+    // ])
+    // .set_data(to_binary(&ExecuteMsgResponse::SwapResult {
+    //     amount_out: Uint128::from(amount_out),
+    // })?))
 }
 
 /// Mint liquidity tokens by depositing tokens into the pool.
@@ -256,10 +288,6 @@ pub fn mint(
 
     let to = deps.api.addr_validate(&to)?;
     let refund_to = deps.api.addr_validate(&refund_to)?;
-
-    // let refund_to = refund_to
-    //     .map(|to| deps.api.addr_validate(&to))
-    //     .transpose()?;
 
     let state = STATE.load(deps.storage)?;
 
@@ -325,7 +353,11 @@ pub fn mint(
         liquidity_minted: (vec![U256::ZERO; liquidity_configs.len()]),
     };
 
-    let amounts_received = BinHelper::received(state.reserves, token_x_balance, token_y_balance);
+    let amounts_received = BinHelper::received(
+        state.reserves,
+        token_x_balance.u128(),
+        token_y_balance.u128(),
+    );
 
     let mut messages: Vec<CosmosMsg> = Vec::new();
 

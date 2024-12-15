@@ -128,10 +128,8 @@ impl InstantiateCallback for InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Swap {
-        offer: TokenAmount,
-        expected_return: Option<Uint128>,
-        to: Option<String>,
-        padding: Option<String>,
+        swap_for_y: bool,
+        to: String,
     },
     FlashLoan {},
     Mint {
@@ -187,11 +185,8 @@ impl ExecuteCallback for ExecuteMsg {
 
 #[cw_serde]
 pub enum InvokeMsg {
-    SwapTokens {
-        expected_return: Option<Uint128>,
-        to: Option<String>,
-        padding: Option<String>,
-    },
+    // TODO: do we need a separate InvokeMsg for swaps?
+    Swap { swap_for_y: bool, to: String },
 }
 
 impl ExecuteCallback for InvokeMsg {

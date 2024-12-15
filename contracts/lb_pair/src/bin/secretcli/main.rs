@@ -115,16 +115,13 @@ fn main() -> io::Result<()> {
     writeln!(file, "## Execute Messages\n")?;
 
     let swap_tokens = ExecuteMsg::Swap {
-        offer: TokenAmount::example(),
-        expected_return: None,
-        to: Some(Addr::recipient().to_string()),
-        padding: None,
+        swap_for_y: true,
+        to: Addr::recipient().to_string(),
     };
 
-    let swap_tokens_invoke = InvokeMsg::SwapTokens {
-        expected_return: None,
-        to: Some(Addr::recipient().to_string()),
-        padding: None,
+    let swap_tokens_invoke = InvokeMsg::Swap {
+        swap_for_y: true,
+        to: Addr::recipient().to_string(),
     };
 
     let collect_protocol_fees = ExecuteMsg::CollectProtocolFees {};

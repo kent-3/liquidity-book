@@ -177,31 +177,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             let checked_addr = deps.api.addr_validate(&msg.from)?;
             receiver_callback(deps, env, info, checked_addr, msg.amount, msg.msg)
         }
-        ExecuteMsg::Swap {
-            to,
-            offer,
-            expected_return: _,
-            padding: _,
-        } => {
-            // let config = CONFIG.load(deps.storage)?;
-            if !offer.token.is_native_token() {
-                return Err(Error::UseReceiveInterface);
-            }
-
-            offer
-                .token
-                .assert_sent_native_token_balance(&info, offer.amount)?;
-
-            let checked_to = if let Some(to) = to {
-                deps.api.addr_validate(to.as_str())?
-            } else {
-                info.sender.clone()
-            };
-
-            let swap_for_y: bool = offer.token.unique_key() == config.token_x.unique_key();
-
-            try_swap(deps, env, info, swap_for_y, checked_to, offer.amount)
-        }
+        ExecuteMsg::Swap { swap_for_y, to } => swap(deps, env, info, swap_for_y, to),
         ExecuteMsg::FlashLoan {} => todo!(),
         ExecuteMsg::Mint {
             to,
@@ -254,6 +230,11 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
     }
 }
 
+// TODO: I don't think we need this! The swap function will always be called by the lb-router, who
+// has the ability to transfer tokens to the lb-pair before-hand. A user sends tokens to the
+// router, so I think we have some refactoring to do over there to handle messages through the
+// receiver_callback.
+
 pub fn receiver_callback(
     deps: DepsMut,
     env: Env,
@@ -267,24 +248,12 @@ pub fn receiver_callback(
     let config = STATE.load(deps.storage)?;
 
     let response = match from_binary(&msg)? {
-        InvokeMsg::SwapTokens {
-            to,
-            expected_return: _,
-            padding: _,
-        } => {
+        InvokeMsg::Swap { swap_for_y, to } => {
             // this check needs to be here instead of in execute() because it is impossible to (cleanly) distinguish between swaps and lp withdraws until this point
             // if contract_status is FreezeAll, this fn will never be called, so only need to check LpWithdrawOnly here
-            let contract_status = CONTRACT_STATUS.load(deps.storage)?;
-            if contract_status == ContractStatus::LpWithdrawOnly {
+            if CONTRACT_STATUS.load(deps.storage)? == ContractStatus::LpWithdrawOnly {
                 return Err(Error::TransactionBlock());
             }
-
-            // validate recipient address
-            let checked_to = if let Some(to) = to {
-                deps.api.addr_validate(to.as_str())?
-            } else {
-                from
-            };
 
             if info.sender != config.token_x.unique_key()
                 && info.sender != config.token_y.unique_key()
@@ -292,9 +261,7 @@ pub fn receiver_callback(
                 return Err(Error::NoMatchingTokenInPair);
             }
 
-            let swap_for_y: bool = info.sender == config.token_x.unique_key();
-
-            try_swap(deps, env, info, swap_for_y, checked_to, amount)?
+            swap(deps, env, info, swap_for_y, to)?
         }
     };
     Ok(response)

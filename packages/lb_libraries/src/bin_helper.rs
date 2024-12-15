@@ -14,7 +14,7 @@ use crate::{
     pair_parameter_helper::{PairParameters, PairParametersError},
     types::Bytes32,
 };
-use cosmwasm_std::Uint128;
+// use cosmwasm_std::{ContractInfo, Uint128};
 use ethnum::U256;
 // use secret_toolkit::snip20::transfer_msg;
 // use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
@@ -412,8 +412,8 @@ impl BinHelper {
         Ok((amounts_in_with_fees, amounts_out_of_bin, total_fees))
     }
 
-    // NOTE: Instead of querying the total balance of the contract and substracting the amount with the reserves,
-    // we will just calculate the amount received from the send message
+    // TODO: these received* functions are supposed to include querying the token balance
+    // internally. The arguments should be ContractInfo and viewing_key instead.
 
     /// Returns the encoded amounts that were transferred to the contract for both tokens.
     /// Determined by subtracting the contract's reserves from the contract's token balances.
@@ -429,8 +429,8 @@ impl BinHelper {
     /// * `amounts` - The amounts, encoded as follows:
     ///     * [0 - 128[: amount_x
     ///     * [128 - 256[: amount_y
-    pub fn received(reserves: Bytes32, token_x: Uint128, token_y: Uint128) -> Bytes32 {
-        Bytes32::encode(token_x.u128(), token_y.u128()).sub(reserves)
+    pub fn received(reserves: Bytes32, token_x: u128, token_y: u128) -> Bytes32 {
+        Bytes32::encode(token_x, token_y).sub(reserves)
     }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token X.
@@ -445,12 +445,19 @@ impl BinHelper {
     /// * `amounts` - The amounts, encoded as follows:
     ///     * [0 - 128[: amount_x
     ///     * [128 - 256[: empty
-    pub fn received_x(amount_received: Uint128) -> Bytes32 {
-        Bytes32::encode_first(amount_received.u128())
+    pub fn received_x(reserves: Bytes32, token_x: u128) -> Bytes32 {
+        let reserve_x = reserves.decode_x();
+        Bytes32::encode_first(token_x - reserve_x)
     }
     // TODO: replace with this version when ready
-    // pub fn received_x(reserves: Bytes32, token_x: Uint128) -> Bytes32 {
-    //     Bytes32::encode_first(token_x.u128()).sub(reserves)
+    // pub fn received_x(reserves: Bytes32, token_x: ContractInfo, viewing_key: String) -> Bytes32 {
+    //     let reserve_x = reserves.decode_x();
+    //     Bytes32::encode_first(Self::_balance_of(token_x) - reserve_x)
+    // }
+
+    // function receivedX(bytes32 reserves, IERC20 tokenX) internal view returns (bytes32) {
+    //     uint128 reserveX = reserves.decodeX();
+    //     return (_balanceOf(tokenX) - reserveX).encodeFirst();
     // }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token Y.
@@ -465,16 +472,20 @@ impl BinHelper {
     /// * `amounts` - The amounts, encoded as follows:
     ///     * [0 - 128[: empty
     ///     * [128 - 256[: amount_y
-    pub fn received_y(amount_received: Uint128) -> Bytes32 {
-        Bytes32::encode_second(amount_received.u128())
+    pub fn received_y(reserves: Bytes32, token_y: u128) -> Bytes32 {
+        let reserve_y = reserves.decode_y();
+        Bytes32::encode_second(token_y - reserve_y)
     }
     // TODO: replace with this version when ready
-    // pub fn received_y(reserves: Bytes32, token_y: Uint128) -> Bytes32 {
-    //     Bytes32::encode_second(token_y.u128()).sub(reserves)
+    // pub fn received_y(reserves: Bytes32, token_x: ContractInfo, viewing_key: String) -> Bytes32 {
+    //     let reserve_y = reserves.decode_y();
+    //     Bytes32::encode_second(Self::_balance_of(token_y) - reserve_y)
     // }
 
-    // TODO: (maybe) move the transfer helper methods into an impl module inside of
-    // shade_protocol/contract_interfaces/liquidity_book
+    // TODO: perform the token balance query here?
+    // pub fn _balance_of(token: ContractInfo, viewing_key: String) -> u128 {
+    //     todo!()
+    // }
 
     /*
 
