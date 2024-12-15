@@ -168,27 +168,34 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::GetMinBinStep {} => query_min_bin_step(deps),
-        QueryMsg::GetFeeRecipient {} => query_fee_recipient(deps),
-        QueryMsg::GetMaxFlashLoanFee {} => query_max_flash_loan_fee(deps),
-        QueryMsg::GetFlashLoanFee {} => query_flash_loan_fee(deps),
-        QueryMsg::GetLbPairImplementation {} => query_lb_pair_implementation(deps),
-        QueryMsg::GetLbTokenImplementation {} => query_lb_token_implementation(deps),
-        QueryMsg::GetNumberOfLbPairs {} => query_number_of_lb_pairs(deps),
-        QueryMsg::GetLbPairAtIndex { index } => query_lb_pair_at_index(deps, index),
-        QueryMsg::GetNumberOfQuoteAssets {} => query_number_of_quote_assets(deps),
-        QueryMsg::GetQuoteAssetAtIndex { index } => query_quote_asset_at_index(deps, index),
-        QueryMsg::IsQuoteAsset { token } => query_is_quote_asset(deps, token),
+        QueryMsg::GetMinBinStep {} => to_binary(&query_min_bin_step(deps)?),
+        QueryMsg::GetFeeRecipient {} => to_binary(&query_fee_recipient(deps)?),
+        QueryMsg::GetMaxFlashLoanFee {} => to_binary(&query_max_flash_loan_fee(deps)?),
+        QueryMsg::GetFlashLoanFee {} => to_binary(&query_flash_loan_fee(deps)?),
+        QueryMsg::GetLbPairImplementation {} => to_binary(&query_lb_pair_implementation(deps)?),
+        QueryMsg::GetLbTokenImplementation {} => to_binary(&query_lb_token_implementation(deps)?),
+        QueryMsg::GetNumberOfLbPairs {} => to_binary(&query_number_of_lb_pairs(deps)?),
+        QueryMsg::GetLbPairAtIndex { index } => to_binary(&query_lb_pair_at_index(deps, index)?),
+        QueryMsg::GetNumberOfQuoteAssets {} => to_binary(&query_number_of_quote_assets(deps)?),
+        QueryMsg::GetQuoteAssetAtIndex { index } => {
+            to_binary(&query_quote_asset_at_index(deps, index)?)
+        }
+        QueryMsg::IsQuoteAsset { token } => to_binary(&query_is_quote_asset(deps, token)?),
         QueryMsg::GetLbPairInformation {
             token_x,
             token_y,
             bin_step,
-        } => query_lb_pair_information(deps, token_x, token_y, bin_step),
-        QueryMsg::GetPreset { bin_step } => query_preset(deps, bin_step),
-        QueryMsg::GetAllBinSteps {} => query_all_bin_steps(deps),
-        QueryMsg::GetOpenBinSteps {} => query_open_bin_steps(deps),
-        QueryMsg::GetAllLbPairs { token_x, token_y } => query_all_lb_pairs(deps, token_x, token_y),
+        } => to_binary(&query_lb_pair_information(
+            deps, token_x, token_y, bin_step,
+        )?),
+        QueryMsg::GetPreset { bin_step } => to_binary(&query_preset(deps, bin_step)?),
+        QueryMsg::GetAllBinSteps {} => to_binary(&query_all_bin_steps(deps)?),
+        QueryMsg::GetOpenBinSteps {} => to_binary(&query_open_bin_steps(deps)?),
+        QueryMsg::GetAllLbPairs { token_x, token_y } => {
+            to_binary(&query_all_lb_pairs(deps, token_x, token_y)?)
+        }
     }
+    .map_err(Error::CwErr)
 }
 
 #[entry_point]
@@ -231,7 +238,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                 let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
                     .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
                     .unwrap_or_default();
-                bin_step_list.push(bin_step);
+                bin_step_list.insert(bin_step);
 
                 AVAILABLE_LB_PAIR_BIN_STEPS.save(
                     deps.storage,

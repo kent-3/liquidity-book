@@ -4,7 +4,7 @@ use super::{
     MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
 use crate::prelude::*;
-use cosmwasm_std::{to_binary, Binary, Deps};
+use cosmwasm_std::Deps;
 use lb_interfaces::{lb_factory::*, lb_pair::LbPairInformation};
 use lb_libraries::math::encoded::Encoded;
 use shade_protocol::swap::core::TokenType;
@@ -14,11 +14,12 @@ use shade_protocol::swap::core::TokenType;
 /// # Returns
 ///
 /// * `min_bin_step` - The minimum bin step of the pair.
-pub fn query_min_bin_step(_deps: Deps) -> Result<Binary> {
+pub fn query_min_bin_step(_deps: Deps) -> Result<MinBinStepResponse> {
     let response = MinBinStepResponse {
         min_bin_step: MIN_BIN_STEP,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the protocol fee recipient.
@@ -26,19 +27,20 @@ pub fn query_min_bin_step(_deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `fee_recipient` - The address of the fee recipient.
-pub fn query_fee_recipient(deps: Deps) -> Result<Binary> {
+pub fn query_fee_recipient(deps: Deps) -> Result<FeeRecipientResponse> {
     let config = STATE.load(deps.storage)?;
     let response = FeeRecipientResponse {
         fee_recipient: config.fee_recipient,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
-pub fn query_max_flash_loan_fee(deps: Deps) -> Result<Binary> {
+pub fn query_max_flash_loan_fee(deps: Deps) -> Result<MaxFlashLoanFeeResponse> {
     todo!()
 }
 
-pub fn query_flash_loan_fee(deps: Deps) -> Result<Binary> {
+pub fn query_flash_loan_fee(deps: Deps) -> Result<FlashLoanFeeResponse> {
     todo!()
 }
 
@@ -47,12 +49,13 @@ pub fn query_flash_loan_fee(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `lb_pair_implementation` - The code ID and hash of the LbPair implementation.
-pub fn query_lb_pair_implementation(deps: Deps) -> Result<Binary> {
+pub fn query_lb_pair_implementation(deps: Deps) -> Result<LbPairImplementationResponse> {
     let config = STATE.load(deps.storage)?;
     let response = LbPairImplementationResponse {
         lb_pair_implementation: config.lb_pair_implementation,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 // TODO: this isn't in joe-v2
@@ -61,12 +64,13 @@ pub fn query_lb_pair_implementation(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `lb_token_implementation` - The code ID and hash of the LbToken implementation.
-pub fn query_lb_token_implementation(deps: Deps) -> Result<Binary> {
+pub fn query_lb_token_implementation(deps: Deps) -> Result<LbTokenImplementationResponse> {
     let config = STATE.load(deps.storage)?;
     let response = LbTokenImplementationResponse {
         lb_token_implementation: config.lb_token_implementation,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the number of LbPairs created.
@@ -74,11 +78,12 @@ pub fn query_lb_token_implementation(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `lb_pair_number` - The number of LbPairs created.
-pub fn query_number_of_lb_pairs(deps: Deps) -> Result<Binary> {
+pub fn query_number_of_lb_pairs(deps: Deps) -> Result<NumberOfLbPairsResponse> {
     let lb_pair_number = ALL_LB_PAIRS.get_len(deps.storage)?;
 
     let response = NumberOfLbPairsResponse { lb_pair_number };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the LbPair created at index `index`.
@@ -90,11 +95,12 @@ pub fn query_number_of_lb_pairs(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * lb_pair - The address of the LbPair at index `index`.
-pub fn query_lb_pair_at_index(deps: Deps, index: u32) -> Result<Binary> {
+pub fn query_lb_pair_at_index(deps: Deps, index: u32) -> Result<LbPairAtIndexResponse> {
     let lb_pair = ALL_LB_PAIRS.get_at(deps.storage, index)?;
 
     let response = LbPairAtIndexResponse { lb_pair };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the number of quote assets whitelisted.
@@ -102,13 +108,14 @@ pub fn query_lb_pair_at_index(deps: Deps, index: u32) -> Result<Binary> {
 /// # Returns
 ///
 /// * `number_of_quote_assets` - The number of quote assets.
-pub fn query_number_of_quote_assets(deps: Deps) -> Result<Binary> {
+pub fn query_number_of_quote_assets(deps: Deps) -> Result<NumberOfQuoteAssetsResponse> {
     let number_of_quote_assets = QUOTE_ASSET_WHITELIST.get_len(deps.storage)?;
 
     let response = NumberOfQuoteAssetsResponse {
         number_of_quote_assets,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the quote asset whitelisted at index `index`.
@@ -120,12 +127,12 @@ pub fn query_number_of_quote_assets(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `asset` - The address of the quote asset at index `index`.
-// TODO: Unsure if this function is necessary. Not sure how to index the Keyset. WAITING: For Front-end to make some decisions about this
-pub fn query_quote_asset_at_index(deps: Deps, index: u32) -> Result<Binary> {
+pub fn query_quote_asset_at_index(deps: Deps, index: u32) -> Result<QuoteAssetAtIndexResponse> {
     let asset = QUOTE_ASSET_WHITELIST.get_at(deps.storage, index)?;
 
     let response = QuoteAssetAtIndexResponse { asset };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns whether a token is a quote asset (true) or not (false).
@@ -133,7 +140,7 @@ pub fn query_quote_asset_at_index(deps: Deps, index: u32) -> Result<Binary> {
 /// # Arguments
 ///
 /// * `token` - The address of the asset.
-pub fn query_is_quote_asset(deps: Deps, token: TokenType) -> Result<Binary> {
+pub fn query_is_quote_asset(deps: Deps, token: TokenType) -> Result<IsQuoteAssetResponse> {
     let is_quote = QUOTE_ASSET_WHITELIST
         .iter(deps.storage)?
         .any(|result| match result {
@@ -142,7 +149,8 @@ pub fn query_is_quote_asset(deps: Deps, token: TokenType) -> Result<Binary> {
         });
 
     let response = IsQuoteAssetResponse { is_quote };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the LbPairInformation if it exists, if not, then the address 0 is returned.
@@ -161,14 +169,15 @@ pub fn query_lb_pair_information(
     token_a: TokenType,
     token_b: TokenType,
     bin_step: u16,
-) -> Result<Binary> {
+) -> Result<LbPairInformationResponse> {
     let lb_pair_information: LbPairInformation =
         _get_lb_pair_information(deps, token_a, token_b, bin_step)?;
 
     let response = LbPairInformationResponse {
         lb_pair_information,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the different parameters of the preset.
@@ -187,7 +196,7 @@ pub fn query_lb_pair_information(
 /// * `protocol_share` - The protocol share of the preset.
 /// * `max_volatility_accumulator` - The max volatility accumulator of the preset.
 /// * `is_open` - Whether the preset is open or not.
-pub fn query_preset(deps: Deps, bin_step: u16) -> Result<Binary> {
+pub fn query_preset(deps: Deps, bin_step: u16) -> Result<PresetResponse> {
     if !PRESETS.has(deps.storage, bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
@@ -216,7 +225,8 @@ pub fn query_preset(deps: Deps, bin_step: u16) -> Result<Binary> {
         max_volatility_accumulator,
         is_open,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns the list of available bin steps with a preset.
@@ -224,7 +234,7 @@ pub fn query_preset(deps: Deps, bin_step: u16) -> Result<Binary> {
 /// # Returns
 ///
 /// * `bin_step_with_preset` - The list of bin steps.
-pub fn query_all_bin_steps(deps: Deps) -> Result<Binary> {
+pub fn query_all_bin_steps(deps: Deps) -> Result<AllBinStepsResponse> {
     // NOTE: iterating over the keys of the PRESETS Keymap will return all available bin_steps
     // not too confident with this implementation...
 
@@ -241,7 +251,8 @@ pub fn query_all_bin_steps(deps: Deps) -> Result<Binary> {
     let response = AllBinStepsResponse {
         bin_step_with_preset,
     };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 // this does the same thing as `query_all_bin_steps` but returns only the ones where `is_open` is true
@@ -250,9 +261,8 @@ pub fn query_all_bin_steps(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `open_bin_step` - The list of open bin steps.
-pub fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
-    // this way is harder to ready, but maybe more efficient?
-
+pub fn query_open_bin_steps(deps: Deps) -> Result<OpenBinStepsResponse> {
+    // TODO: revisit this once we have an EnumerableMap type of storage
     let hashset = PRESET_HASHSET.load(deps.storage)?;
 
     let mut open_bin_steps = Vec::<u16>::new();
@@ -266,7 +276,8 @@ pub fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
     }
 
     let response = OpenBinStepsResponse { open_bin_steps };
-    to_binary(&response).map_err(Error::CwErr)
+
+    Ok(response)
 }
 
 /// Returns all the LbPair of a pair of tokens.
@@ -279,21 +290,18 @@ pub fn query_open_bin_steps(deps: Deps) -> Result<Binary> {
 /// # Returns
 ///
 /// * `lb_pairs_available` - The list of available LbPairs.
-pub fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) -> Result<Binary> {
+pub fn query_all_lb_pairs(
+    deps: Deps,
+    token_x: TokenType,
+    token_y: TokenType,
+) -> Result<AllLbPairsResponse> {
     let (token_a, token_b) = _sort_tokens(token_x, token_y);
 
-    // Create a Vec of available bin steps for this pair
-    let bin_steps: Vec<u16> = AVAILABLE_LB_PAIR_BIN_STEPS
+    let bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
         .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
         .map_err(|_| Error::Generic("This token pair is not in the map".to_string()))?;
 
-    // Not sure if this condition is possible, but just in case.
-    if bin_steps.is_empty() {
-        return Err(Error::Generic("No available bin_steps".to_string()));
-    }
-
-    // Collect LbPairInformation values into a vector
-    let lb_pairs_available: Result<Vec<LbPairInformation>> = bin_steps
+    let lb_pairs_available: Vec<LbPairInformation> = bin_steps
         .into_iter()
         .map(|bin_step| {
             LB_PAIRS_INFO
@@ -303,10 +311,9 @@ pub fn query_all_lb_pairs(deps: Deps, token_x: TokenType, token_y: TokenType) ->
                 )
                 .map_err(|_| Error::Generic("Error retrieving LbPairInformation".to_string()))
         })
-        .collect();
+        .collect::<Result<Vec<LbPairInformation>>>()?;
 
-    let response = AllLbPairsResponse {
-        lb_pairs_available: lb_pairs_available?,
-    };
-    to_binary(&response).map_err(Error::CwErr)
+    let response = AllLbPairsResponse { lb_pairs_available };
+
+    Ok(response)
 }
