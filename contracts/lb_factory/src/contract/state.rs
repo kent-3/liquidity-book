@@ -1,6 +1,6 @@
 use crate::types::NextPairKey;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, ContractInfo, Storage};
+use cosmwasm_std::{Addr, ContractInfo, Storage, Uint128};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 use lb_interfaces::{
     lb_factory::ContractImplementation,
@@ -13,11 +13,13 @@ use shade_protocol::{
     Contract,
 };
 use std::collections::HashSet;
+// use secret_toolkit::storage::{AppendStore, Item, Keymap, Keyset};
 
 // TODO: unify const vs static. use secret-toolkit storage types?
 
 pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new("contract_status");
 pub const STATE: Item<State> = Item::new("state");
+pub const FLASH_LOAN_FEE: Item<Uint128> = Item::new("flashloan_fee");
 
 pub static ALL_LB_PAIRS: AppendStore<LbPair> = AppendStore::new("all_lb_pairs");
 

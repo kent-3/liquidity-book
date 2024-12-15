@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdError, StdResult, SubMsgResult,
+    StdError, StdResult, SubMsgResult, Uint128,
 };
 use lb_interfaces::{
     lb_factory::*,
@@ -20,8 +20,7 @@ use state::*;
 
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
-                             // FIXME: thats a bitxor not pow
-static MAX_FLASHLOAN_FEE: u8 = 10 ^ 17; // 10%
+static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%
 
 const INSTANTIATE_REPLY_ID: u64 = 1u64;
 

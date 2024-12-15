@@ -1,7 +1,7 @@
 use super::{
     helper::{_get_lb_pair_information, _is_preset_open, _sort_tokens},
     state::*,
-    MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
+    MAX_FLASH_LOAN_FEE, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
 use crate::prelude::*;
 use cosmwasm_std::Deps;
@@ -36,12 +36,20 @@ pub fn query_fee_recipient(deps: Deps) -> Result<FeeRecipientResponse> {
     Ok(response)
 }
 
-pub fn query_max_flash_loan_fee(deps: Deps) -> Result<MaxFlashLoanFeeResponse> {
-    todo!()
+pub fn query_max_flash_loan_fee(_deps: Deps) -> Result<MaxFlashLoanFeeResponse> {
+    let response = MaxFlashLoanFeeResponse {
+        max_flash_loan_fee: MAX_FLASH_LOAN_FEE,
+    };
+
+    Ok(response)
 }
 
 pub fn query_flash_loan_fee(deps: Deps) -> Result<FlashLoanFeeResponse> {
-    todo!()
+    let response = FlashLoanFeeResponse {
+        flash_loan_fee: FLASH_LOAN_FEE.load(deps.storage)?,
+    };
+
+    Ok(response)
 }
 
 /// Returns the code ID and hash of the LbPair implementation.
