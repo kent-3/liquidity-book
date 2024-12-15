@@ -14,12 +14,6 @@ use lb_libraries::{
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbFactoryError {
-    #[error("{0}!")]
-    Generic(String),
-
-    #[error("Only the Owner can do that!")]
-    OnlyOwner,
-
     #[error("Tokens are identical! Both addresses are {token}!")]
     IdenticalAddresses { token: String },
 
@@ -28,6 +22,17 @@ pub enum LbFactoryError {
 
     #[error("Quote Asset {quote_asset} is already whitelisted!")]
     QuoteAssetAlreadyWhitelisted { quote_asset: String },
+
+    // Not sure if applicable
+    #[error("Address zero!")]
+    AddressZero,
+
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) already exists!")]
+    LbPairAlreadyExists {
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+    },
 
     #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) does not exist!")]
     LbPairDoesNotExist {
@@ -38,13 +43,6 @@ pub enum LbFactoryError {
 
     #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) not created!")]
     LbPairNotCreated {
-        token_x: String,
-        token_y: String,
-        bin_step: u16,
-    },
-
-    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) already exists!")]
-    LbPairAlreadyExists {
         token_x: String,
         token_y: String,
         bin_step: u16,
@@ -79,41 +77,36 @@ pub enum LbFactoryError {
     )]
     LbPairSafetyCheckFailed { lb_pair_implementation: Addr },
 
-    #[error(
-        "LbFactory safety check failed. {lb_factory_implementation} factory address does not match this one!"
-    )]
-    LbFactorySafetyCheckFailed { lb_factory_implementation: Addr },
-
     #[error("Lb implementation is already set to code ID {implementation}!")]
     SameImplementation { implementation: u64 },
 
     #[error("The LbPair implementation has not been set yet!")]
     ImplementationNotSet,
 
+    // not in joe-v2
+    #[error("{0}!")]
+    Generic(String),
+
+    #[error("Only the Owner can do that!")]
+    OnlyOwner,
+
     #[error("Transaction is blocked by contract status")]
     TransactionBlock(),
 
     #[error(transparent)]
     CwErr(#[from] StdError),
-
     #[error(transparent)]
     BinErr(#[from] BinError),
-
     #[error(transparent)]
     FeeErr(#[from] FeeError),
-
     #[error(transparent)]
     OracleErr(#[from] OracleError),
-
     #[error(transparent)]
     ParamsErr(#[from] PairParametersError),
-
     #[error(transparent)]
     LiquidityConfigErr(#[from] LiquidityConfigurationsError),
-
     #[error(transparent)]
     U128Err(#[from] U128x128MathError),
-
     #[error(transparent)]
     U256Err(#[from] U256x256MathError),
 }
