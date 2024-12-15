@@ -18,6 +18,7 @@ use execute::*;
 use query::*;
 use state::*;
 
+// TODO: understand the implications of static vs const
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
 static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%
@@ -203,7 +204,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         (INSTANTIATE_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
                 let contract_address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
-                let lb_pair_key = ephemeral_storage_r(deps.storage).load()?;
+                let lb_pair_key = EPHEMERAL_STORAGE.load(deps.storage)?;
 
                 let token_a = lb_pair_key.token_a;
                 let token_b = lb_pair_key.token_b;
@@ -245,7 +246,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                     &bin_step_list,
                 )?;
 
-                ephemeral_storage_w(deps.storage).remove();
+                EPHEMERAL_STORAGE.remove(deps.storage);
                 Ok(Response::default()
                     .set_data(to_binary(&lb_pair)?)
                     .add_attribute("lb_pair_address", lb_pair.contract.address)

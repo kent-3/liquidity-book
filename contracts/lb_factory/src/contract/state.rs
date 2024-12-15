@@ -60,21 +60,13 @@ pub enum ContractStatus {
 pub struct State {
     pub contract_info: ContractInfo,
     pub owner: Addr,
+    // TODO: I think these should be stored with separate keys.
     pub fee_recipient: Addr,
     pub lb_pair_implementation: ContractImplementation,
     pub lb_token_implementation: ContractImplementation,
+    // TODO: change to ContractInfo, or maybe get rid of these auth contracts...
     pub admin_auth: Contract,
     pub query_auth: Contract,
 }
 
-// TODO: Be consistent with the storage types used. Other contracts use Item.
-
-pub static EPHEMERAL_STORAGE_KEY: &[u8] = b"ephemeral_storage";
-
-pub fn ephemeral_storage_w(storage: &mut dyn Storage) -> Singleton<NextPairKey> {
-    singleton(storage, EPHEMERAL_STORAGE_KEY)
-}
-
-pub fn ephemeral_storage_r(storage: &dyn Storage) -> ReadonlySingleton<NextPairKey> {
-    singleton_read(storage, EPHEMERAL_STORAGE_KEY)
-}
+pub const EPHEMERAL_STORAGE: Item<NextPairKey> = Item::new("ephemeral_storage");

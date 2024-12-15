@@ -214,13 +214,17 @@ pub fn create_lb_pair(
         INSTANTIATE_REPLY_ID,
     ));
 
-    ephemeral_storage_w(deps.storage).save(&NextPairKey {
-        token_a,
-        token_b,
-        bin_step,
-        code_hash: config.lb_pair_implementation.code_hash,
-        is_open: is_owner,
-    })?;
+    EPHEMERAL_STORAGE.save(
+        deps.storage,
+        &NextPairKey {
+            token_a,
+            token_b,
+            bin_step,
+            code_hash: config.lb_pair_implementation.code_hash,
+            // FIXME: ???
+            is_open: is_owner,
+        },
+    )?;
 
     Ok(Response::new().add_submessages(messages))
 }
