@@ -29,6 +29,8 @@ pub const LB_PAIRS_INFO: Map<(String, String, u16), LbPairInformation> = Map::ne
 // TODO: is this necessary? it's not in the original
 pub const PRESET_HASHSET: Item<HashSet<u16>> = Item::new("preset_hashset");
 
+// TODO: I think we need the secret-toolkit KeyMap to be able to iterate over the keys, to avoid
+// needing the PRESET_HASHSET.
 pub const PRESETS: Map<u16, PairParameters> = Map::new("presets");
 // TODO: Would a HashSet would be better for this?
 pub static QUOTE_ASSET_WHITELIST: AppendStore<TokenType> =
@@ -43,7 +45,7 @@ pub static QUOTE_ASSET_WHITELIST: AppendStore<TokenType> =
 /// bin steps that are already used for a pair.
 /// The tokens are ordered to save gas, but they can be in the reverse order in the actual pair.
 /// Always query one of the 2 tokens of the pair to assert the order of the 2 tokens.
-pub const AVAILABLE_LB_PAIR_BIN_STEPS: Map<(String, String), Vec<u16>> =
+pub const AVAILABLE_LB_PAIR_BIN_STEPS: Map<(String, String), HashSet<u16>> =
     Map::new("available_lb_pair_bin_steps");
 
 #[cw_serde]
