@@ -296,12 +296,8 @@ pub fn set_pair_preset(
     }
 
     let mut hashset = PRESET_HASHSET.load(deps.storage)?;
-
-    if !hashset.contains(&bin_step) {
-        hashset.insert(bin_step);
-
-        PRESET_HASHSET.save(deps.storage, &hashset)?;
-    }
+    hashset.insert(bin_step);
+    PRESET_HASHSET.save(deps.storage, &hashset)?;
 
     PRESETS.save(deps.storage, bin_step, &preset)?;
     STATE.save(deps.storage, &state)?;
