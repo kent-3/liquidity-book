@@ -1,7 +1,6 @@
 use crate::types::NextPairKey;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, ContractInfo, Storage, Uint128};
-use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
+use cosmwasm_std::{Addr, ContractInfo, Uint128};
 use lb_interfaces::{
     lb_factory::ContractImplementation,
     lb_pair::{LbPair, LbPairInformation},
