@@ -1,5 +1,4 @@
 #![allow(clippy::too_many_arguments)]
-// #![allow(unused)]
 
 mod error;
 mod prelude;

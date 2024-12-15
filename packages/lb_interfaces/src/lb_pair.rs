@@ -157,7 +157,17 @@ pub enum ExecuteMsg {
         protocol_share: u16,
         max_volatility_accumulator: u32,
     },
+    SetHooksParameters {
+        hooks_parameters: Bytes32,
+        on_hooks_set_data: Binary,
+    },
     ForceDecay {},
+    BatchTransferFrom {
+        from: String,
+        to: String,
+        ids: Vec<u32>,
+        amounts: Vec<Uint256>,
+    },
 
     // not in joe-v2
     SetContractStatus {

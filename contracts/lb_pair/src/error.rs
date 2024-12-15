@@ -33,6 +33,10 @@ pub enum LbPairError {
     TransactionBlock(),
     #[error("Not enough funds")]
     NotEnoughFunds,
+    #[error("Unknown reply id: {id}")]
+    UnknownReplyId { id: u64 },
+    #[error("Reply data is missing!")]
+    ReplyDataMissing,
 
     // Permission Errors
     #[error("Only the Factory can do that!")]

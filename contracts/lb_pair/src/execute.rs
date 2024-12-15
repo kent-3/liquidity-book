@@ -1,7 +1,7 @@
 use crate::{helper::*, prelude::*, state::*};
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
-    StdResult, Timestamp, Uint128, Uint256,
+    to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+    Uint256,
 };
 use ethnum::U256;
 use lb_interfaces::{
@@ -10,12 +10,11 @@ use lb_interfaces::{
 };
 use lb_libraries::{
     bin_helper::BinHelper,
-    constants::{BASIS_POINT_MAX, MAX_FEE, PRECISION, SCALE_OFFSET},
+    constants::MAX_FEE,
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
     math::{
         liquidity_configurations::LiquidityConfiguration,
         packed_u128_math::PackedUint128Math,
-        tree_math::TreeUint24,
         u24::U24,
         u256x256_math::U256x256Math,
         uint256_to_u256::{ConvertU256, ConvertUint256},
@@ -26,10 +25,7 @@ use lb_libraries::{
     types::Bytes32,
 };
 use secret_toolkit::snip20::{self, query::Balance};
-use shade_protocol::{
-    admin::helpers::{validate_admin, AdminPermissions},
-    swap::core::TokenType,
-};
+use shade_protocol::swap::core::TokenType;
 
 #[derive(Clone, Debug)]
 pub struct MintArrays {
@@ -758,7 +754,7 @@ pub fn burn(
 // Administrative functions
 
 /// Collect the protocol fees from the pool.
-pub fn try_collect_protocol_fees(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response> {
+pub fn collect_protocol_fees(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response> {
     let state = STATE.load(deps.storage)?;
     // only_protocol_fee_recipient(&info.sender, &state.factory.address)?;
 
@@ -816,7 +812,7 @@ pub fn try_collect_protocol_fees(deps: DepsMut, _env: Env, info: MessageInfo) ->
 /// # Arguments
 ///
 /// * `new_length` - The new length of the oracle
-pub fn try_increase_oracle_length(
+pub fn increase_oracle_length(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -852,7 +848,7 @@ pub fn try_increase_oracle_length(
 /// * `variable_fee_control` - The variable fee control of the static fee
 /// * `protocol_share` - The protocol share of the static fee
 /// * `max_volatility_accumulator` - The max volatility accumulator of the static fee
-pub fn try_set_static_fee_parameters(
+pub fn set_static_fee_parameters(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -895,7 +891,7 @@ pub fn try_set_static_fee_parameters(
 /// Forces the decay of the volatility reference variables.
 ///
 /// Can only be called by the factory.
-pub fn try_force_decay(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response> {
+pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response> {
     let state = STATE.load(deps.storage)?;
     only_factory(&info.sender, &state.factory.address)?;
 

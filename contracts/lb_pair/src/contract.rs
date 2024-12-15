@@ -1,23 +1,23 @@
 use crate::{execute::*, helper::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
-    WasmMsg,
+    MessageInfo, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
-    lb_token::state_structs::LbPair,
-    math::{sample_math::OracleSample, tree_math::TreeUint24, u24::U24},
-    oracle_helper::OracleMap,
+    lb_token::state_structs::LbPair, math::tree_math::TreeUint24,
     pair_parameter_helper::PairParameters,
 };
+// TODO: get rid of admin stuff and shade_protocol dependency
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},
-    swap::core::{TokenAmount, TokenType, ViewingKey},
+    swap::core::{TokenType, ViewingKey},
 };
 use std::vec;
 
-/////////////// INSTANTIATE ///////////////
+pub const INSTANTIATE_LP_TOKEN_REPLY_ID: u64 = 1u64;
+pub const MINT_REPLY_ID: u64 = 1u64;
+
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
@@ -81,7 +81,6 @@ pub fn instantiate(
         INSTANTIATE_LP_TOKEN_REPLY_ID,
     ));
 
-    //Initializing PairParameters
     let mut pair_parameters = PairParameters::default();
     pair_parameters.set_static_fee_parameters(
         msg.pair_parameters.base_factor,
@@ -109,7 +108,6 @@ pub fn instantiate(
         }
     }
 
-    // State initialization
     let state = State {
         creator: info.sender,
         factory: msg.factory,
@@ -120,7 +118,7 @@ pub fn instantiate(
         reserves: [0u8; 32],
         protocol_fees: [0u8; 32],
 
-        // ContractInfo for lb_token and lb_staking are intentionally kept empty and will be filled in later
+        // ContractInfo for lb_token is intentionally empty and will be filled in later
         lb_token: ContractInfo {
             address: Addr::unchecked(""),
             code_hash: "".to_string(),
@@ -147,13 +145,9 @@ pub fn instantiate(
     Ok(response)
 }
 
-/////////////// EXECUTE ///////////////
 #[entry_point]
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {
-    let contract_status = CONTRACT_STATUS.load(deps.storage)?;
-    let config = STATE.load(deps.storage)?;
-
-    match contract_status {
+    match CONTRACT_STATUS.load(deps.storage)? {
         ContractStatus::FreezeAll => match msg {
             ExecuteMsg::Mint { .. }
             | ExecuteMsg::Swap { .. }
@@ -173,10 +167,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
     }
 
     match msg {
-        ExecuteMsg::Receive(msg) => {
-            let checked_addr = deps.api.addr_validate(&msg.from)?;
-            receiver_callback(deps, env, info, checked_addr, msg.amount, msg.msg)
-        }
         ExecuteMsg::Swap { swap_for_y, to } => swap(deps, env, info, swap_for_y, to),
         ExecuteMsg::FlashLoan {} => todo!(),
         ExecuteMsg::Mint {
@@ -190,9 +180,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             ids,
             amounts_to_burn,
         } => burn(deps, env, info, from, to, ids, amounts_to_burn),
-        ExecuteMsg::CollectProtocolFees {} => try_collect_protocol_fees(deps, env, info),
+        ExecuteMsg::CollectProtocolFees {} => collect_protocol_fees(deps, env, info),
         ExecuteMsg::IncreaseOracleLength { new_length } => {
-            try_increase_oracle_length(deps, env, info, new_length)
+            increase_oracle_length(deps, env, info, new_length)
         }
         ExecuteMsg::SetStaticFeeParameters {
             base_factor,
@@ -202,7 +192,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             variable_fee_control,
             protocol_share,
             max_volatility_accumulator,
-        } => try_set_static_fee_parameters(
+        } => set_static_fee_parameters(
             deps,
             env,
             info,
@@ -214,7 +204,19 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             protocol_share,
             max_volatility_accumulator,
         ),
-        ExecuteMsg::ForceDecay {} => try_force_decay(deps, env, info),
+        ExecuteMsg::SetHooksParameters {
+            hooks_parameters,
+            on_hooks_set_data,
+        } => todo!(),
+        ExecuteMsg::ForceDecay {} => force_decay(deps, env, info),
+        ExecuteMsg::BatchTransferFrom {
+            from,
+            to,
+            ids,
+            amounts,
+        } => todo!(),
+
+        // not in joe-v2
         ExecuteMsg::SetContractStatus { contract_status } => {
             let state = STATE.load(deps.storage)?;
             validate_admin(
@@ -226,6 +228,10 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             CONTRACT_STATUS.save(deps.storage, &contract_status)?;
 
             Ok(Response::default().add_attribute("new_status", contract_status.to_string()))
+        }
+        ExecuteMsg::Receive(msg) => {
+            let checked_addr = deps.api.addr_validate(&msg.from)?;
+            receiver_callback(deps, env, info, checked_addr, msg.amount, msg.msg)
         }
     }
 }
@@ -315,31 +321,29 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
 }
 
 #[entry_point]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
         (INSTANTIATE_LP_TOKEN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
-                let contract_address_string = &String::from_utf8(x.to_vec())?;
+                // TODO: deserialize the data properly
+                let contract_address_string = &String::from_utf8(x.to_vec()).unwrap();
                 let trimmed_str = contract_address_string.trim_matches('\"');
-                let contract_address = deps.api.addr_validate(trimmed_str)?;
+                let address = deps.api.addr_validate(trimmed_str)?;
 
-                let emp_storage = EPHEMERAL_STORAGE.load(deps.storage)?;
+                let code_hash = EPHEMERAL_STORAGE.load(deps.storage)?.lb_token_code_hash;
                 let mut state = STATE.load(deps.storage)?;
 
-                state.lb_token = ContractInfo {
-                    address: contract_address,
-                    code_hash: emp_storage.lb_token_code_hash,
-                };
+                state.lb_token = ContractInfo { address, code_hash };
 
                 STATE.save(deps.storage, &state)?;
 
-                let mut response = Response::new();
-                response.data = Some(env.contract.address.to_string().as_bytes().into());
+                let response =
+                    Response::new().set_data(env.contract.address.to_string().as_bytes());
 
                 Ok(response)
             }
-            None => Err(StdError::generic_err("Unknown reply id")),
+            None => Err(Error::ReplyDataMissing),
         },
-        _ => Err(StdError::generic_err("Unknown reply id")),
+        _ => Err(Error::UnknownReplyId { id: msg.id }),
     }
 }

@@ -1,7 +1,5 @@
 use crate::{helper::*, prelude::*, state::*};
-use cosmwasm_std::{
-    from_binary, to_binary, Addr, Binary, Decimal, Deps, Env, StdResult, Uint128, Uint256,
-};
+use cosmwasm_std::{Addr, Deps, Env, Uint128, Uint256};
 use ethnum::U256;
 use lb_interfaces::lb_pair::*;
 use lb_libraries::{
@@ -18,19 +16,17 @@ use lb_libraries::{
     price_helper::PriceHelper,
     types::Bytes32,
 };
+// TODO: get rid of these dependencies
 use shade_protocol::{
     swap::{
         amm_pair::{
             FeeInfo,
-            QueryMsgResponse::{self, GetPairInfo, SwapSimulation},
-            SwapResult,
+            QueryMsgResponse::{self, GetPairInfo},
         },
-        core::{Fee, TokenAmount, TokenPair, TokenType},
+        core::{Fee, TokenPair},
     },
     Contract,
 };
-use std::collections::HashSet;
-use std::ops::Add;
 
 // TODO - Revisit if this function is necessary. It seems like something that might belong in the
 //        lb-factory contract. It should at least have it's own interface and not use amm_pair's.

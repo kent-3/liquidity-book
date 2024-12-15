@@ -16,9 +16,6 @@ use shade_protocol::{
     swap::core::{TokenType, ViewingKey},
 };
 
-pub const INSTANTIATE_LP_TOKEN_REPLY_ID: u64 = 1u64;
-pub const MINT_REPLY_ID: u64 = 1u64;
-
 // TODO: make a 'bin' type with these methods?
 
 /// Transfers the encoded amounts to the recipient for both tokens.
