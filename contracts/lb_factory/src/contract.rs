@@ -72,6 +72,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             set_lb_pair_implementation(deps, env, info, implementation)
         }
         // TODO: why isn't this in joe-v2?
+        // I think it's because... we don't want the pairs to ever have differing token contract
+        // implementations. So really this should probably be static inside the pair contract. I'm
+        // not sure there is a way to do that.
         ExecuteMsg::SetLbTokenImplementation { implementation } => {
             set_lb_token_implementation(deps, env, info, implementation)
         }

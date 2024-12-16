@@ -23,6 +23,7 @@ pub const EPHEMERAL_STORAGE: Item<EphemeralStruct> = Item::new("ephemeral_storag
 
 // TODO: use simplest possible storage types for things like parameters, reserves, protocol_fees.
 // They can all be stored simply as bytes. No need to be serialized in any special way.
+pub const LB_TOKEN: Item<ContractInfo> = Item::new("lb_token");
 pub const PARAMETERS: Item<Bytes32> = Item::new("pair_parameters");
 pub const RESERVES: Item<Bytes32> = Item::new("reserves");
 pub const PROTOCOL_FEES: Item<Bytes32> = Item::new("protocol_fees");
