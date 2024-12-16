@@ -96,6 +96,10 @@ pub fn bin_transfer_x(amounts: Bytes32, token_x: TokenType, recipient: Addr) -> 
     }
 }
 
+// TODO: wouldn't it be okay to allow zero amount transfers?
+// we already return Err(Error::InsufficientAmountOut) when the amounts_out is zero.
+// The Option makes it awkward.
+
 /// Transfers the encoded amounts to the recipient, only for token Y.
 ///
 /// # Arguments

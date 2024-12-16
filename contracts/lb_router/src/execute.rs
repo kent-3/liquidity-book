@@ -242,7 +242,7 @@ pub fn remove_liquidity(
             amount_y_min,
             is_wrong_order,
         },
-    );
+    )?;
 
     _remove_liquidity(
         deps,

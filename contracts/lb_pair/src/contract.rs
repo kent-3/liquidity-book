@@ -168,7 +168,12 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 
     match msg {
         ExecuteMsg::Swap { swap_for_y, to } => swap(deps, env, info, swap_for_y, to),
-        ExecuteMsg::FlashLoan {} => todo!(),
+        // TODO:
+        ExecuteMsg::FlashLoan {
+            receiver,
+            amounts,
+            data,
+        } => flash_loan(deps, env, info, receiver, amounts, data),
         ExecuteMsg::Mint {
             to,
             liquidity_configs,

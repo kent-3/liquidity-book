@@ -21,6 +21,13 @@ pub const BIN_TREE: Item<TreeUint24, Bincode2> = Item::new("bin_tree");
 pub const ORACLE: Map<u16, OracleSample> = Map::new("oracle");
 pub const EPHEMERAL_STORAGE: Item<EphemeralStruct> = Item::new("ephemeral_storage");
 
+// TODO: use simplest possible storage types for things like parameters, reserves, protocol_fees.
+// They can all be stored simply as bytes. No need to be serialized in any special way.
+pub const PARAMETERS: Item<Bytes32> = Item::new("pair_parameters");
+pub const RESERVES: Item<Bytes32> = Item::new("reserves");
+pub const PROTOCOL_FEES: Item<Bytes32> = Item::new("protocol_fees");
+pub const HOOKS_PARAMETERS: Item<Bytes32> = Item::new("hooks_parameters");
+
 // TODO: store some of these things under separate keys? especially reserves
 #[cw_serde]
 pub struct State {
@@ -33,6 +40,7 @@ pub struct State {
     pub token_x: TokenType,
     pub token_y: TokenType,
     pub bin_step: u16,
+    // TODO: separate storage key for parameters
     pub pair_parameters: PairParameters,
     pub viewing_key: ViewingKey,
 
