@@ -1,6 +1,6 @@
 use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, ContractInfo, Event, QuerierWrapper, StdResult, Uint128};
 use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
@@ -12,14 +12,14 @@ pub trait LbFactoryEventExt {
         token_y: String,
         bin_step: u16,
         lb_pair: String,
-        pid: Uint256,
+        pid: u32,
     ) -> Event {
         Event::new("lb_pair_created")
             .add_attribute_plaintext("token_x", token_x)
             .add_attribute_plaintext("token_y", token_y)
             .add_attribute_plaintext("bin_step", bin_step.to_string())
             .add_attribute_plaintext("lb_pair", lb_pair)
-            .add_attribute_plaintext("pid", pid)
+            .add_attribute_plaintext("pid", pid.to_string())
     }
 
     fn fee_recipient_set(old_recipient: Addr, new_recipient: Addr) -> Event {
@@ -46,6 +46,21 @@ pub trait LbFactoryEventExt {
             .add_attribute_plaintext(
                 "new_lb_pair_implementation",
                 new_lb_pair_implementation.to_string(),
+            )
+    }
+
+    fn lb_token_implementation_set(
+        old_lb_token_implementation: u64,
+        new_lb_token_implementation: u64,
+    ) -> Event {
+        Event::new("lb_token_implementation_set")
+            .add_attribute_plaintext(
+                "old_lb_token_implementation",
+                old_lb_token_implementation.to_string(),
+            )
+            .add_attribute_plaintext(
+                "new_lb_token_implementation",
+                new_lb_token_implementation.to_string(),
             )
     }
 

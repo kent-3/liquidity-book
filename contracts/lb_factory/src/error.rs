@@ -1,5 +1,7 @@
 //! ### Custom Errors for lb-factory contract.
 
+use std::string::FromUtf8Error;
+
 use cosmwasm_std::{Addr, StdError};
 use lb_libraries::{
     bin_helper::BinError,
@@ -86,13 +88,17 @@ pub enum LbFactoryError {
     // not in joe-v2
     #[error("{0}!")]
     Generic(String),
-
     #[error("Only the Owner can do that!")]
     OnlyOwner,
-
     #[error("Transaction is blocked by contract status")]
     TransactionBlock(),
+    #[error("Unknown reply id: {id}")]
+    UnknownReplyId { id: u64 },
+    #[error("Reply data is missing!")]
+    ReplyDataMissing,
 
+    #[error(transparent)]
+    FromUtf8Error(#[from] FromUtf8Error),
     #[error(transparent)]
     CwErr(#[from] StdError),
     #[error(transparent)]

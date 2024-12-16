@@ -11,6 +11,7 @@ use lb_libraries::{
     oracle_helper::OracleError,
     pair_parameter_helper::PairParametersError,
 };
+use std::string::FromUtf8Error;
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbPairError {
@@ -92,6 +93,8 @@ pub enum LbPairError {
     WrongPair,
 
     // Error Wrappings from Dependencies
+    #[error(transparent)]
+    FromUtf8Error(#[from] FromUtf8Error),
     #[error(transparent)]
     CwErr(#[from] StdError),
     #[error(transparent)]

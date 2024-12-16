@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, Event, MessageInfo, Reply,
-    Response, StdError, StdResult, SubMsgResult, Uint128, Uint256,
+    Response, StdResult, SubMsgResult, Uint128,
 };
 use lb_interfaces::{
     lb_factory::*,
@@ -199,11 +199,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
 }
 
 #[entry_point]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
         (INSTANTIATE_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
-                let contract_address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
+                let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
                 let lb_pair_key = EPHEMERAL_STORAGE.load(deps.storage)?;
 
                 let token_a = lb_pair_key.token_a;
@@ -215,10 +215,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
                     token_x: token_a.clone(),
                     token_y: token_b.clone(),
                     bin_step,
-                    contract: ContractInfo {
-                        address: contract_address,
-                        code_hash,
-                    },
+                    contract: ContractInfo { address, code_hash },
                 };
 
                 LB_PAIRS_INFO.save(
@@ -234,38 +231,47 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 
                 ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
 
+                // TODO: delete this once we're sure the 'update' code works
+                //
                 // load the different bin_step LbPairs that exist for this pair of tokens, then add the new one
-                let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
-                    .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
-                    .unwrap_or_default();
-                bin_step_list.insert(bin_step);
+                // let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
+                //     .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
+                //     .unwrap_or_default();
+                //
+                // bin_step_list.insert(bin_step);
+                //
+                // AVAILABLE_LB_PAIR_BIN_STEPS.save(
+                //     deps.storage,
+                //     (token_a.unique_key(), token_b.unique_key()),
+                //     &bin_step_list,
+                // )?;
 
-                AVAILABLE_LB_PAIR_BIN_STEPS.save(
+                AVAILABLE_LB_PAIR_BIN_STEPS.update(
                     deps.storage,
                     (token_a.unique_key(), token_b.unique_key()),
-                    &bin_step_list,
+                    |bin_steps| -> StdResult<_> {
+                        let mut bin_steps = bin_steps.unwrap_or_default();
+                        bin_steps.insert(bin_step);
+                        Ok(bin_steps)
+                    },
                 )?;
 
                 EPHEMERAL_STORAGE.remove(deps.storage);
 
-                use lb_interfaces::lb_factory::LbFactoryEventExt;
-
-                // TODO: see what this pid is about
-                let pid = Uint256::one();
                 let event = Event::lb_pair_created(
                     token_a.unique_key(),
                     token_b.unique_key(),
                     bin_step,
                     lb_pair.contract.address.to_string(),
-                    pid,
+                    ALL_LB_PAIRS.get_len(deps.storage)? - 1,
                 );
 
                 Ok(Response::default()
                     .set_data(to_binary(&lb_pair)?)
                     .add_event(event))
             }
-            None => Err(StdError::generic_err("Expecting contract id")),
+            None => Err(Error::ReplyDataMissing),
         },
-        _ => Err(StdError::generic_err("Unknown reply id")),
+        _ => Err(Error::UnknownReplyId { id: msg.id }),
     }
 }

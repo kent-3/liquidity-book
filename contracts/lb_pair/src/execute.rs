@@ -729,6 +729,7 @@ pub fn burn(
     let raw_msgs = bin_transfer(amounts_out, token_x, token_y, info.sender);
 
     // TODO: is it better to use `update` here or `save`?
+    // I think 'save' is better, because we've already loaded it.
     STATE.update(deps.storage, |mut state| -> StdResult<State> {
         state.reserves = state.reserves.sub(amounts_out);
         Ok(state)

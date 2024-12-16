@@ -55,6 +55,7 @@ pub enum ContractStatus {
     FreezeAll, // blocks everything except admin-protected config changes
 }
 
+// TODO: decide on calling this config or state
 #[cw_serde]
 pub struct State {
     pub contract_info: ContractInfo,

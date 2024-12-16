@@ -1,7 +1,7 @@
 use crate::{execute::*, helper::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    MessageInfo, Reply, Response, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
@@ -325,17 +325,18 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
         (INSTANTIATE_LP_TOKEN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
-                // TODO: deserialize the data properly
-                let contract_address_string = &String::from_utf8(x.to_vec()).unwrap();
-                let trimmed_str = contract_address_string.trim_matches('\"');
-                let address = deps.api.addr_validate(trimmed_str)?;
+                // TODO: do we need to trim the string like this?
+                // let contract_address_string = &String::from_utf8(x.to_vec())?;
+                // let trimmed_str = contract_address_string.trim_matches('\"');
+                // let address = deps.api.addr_validate(trimmed_str)?;
 
+                let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
                 let code_hash = EPHEMERAL_STORAGE.load(deps.storage)?.lb_token_code_hash;
-                let mut state = STATE.load(deps.storage)?;
 
-                state.lb_token = ContractInfo { address, code_hash };
-
-                STATE.save(deps.storage, &state)?;
+                STATE.update(deps.storage, |mut state| -> StdResult<_> {
+                    state.lb_token = ContractInfo { address, code_hash };
+                    Ok(state)
+                })?;
 
                 let response =
                     Response::new().set_data(env.contract.address.to_string().as_bytes());

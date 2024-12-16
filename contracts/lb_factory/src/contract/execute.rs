@@ -5,7 +5,8 @@ use super::{
 };
 use crate::{prelude::*, types::NextPairKey};
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, WasmMsg,
+    to_binary, Addr, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response, StdResult, SubMsg,
+    WasmMsg,
 };
 use lb_interfaces::{
     lb_factory::*,
@@ -47,11 +48,16 @@ pub fn set_lb_pair_implementation(
     }
 
     STATE.update(deps.storage, |mut config| -> StdResult<_> {
-        config.lb_pair_implementation = new_lb_pair_implementation;
+        config.lb_pair_implementation = new_lb_pair_implementation.clone();
         Ok(config)
     })?;
 
-    Ok(Response::default())
+    let event = Event::lb_pair_implementation_set(
+        old_lb_pair_implementation.id,
+        new_lb_pair_implementation.id,
+    );
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Sets the LbToken implementation details.
@@ -81,11 +87,16 @@ pub fn set_lb_token_implementation(
     }
 
     STATE.update(deps.storage, |mut config| -> StdResult<_> {
-        config.lb_token_implementation = new_lb_token_implementation;
+        config.lb_token_implementation = new_lb_token_implementation.clone();
         Ok(config)
     })?;
 
-    Ok(Response::default())
+    let event = Event::lb_token_implementation_set(
+        old_lb_token_implementation.id,
+        new_lb_token_implementation.id,
+    );
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Creates a liquidity bin LbPair for token_x and token_y.
@@ -239,6 +250,10 @@ pub fn set_lb_pair_ignored(
     ignored: bool,
 ) -> Result<Response> {
     todo!()
+
+    // let event = Event::lb_pair_ignored_state_changed(lb_pair, ignored);
+    //
+    // Ok(Response::new().add_event(event))
 }
 
 /// Sets the preset parameters of a bin step
@@ -302,7 +317,18 @@ pub fn set_pair_preset(
     PRESETS.save(deps.storage, bin_step, &preset)?;
     STATE.save(deps.storage, &state)?;
 
-    Ok(Response::default().add_attribute_plaintext("set preset", bin_step.to_string()))
+    let event = Event::preset_set(
+        bin_step,
+        base_factor,
+        filter_period,
+        decay_period,
+        reduction_factor,
+        variable_fee_control,
+        protocol_share,
+        max_volatility_accumulator,
+    );
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Sets if the preset is open or not to be used by users
@@ -339,10 +365,9 @@ pub fn set_preset_open_state(
 
     PRESETS.save(deps.storage, bin_step, &preset)?;
 
-    Ok(Response::default().add_attribute_plaintext(
-        format!("bin step: {}", bin_step),
-        format!("is_open: {}", is_open),
-    ))
+    let event = Event::preset_open_state_changed(bin_step, is_open);
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Remove the preset linked to a bin_step
@@ -373,7 +398,9 @@ pub fn remove_preset(
     hashset.remove(&bin_step);
     PRESET_HASHSET.save(deps.storage, &hashset)?;
 
-    Ok(Response::default().add_attribute_plaintext("preset removed", bin_step.to_string()))
+    let event = Event::preset_removed(bin_step);
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Function to set the fee parameters of a LbPair
@@ -436,8 +463,7 @@ pub fn set_fee_parameters_on_pair(
     }
     .to_cosmos_msg(&lb_pair.contract, vec![])?;
 
-    let response = Response::new().add_message(msg);
-    Ok(response)
+    Ok(Response::new().add_message(msg))
 }
 
 /// Function to set the recipient of the fees. This address needs to be able to receive SNIP20s.
@@ -471,9 +497,9 @@ pub fn set_fee_recipient(
         Ok(config)
     })?;
 
-    Ok(Response::default()
-        .add_attribute_plaintext("old fee recipient", old_fee_recipient.as_str())
-        .add_attribute_plaintext("new fee recipient", fee_recipient.as_str()))
+    let event = Event::fee_recipient_set(old_fee_recipient, fee_recipient);
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Function to add an asset to the whitelist of quote assets
@@ -508,8 +534,9 @@ pub fn add_quote_asset(
 
     QUOTE_ASSET_WHITELIST.push(deps.storage, &quote_asset)?;
 
-    Ok(Response::default()
-        .add_attribute_plaintext("quote asset added", quote_asset.unique_key().as_str()))
+    let event = Event::quote_asset_added(quote_asset.unique_key());
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Function to remove an asset from the whitelist of quote assets
@@ -537,8 +564,12 @@ pub fn remove_quote_asset(
         .find(|(_, result)| result.as_ref().ok().map_or(false, |t| t.eq(&asset)));
 
     match found_asset {
-        Some((index, Ok(_))) => {
+        Some((index, Ok(quote_asset))) => {
             QUOTE_ASSET_WHITELIST.remove(deps.storage, index as u32)?;
+
+            let event = Event::quote_asset_removed(quote_asset.unique_key());
+
+            Ok(Response::new().add_event(event))
         }
         _ => {
             return Err(Error::QuoteAssetNotWhitelisted {
@@ -546,9 +577,6 @@ pub fn remove_quote_asset(
             });
         }
     }
-
-    Ok(Response::default()
-        .add_attribute_plaintext("quote asset removed", asset.unique_key().as_str()))
 }
 
 pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo, pair: LbPair) -> Result<Response> {
