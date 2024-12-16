@@ -15,7 +15,7 @@ use lb_interfaces::{
     lb_pair::{self, ILbPair, LiquidityParameters},
     lb_router::{Path, Version},
 };
-use lb_libraries::types::LiquidityConfiguration;
+use lb_libraries::LiquidityConfiguration;
 use shade_protocol::{swap::core::TokenType, utils::ExecuteCallback};
 
 pub fn create_lb_pair(

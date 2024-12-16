@@ -3,18 +3,12 @@ use cosmwasm_std::{Addr, Deps, Env, Uint128, Uint256};
 use ethnum::U256;
 use lb_interfaces::lb_pair::*;
 use lb_libraries::{
-    bin_helper::BinHelper,
     constants::SCALE_OFFSET,
-    fee_helper::FeeHelper,
     math::{
-        packed_u128_math::PackedUint128Math,
         u24::U24,
-        u256x256_math::U256x256Math,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
-    oracle_helper::{self, OracleMap},
-    price_helper::PriceHelper,
-    types::Bytes32,
+    BinHelper, Bytes32, FeeHelper, OracleMap, PackedUint128Math, PriceHelper, U256x256Math,
 };
 // TODO: get rid of these dependencies
 use shade_protocol::{
@@ -397,7 +391,8 @@ pub fn query_oracle_params(deps: Deps) -> Result<OracleParametersResponse> {
 
     let oracle_id = params.get_oracle_id();
 
-    let sample_lifetime = oracle_helper::MAX_SAMPLE_LIFETIME;
+    // let sample_lifetime = oracle_helper::MAX_SAMPLE_LIFETIME;
+    let sample_lifetime = todo!();
 
     if oracle_id > 0 {
         let (mut sample, mut active_size) =

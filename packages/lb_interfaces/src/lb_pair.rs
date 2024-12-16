@@ -4,8 +4,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     Addr, Binary, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
 };
-use lb_libraries::hooks::Parameters;
-use lb_libraries::types::{Bytes32, LiquidityConfiguration};
+use lb_libraries::{hooks::Parameters, Bytes32, LiquidityConfiguration};
 use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},

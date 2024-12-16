@@ -1,9 +1,5 @@
 use lb_interfaces::lb_pair::ContractStatus;
-use lb_libraries::{
-    math::{sample_math::OracleSample, tree_math::TreeUint24},
-    pair_parameter_helper::PairParameters,
-    types::Bytes32,
-};
+use lb_libraries::{Bytes32, OracleSample, PairParameters, TreeUint24};
 // TODO: sort out viewing key strategy
 use shade_protocol::swap::core::ViewingKey;
 use shade_protocol::{

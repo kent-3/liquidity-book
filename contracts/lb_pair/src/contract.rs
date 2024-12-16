@@ -4,10 +4,7 @@ use cosmwasm_std::{
     MessageInfo, Reply, Response, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use lb_interfaces::{lb_pair::*, lb_token};
-use lb_libraries::{
-    lb_token::state_structs::LbPair, math::tree_math::TreeUint24,
-    pair_parameter_helper::PairParameters,
-};
+use lb_libraries::{lb_token::state_structs::LbPair, Bytes32, PairParameters, TreeUint24};
 // TODO: get rid of admin stuff and shade_protocol dependency
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},

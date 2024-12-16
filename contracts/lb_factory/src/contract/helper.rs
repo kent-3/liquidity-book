@@ -2,7 +2,7 @@ use super::{state::*, OFFSET_IS_PRESET_OPEN};
 use crate::prelude::*;
 use cosmwasm_std::Deps;
 use lb_interfaces::lb_pair::LbPairInformation;
-use lb_libraries::{math::encoded::Encoded, types::Bytes32};
+use lb_libraries::{Bytes32, Encoded};
 use shade_protocol::swap::core::TokenType;
 
 /// Returns the LbPairInformation if it exists, if not, then the address 0 is returned. The order doesn't matter

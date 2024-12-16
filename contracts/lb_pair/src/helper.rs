@@ -7,7 +7,7 @@ use lb_libraries::{
         packed_u128_math::PackedUint128Math, tree_math::TreeUint24, u24::U24,
         uint256_to_u256::ConvertUint256,
     },
-    types::Bytes32,
+    Bytes32,
 };
 // TODO: sort out viewing key strategy
 use secret_toolkit::snip20::{register_receive_msg, set_viewing_key_msg, transfer_msg};
