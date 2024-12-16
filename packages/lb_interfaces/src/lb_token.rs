@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Coin, CosmosMsg, StdResult, Uint128, Uint256, WasmMsg,
+    to_binary, Addr, Binary, Coin, CosmosMsg, Event, StdResult, Uint128, Uint256, WasmMsg,
 };
 use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 
@@ -16,6 +16,33 @@ use lb_libraries::lb_token::{
 };
 
 use secret_toolkit::permit::Permit;
+
+pub trait LbTokenEventExt {
+    fn transfer_batch(
+        sender: &Addr,
+        from: &Addr,
+        to: &Addr,
+        ids: &Vec<u32>,
+        // TODO: check what the max supply for snip20 tokens is. Uint128 or Uint256?
+        amounts: &Vec<Uint256>,
+    ) -> Event {
+        Event::new("transfer_batch")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("from", from)
+            .add_attribute_plaintext("to", to)
+            .add_attribute_plaintext("ids", serde_json_wasm::to_string(&ids).unwrap())
+            .add_attribute_plaintext("amounts", serde_json_wasm::to_string(&amounts).unwrap())
+    }
+
+    fn approval_for_all(account: &Addr, sender: &Addr, approved: bool) -> Event {
+        Event::new("approval_for_all")
+            .add_attribute_plaintext("account", account)
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("approved", approved.to_string())
+    }
+}
+
+impl LbTokenEventExt for Event {}
 
 /////////////////////////////////////////////////////////////////////////////////
 // Init messages

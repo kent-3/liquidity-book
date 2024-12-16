@@ -16,3 +16,5 @@ thiserror = { workspace = true }
 ethnum = { workspace = true }
 secret-toolkit = { workspace = true }
 shade-protocol = { workspace = true }
+serde-json-wasm = { workspace = true }
+base64 = { workspace = true }

@@ -1,12 +1,12 @@
 use crate::{helper::*, prelude::*, state::*};
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
-    Uint256,
+    to_binary, Addr, Binary, ContractInfo, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response,
+    StdError, StdResult, Uint128, Uint256,
 };
 use ethnum::U256;
 use lb_interfaces::{
     lb_pair::{self, *},
-    lb_token,
+    lb_token::{self, LbTokenEventExt},
 };
 use lb_libraries::{
     bin_helper::BinHelper,
@@ -29,7 +29,7 @@ use shade_protocol::swap::core::TokenType;
 
 #[derive(Clone, Debug)]
 pub struct MintArrays {
-    pub ids: Vec<U256>,
+    pub ids: Vec<u32>,
     pub amounts: Vec<Bytes32>,
     pub liquidity_minted: Vec<U256>,
 }
@@ -57,7 +57,7 @@ pub struct MintArrays {
 pub fn swap(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     swap_for_y: bool,
     to: String,
     // amounts_received: Uint128, //Will get this parameter from router contract
@@ -128,6 +128,8 @@ pub fn swap(
     // updating the volatility
     params.update_references(env.block.time.seconds())?;
 
+    let mut events: Vec<Event> = Vec::new();
+
     loop {
         let bin_reserves = BIN_MAP
             .load(deps.storage, active_id)
@@ -149,6 +151,7 @@ pub fn swap(
                 amounts_left = amounts_left.sub(amounts_in_with_fees);
                 amounts_out = amounts_out.add(amounts_out_of_bin);
 
+                // TODO: stop this
                 let p_fees =
                     fees.scalar_mul_div_basis_point_round_down(params.get_protocol_share().into())?;
                 total_fees = total_fees.add(fees);
@@ -167,6 +170,18 @@ pub fn swap(
                         .add(amounts_in_with_fees) // actually amount in wihtout fees
                         .sub(amounts_out_of_bin),
                 )?;
+
+                events.push(Event::swap(
+                    info.sender.as_str(),
+                    to.as_str(),
+                    active_id,
+                    amounts_in_with_fees,
+                    amounts_out_of_bin,
+                    params.get_volatility_accumulator(),
+                    total_fees,
+                    protocol_fees,
+                ));
+
                 ids.push(active_id);
             }
         }
@@ -210,6 +225,7 @@ pub fn swap(
     })?;
 
     let mut messages: Vec<CosmosMsg> = Vec::new();
+
     // Determine the output amount and the corresponding transfer message based on swap_for_y
     let amount_out = if swap_for_y {
         amounts_out.decode_y()
@@ -226,26 +242,30 @@ pub fn swap(
         messages.push(message);
     }
 
-    Ok(Response::new().add_messages(messages))
-    // TODO: rethink attributes and data
-    // .add_attributes(vec![
-    //     Attribute::new("amount_in", amounts_received),
-    //     Attribute::new("amount_out", amount_out.to_string()),
-    //     Attribute::new("lp_fee_amount", lp_fees.decode_alt(swap_for_y).to_string()),
-    //     Attribute::new(
-    //         "total_fee_amount",
-    //         total_fees.decode_alt(swap_for_y).to_string(),
-    //     ),
-    //     Attribute::new(
-    //         "shade_dao_fee_amount",
-    //         shade_dao_fees.decode_alt(swap_for_y).to_string(),
-    //     ),
-    //     Attribute::new("token_in_key", token_x.unique_key()),
-    //     Attribute::new("token_out_key", token_y.unique_key()),
-    // ])
-    // .set_data(to_binary(&ExecuteMsgResponse::SwapResult {
-    //     amount_out: Uint128::from(amount_out),
-    // })?))
+    Ok(Response::new().add_events(events).add_messages(messages))
+}
+
+/// Flash loan tokens from the pool to a receiver contract and execute a callback function.
+/// The receiver contract is expected to return the tokens plus a fee to this contract.
+/// The fee is calculated as a percentage of the amount borrowed, and is the same for both tokens.
+pub fn flash_loan(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _receiver: ContractInfo,
+    _amounts: Bytes32,
+    _data: Binary,
+) -> Result<Response> {
+    // let event = Event::flash_loan(
+    //     info.sender,
+    //     receiver.address,
+    //     params.get_active_id(),
+    //     amounts,
+    //     total_fees,
+    //     protocol_fees,
+    // );
+
+    todo!()
 }
 
 /// Mint liquidity tokens by depositing tokens into the pool.
@@ -343,10 +363,13 @@ pub fn mint(
     //     },
     // )?;
 
-    let mut mint_arrays = MintArrays {
-        ids: (vec![U256::ZERO; liquidity_configs.len()]),
-        amounts: (vec![[0u8; 32]; liquidity_configs.len()]),
-        liquidity_minted: (vec![U256::ZERO; liquidity_configs.len()]),
+    // TODO: these don't need to be U256 types. I think they just do that in EVM land.
+    // ids should be u24/u32
+    // liquidity_minted might still be U256 or Uint256
+    let mut arrays = MintArrays {
+        ids: vec![0u32; liquidity_configs.len()],
+        amounts: vec![[0u8; 32]; liquidity_configs.len()],
+        liquidity_minted: vec![U256::ZERO; liquidity_configs.len()],
     };
 
     let amounts_received = BinHelper::received(
@@ -364,8 +387,8 @@ pub fn mint(
         state.pair_parameters,
         liquidity_configs,
         amounts_received,
-        to,
-        &mut mint_arrays,
+        to.clone(),
+        &mut arrays,
         &mut messages,
     )?;
 
@@ -376,7 +399,7 @@ pub fn mint(
 
     let (amount_left_x, amount_left_y) = amounts_left.decode();
 
-    // TODO: is this for the refund? rewrite this to not be an iterator...
+    // TODO: rewrite this to not be an iterator...
 
     let mut transfer_messages = Vec::new();
     // 2- tokens checking and transfer
@@ -410,11 +433,29 @@ pub fn mint(
         }
     }
 
-    let liquidity_minted = mint_arrays
+    let liquidity_minted = arrays
         .liquidity_minted
         .into_iter()
         .map(|el| el.u256_to_uint256())
         .collect();
+
+    // NOTE: 2nd argument is the 'from' address. In EVM they use address(0). Since tokens are being
+    // minted here, they aren't really coming 'from' anywhere...
+    // TODO: Decide what to use for the 'from' address.
+    let events = vec![
+        Event::transfer_batch(
+            &info.sender,
+            // &env.contract.address,
+            &Addr::unchecked("0"),
+            &to,
+            &arrays.ids,
+            &liquidity_minted,
+        ),
+        Event::deposited_to_bins(&info.sender, &to, &arrays.ids, &arrays.amounts),
+    ];
+
+    // TODO: refund any amounts left
+    // if (amountsLeft > 0) amountsLeft.transfer(_tokenX(), _tokenY(), refundTo);
 
     let data = lb_pair::MintResponse {
         amounts_received,
@@ -424,6 +465,7 @@ pub fn mint(
 
     let response = Response::new()
         .set_data(to_binary(&data)?)
+        .add_events(events)
         .add_messages(messages)
         .add_messages(transfer_messages);
 
@@ -477,7 +519,7 @@ fn mint_bins(
 
         amounts_left = amounts_left.sub(amounts_in);
 
-        mint_arrays.ids[index] = id.into();
+        mint_arrays.ids[index] = id;
         mint_arrays.amounts[index] = amounts_in_to_bin;
         mint_arrays.liquidity_minted[index] = shares;
 

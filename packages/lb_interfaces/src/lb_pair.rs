@@ -1,7 +1,10 @@
 use super::lb_factory::{ContractImplementation, StaticFeeParameters};
+use base64::prelude::{Engine as _, BASE64_STANDARD};
+use base64::Engine;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
-    Addr, Binary, ContractInfo, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
+    to_binary, Addr, Binary, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256,
+    Uint64,
 };
 use lb_libraries::hooks::Parameters;
 use lb_libraries::types::{Bytes32, LiquidityConfiguration};
@@ -10,6 +13,138 @@ use shade_protocol::{
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
 use std::fmt::{Debug, Display};
+
+// TODO: Decide which attributes to make private.
+// NOTE: All Bytes32 values are represented as Base64 strings. Should we use hex instead?
+pub trait LbPairEventExt {
+    fn deposited_to_bins(sender: &Addr, to: &Addr, ids: &[u32], amounts: &[Bytes32]) -> Event {
+        let amounts: Vec<String> = amounts
+            .iter()
+            .map(|amount| BASE64_STANDARD.encode(amount))
+            .collect();
+
+        Event::new("deposited_to_bins")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("to", to)
+            .add_attribute_plaintext("ids", serde_json_wasm::to_string(&ids).unwrap())
+            .add_attribute_plaintext("amounts", serde_json_wasm::to_string(&amounts).unwrap())
+    }
+
+    fn withdrawn_from_bins(sender: &Addr, to: &Addr, ids: &[u32], amounts: &[Bytes32]) -> Event {
+        let amounts: Vec<String> = amounts
+            .iter()
+            .map(|amount| BASE64_STANDARD.encode(amount))
+            .collect();
+
+        Event::new("withdrawn_from_bins")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("to", to)
+            .add_attribute_plaintext("ids", serde_json_wasm::to_string(&ids).unwrap())
+            .add_attribute_plaintext("amounts", serde_json_wasm::to_string(&amounts).unwrap())
+    }
+
+    fn composition_fees(
+        sender: &Addr,
+        id: u32,
+        total_fees: &Bytes32,
+        protocol_fees: &Bytes32,
+    ) -> Event {
+        Event::new("composition_fees")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("id", id.to_string())
+            .add_attribute_plaintext("total_fees", BASE64_STANDARD.encode(total_fees))
+            .add_attribute_plaintext("protocol_fees", BASE64_STANDARD.encode(protocol_fees))
+    }
+
+    fn collected_protocol_fees(fee_recipient: &Addr, protocol_fees: &Bytes32) -> Event {
+        Event::new("collected_protocol_fees")
+            .add_attribute_plaintext("fee_recipient", fee_recipient)
+            .add_attribute_plaintext("protocol_fees", BASE64_STANDARD.encode(protocol_fees))
+    }
+
+    fn swap(
+        sender: &str,
+        to: &str,
+        id: u32,
+        amounts_in: Bytes32,
+        amounts_out: Bytes32,
+        volatility_accumulator: u32,
+        total_fees: Bytes32,
+        protocol_fees: Bytes32,
+    ) -> Event {
+        Event::new("swap")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("to", to)
+            .add_attribute_plaintext("id", id.to_string())
+            .add_attribute_plaintext("amounts_in", BASE64_STANDARD.encode(amounts_in))
+            .add_attribute_plaintext("amounts_out", BASE64_STANDARD.encode(amounts_out))
+            .add_attribute_plaintext("volatility_accumulator", volatility_accumulator.to_string())
+            .add_attribute_plaintext("total_fees", BASE64_STANDARD.encode(total_fees))
+            .add_attribute_plaintext("protocol_fees", BASE64_STANDARD.encode(protocol_fees))
+    }
+
+    fn static_fee_parameters_set(
+        sender: Addr,
+        base_factor: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        variable_fee_control: u32,
+        protocol_share: u16,
+        max_volatility_accumulator: u32,
+    ) -> Event {
+        Event::new("static_fee_parameters_set")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("base_factor", base_factor.to_string())
+            .add_attribute_plaintext("filter_period", filter_period.to_string())
+            .add_attribute_plaintext("decay_period", decay_period.to_string())
+            .add_attribute_plaintext("reduction_factor", reduction_factor.to_string())
+            .add_attribute_plaintext("variable_fee_control", variable_fee_control.to_string())
+            .add_attribute_plaintext("protocol_share", protocol_share.to_string())
+            .add_attribute_plaintext(
+                "max_volatility_accumulator",
+                max_volatility_accumulator.to_string(),
+            )
+    }
+
+    fn hooks_parameters_set(sender: &Addr, hooks_parameters: &Bytes32) -> Event {
+        Event::new("hooks_parameters_set")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("hooks_parameters", BASE64_STANDARD.encode(hooks_parameters))
+    }
+
+    fn flash_loan(
+        sender: &Addr,
+        receiver: &Addr,
+        active_id: u32,
+        amounts: &Bytes32,
+        total_fees: &Bytes32,
+        protocol_fees: &Bytes32,
+    ) -> Event {
+        Event::new("flash_loan")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("receiver", receiver)
+            .add_attribute_plaintext("active_id", active_id.to_string())
+            .add_attribute_plaintext("amounts", BASE64_STANDARD.encode(total_fees))
+            .add_attribute_plaintext("total_fees", BASE64_STANDARD.encode(total_fees))
+            .add_attribute_plaintext("protocol_fees", BASE64_STANDARD.encode(protocol_fees))
+    }
+
+    fn oracle_length_increased(sender: &Addr, oracle_length: u16) -> Event {
+        Event::new("oracle_length_increased")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("oracle_length", oracle_length.to_string())
+    }
+
+    fn forced_decay(sender: &Addr, id_reference: u32, volatility_reference: u32) -> Event {
+        Event::new("forced_decay")
+            .add_attribute_plaintext("sender", sender)
+            .add_attribute_plaintext("id_reference", id_reference.to_string())
+            .add_attribute_plaintext("volatility_reference", volatility_reference.to_string())
+    }
+}
+
+impl LbPairEventExt for Event {}
 
 pub struct ILbPair(pub ContractInfo);
 
@@ -131,7 +266,12 @@ pub enum ExecuteMsg {
         swap_for_y: bool,
         to: String,
     },
-    FlashLoan {},
+    // TODO: figure out proper types here
+    FlashLoan {
+        receiver: ContractInfo,
+        amounts: Bytes32,
+        data: Binary,
+    },
     Mint {
         to: String,
         // TODO: Change to the new encoded Bytes32 approach.
