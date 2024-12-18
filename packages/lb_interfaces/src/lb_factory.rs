@@ -1,10 +1,12 @@
 use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, ContractInfo, Event, QuerierWrapper, StdResult, Uint128};
+use serde::{Deserialize, Serialize};
 use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
+use std::ops::Deref;
 
 pub trait LbFactoryEventExt {
     fn lb_pair_created(
@@ -115,9 +117,28 @@ pub trait LbFactoryEventExt {
 
 impl LbFactoryEventExt for Event {}
 
+#[derive(Serialize, Deserialize)]
 pub struct ILbFactory(pub ContractInfo);
 
+impl Deref for ILbFactory {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl ILbFactory {
+    pub fn get_fee_recipient(&self, querier: QuerierWrapper) -> StdResult<Addr> {
+        querier
+            .query_wasm_smart::<FeeRecipientResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetFeeRecipient {},
+            )
+            .map(|response| response.fee_recipient)
+    }
+
     pub fn get_all_lb_pairs(
         &self,
         querier: QuerierWrapper,
@@ -160,20 +181,6 @@ impl ILbFactory {
         token_y: ContractInfo,
         bin_step: u16,
     ) -> StdResult<LbPairInformation> {
-        // let LbPairInformationResponse {
-        //     lb_pair_information,
-        // } = querier.query_wasm_smart(
-        //     self.0.code_hash.clone(),
-        //     self.0.address.clone(),
-        //     &QueryMsg::GetLbPairInformation {
-        //         token_x: token_x.into(),
-        //         token_y: token_y.into(),
-        //         bin_step,
-        //     },
-        // )?;
-        //
-        // Ok(lb_pair_information)
-
         querier
             .query_wasm_smart::<LbPairInformationResponse>(
                 self.0.code_hash.clone(),
