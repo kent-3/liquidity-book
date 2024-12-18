@@ -12,7 +12,7 @@ use crate::{
         u256x256_math::{U256x256Math, U256x256MathError},
     },
     pair_parameter_helper::{PairParameters, PairParametersError},
-    types::Bytes32,
+    Bytes32,
 };
 // use cosmwasm_std::{ContractInfo, Uint128};
 use ethnum::U256;

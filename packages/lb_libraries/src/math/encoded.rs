@@ -3,7 +3,7 @@
 //!
 //! Helper library used for setting and decoding parts of encoded Bytes32.
 
-use crate::types::Bytes32;
+use crate::Bytes32;
 use ethnum::U256;
 
 pub const MASK_UINT1: U256 = U256::new(0x1u128);

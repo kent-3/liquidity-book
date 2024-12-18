@@ -4,7 +4,7 @@
 //! This module contains functions to interact with a tree of TreeUint24.
 
 use super::{bit_math::BitMath, u24::U24};
-use crate::types::Bytes32;
+use crate::Bytes32;
 use ethnum::U256;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

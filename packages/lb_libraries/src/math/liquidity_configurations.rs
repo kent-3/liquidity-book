@@ -4,7 +4,7 @@
 //! This library contains functions to encode and decode the config of a pool and interact with the encoded Bytes32.
 
 use super::packed_u128_math::PackedUint128Math;
-use crate::types::Bytes32;
+use crate::Bytes32;
 use ethnum::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

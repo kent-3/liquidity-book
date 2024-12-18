@@ -13,7 +13,7 @@
 //! * 216 - 256: sample creation timestamp (40 bits)
 
 use super::encoded::*;
-use crate::types::Bytes32;
+use crate::Bytes32;
 use ethnum::U256;
 use serde::{Deserialize, Serialize};
 

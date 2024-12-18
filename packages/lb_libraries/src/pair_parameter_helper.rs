@@ -22,7 +22,7 @@ use super::{
     constants::*,
     math::{encoded::*, safe_math::Safe, u24::U24},
 };
-use crate::types::Bytes32;
+use crate::Bytes32;
 use ethnum::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
