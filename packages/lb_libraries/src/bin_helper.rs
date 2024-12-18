@@ -14,10 +14,7 @@ use crate::{
     pair_parameter_helper::{PairParameters, PairParametersError},
     Bytes32,
 };
-// use cosmwasm_std::{ContractInfo, Uint128};
 use ethnum::U256;
-// use secret_toolkit::snip20::transfer_msg;
-// use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum BinError {
@@ -415,9 +412,6 @@ impl BinHelper {
         Ok((amounts_in_with_fees, amounts_out_of_bin, total_fees))
     }
 
-    // TODO: these received* functions are supposed to include querying the token balance
-    // internally. The arguments should be ContractInfo and viewing_key instead.
-
     /// Returns the encoded amounts that were transferred to the contract for both tokens.
     /// Determined by subtracting the contract's reserves from the contract's token balances.
     ///
@@ -452,16 +446,6 @@ impl BinHelper {
         let reserve_x = reserves.decode_x();
         Bytes32::encode_first(token_x - reserve_x)
     }
-    // TODO: replace with this version when ready
-    // pub fn received_x(reserves: Bytes32, token_x: ContractInfo, viewing_key: String) -> Bytes32 {
-    //     let reserve_x = reserves.decode_x();
-    //     Bytes32::encode_first(Self::_balance_of(token_x) - reserve_x)
-    // }
-
-    // function receivedX(bytes32 reserves, IERC20 tokenX) internal view returns (bytes32) {
-    //     uint128 reserveX = reserves.decodeX();
-    //     return (_balanceOf(tokenX) - reserveX).encodeFirst();
-    // }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token Y.
     ///
@@ -479,16 +463,8 @@ impl BinHelper {
         let reserve_y = reserves.decode_y();
         Bytes32::encode_second(token_y - reserve_y)
     }
-    // TODO: replace with this version when ready
-    // pub fn received_y(reserves: Bytes32, token_x: ContractInfo, viewing_key: String) -> Bytes32 {
-    //     let reserve_y = reserves.decode_y();
-    //     Bytes32::encode_second(Self::_balance_of(token_y) - reserve_y)
-    // }
 
-    // TODO: perform the token balance query here?
-    // pub fn _balance_of(token: ContractInfo, viewing_key: String) -> u128 {
-    //     todo!()
-    // }
+    // TODO: These transfer methods don't really belong here because they depend on cosmwasm.
 
     /*
 
@@ -507,25 +483,39 @@ impl BinHelper {
         token_x: TokenType,
         token_y: TokenType,
         recipient: Addr,
-    ) -> Option<Vec<CosmosMsg>> {
+    ) -> Vec<CosmosMsg> {
+        let (amount_x, amount_y) = amounts.decode();
+
         let mut messages: Vec<CosmosMsg> = Vec::new();
 
-        let msgs_x = Self::transfer_x(amounts, token_x, recipient.clone());
-
-        if let Some(msgs) = msgs_x {
-            messages.push(msgs);
-        }
-        let msgs_y = Self::transfer_y(amounts, token_y, recipient);
-
-        if let Some(msgs) = msgs_y {
-            messages.push(msgs);
+        if let Some(msg) = token_x.transfer(amount_x.into(), recipient.clone()) {
+            messages.push(msg)
         }
 
-        if !messages.is_empty() {
-            Some(messages)
-        } else {
-            None
+        if let Some(msg) = token_y.transfer(amount_y.into(), recipient) {
+            messages.push(msg)
         }
+
+        messages
+
+        // let mut messages: Vec<CosmosMsg> = Vec::new();
+        //
+        // let msgs_x = Self::transfer_x(amounts, token_x, recipient.clone());
+        //
+        // if let Some(msgs) = msgs_x {
+        //     messages.push(msgs);
+        // }
+        // let msgs_y = Self::transfer_y(amounts, token_y, recipient);
+        //
+        // if let Some(msgs) = msgs_y {
+        //     messages.push(msgs);
+        // }
+        //
+        // if !messages.is_empty() {
+        //     Some(messages)
+        // } else {
+        //     None
+        // }
     }
 
     /// Transfers the encoded amounts to the recipient, only for token X.
@@ -538,36 +528,40 @@ impl BinHelper {
     /// * `token_x` - The token X
     /// * `recipient` - The recipient
     pub fn transfer_x(amounts: Bytes32, token_x: TokenType, recipient: Addr) -> Option<CosmosMsg> {
-        let amount = Uint128::from(amounts.decode_x());
+        let amount_x = amounts.decode_x();
 
-        if amount.gt(&Uint128::zero()) {
-            match token_x {
-                TokenType::CustomToken {
-                    contract_addr,
-                    token_code_hash,
-                } => {
-                    let cosmos_msg = transfer_msg(
-                        recipient.to_string(),
-                        amount,
-                        None,
-                        None,
-                        256,
-                        token_code_hash,
-                        contract_addr.to_string(),
-                    )
-                    .unwrap();
+        token_x.transfer(amount_x.into(), recipient)
 
-                    Some(cosmos_msg)
-                }
-
-                TokenType::NativeToken { denom } => Some(CosmosMsg::Bank(BankMsg::Send {
-                    to_address: recipient.to_string(),
-                    amount: vec![Coin { denom, amount }],
-                })),
-            }
-        } else {
-            None
-        }
+        // Raw way to do it, but the TokenType::transfer method takes care of this stuff.
+        //
+        // if amount > 0 {
+        //     match token_x {
+        //         TokenType::CustomToken {
+        //             contract_addr,
+        //             token_code_hash,
+        //         } => {
+        //             let cosmos_msg = transfer_msg(
+        //                 recipient.to_string(),
+        //                 amount.into(),
+        //                 None,
+        //                 None,
+        //                 256,
+        //                 token_code_hash,
+        //                 contract_addr.to_string(),
+        //             )
+        //             .unwrap();
+        //
+        //             Some(cosmos_msg)
+        //         }
+        //
+        //         TokenType::NativeToken { denom } => Some(CosmosMsg::Bank(BankMsg::Send {
+        //             to_address: recipient.to_string(),
+        //             amount: vec![Coin { denom, amount }],
+        //         })),
+        //     }
+        // } else {
+        //     None
+        // }
     }
 
     /// Transfers the encoded amounts to the recipient, only for token Y.
@@ -580,36 +574,9 @@ impl BinHelper {
     /// * `token_y` - The token Y
     /// * `recipient` - The recipient
     pub fn transfer_y(amounts: Bytes32, token_y: TokenType, recipient: Addr) -> Option<CosmosMsg> {
-        let amount = Uint128::from(amounts.decode_y());
+        let amount_y = amounts.decode_y();
 
-        if amount.gt(&Uint128::zero()) {
-            match token_y {
-                TokenType::CustomToken {
-                    contract_addr,
-                    token_code_hash,
-                } => {
-                    let cosmos_msg = transfer_msg(
-                        recipient.to_string(),
-                        amount,
-                        None,
-                        None,
-                        256,
-                        token_code_hash,
-                        contract_addr.to_string(),
-                    )
-                    .unwrap();
-
-                    Some(cosmos_msg)
-                }
-
-                TokenType::NativeToken { denom } => Some(CosmosMsg::Bank(BankMsg::Send {
-                    to_address: recipient.to_string(),
-                    amount: vec![Coin { denom, amount }],
-                })),
-            }
-        } else {
-            None
-        }
+        token_y.transfer(amount_y.into(), recipient)
     }
 
     */
@@ -635,7 +602,7 @@ mod tests {
 
         let amount_out =
             BinHelper::get_amount_out_of_bin(bin_reserves, amount_to_burn, total_supply).unwrap();
-        let (amount_out_x, amount_out_y) = amount_out;
+        let (amount_out_x, amount_out_y) = amount_out.decode();
 
         assert_eq!(amount_out_x, 0);
         assert_eq!(amount_out_y, 0);
@@ -651,7 +618,7 @@ mod tests {
 
         let amount_out =
             BinHelper::get_amount_out_of_bin(bin_reserves, amount_to_burn, total_supply)?;
-        let (amount_out_x, amount_out_y) = amount_out;
+        let (amount_out_x, amount_out_y) = amount_out.decode();
 
         assert_eq!(amount_out_x, 0);
         assert_eq!(amount_out_y, 0);
@@ -677,7 +644,7 @@ mod tests {
 
         let amount_out =
             BinHelper::get_amount_out_of_bin(bin_reserves, amount_to_burn, total_supply)?;
-        let (amount_out_x, amount_out_y) = amount_out;
+        let (amount_out_x, amount_out_y) = amount_out.decode();
 
         // Your assertions go here, depending on what behavior you expect
         // For instance, if you expect it to be proportional
@@ -695,7 +662,7 @@ mod tests {
 
         let amount_out =
             BinHelper::get_amount_out_of_bin(bin_reserves, amount_to_burn, total_supply)?;
-        let (amount_out_x, amount_out_y) = amount_out;
+        let (amount_out_x, amount_out_y) = amount_out.decode();
 
         // Should be capped at u128::MAX
         assert_eq!(amount_out_x, u128::MAX);
@@ -716,7 +683,7 @@ mod tests {
         let amount_out =
             BinHelper::get_amount_out_of_bin(bin_reserves, amount_to_burn, total_supply).unwrap();
 
-        let (amount_out_x, amount_out_y) = amount_out;
+        let (amount_out_x, amount_out_y) = amount_out.decode();
 
         assert_eq!(
             amount_out_x,
