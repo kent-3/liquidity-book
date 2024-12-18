@@ -11,6 +11,14 @@ use lb_interfaces::{
 };
 use lb_libraries::math::packed_u128_math::PackedUint128Math;
 
+// TODO: How are we going to register this router contract to be able to receive every supported snip20 token?
+// I guess we can add a new ExecuteMsg type for that purpose, but if we ever deploy a new router, we'll need to
+// re-register allllll the tokens.
+
+// TODO: Modify create_lb_pair to register_receiver for the two tokens.
+
+// TODO: Implement the receive interface to support swaps.
+
 pub const BLOCK_SIZE: usize = 256;
 pub const ROUTER_KEY: &str = "lb_router";
 
