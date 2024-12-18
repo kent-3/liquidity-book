@@ -9,8 +9,12 @@ use ethnum::U256;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// TODO - This module is likely inefficient because we don't have bit ops for Bytes32.
-//      - Other libraries could benefit from Bytes32 bit ops also...
+// TODO: This module is likely inefficient because we don't have bit ops for Bytes32, so we have to
+// convert into U256 a lot. Other parts of the library could also benefit from Bytes32 bit ops.
+
+// TODO: IDEALLY this data structure would be some abstraction over cosmwasm_storage types, to
+// avoid needing to load and save the entire tree each time. However, it doesn't seem like too high
+// a cost, so that optimazation can wait!
 
 /// Can store 256^3 = 2^24 = 16,777,216 values.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
