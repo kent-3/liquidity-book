@@ -117,7 +117,7 @@ impl BinHelper {
         bin_reserves: Bytes32,
         amount_to_burn: U256,
         total_supply: U256,
-    ) -> Result<(u128, u128), BinError> {
+    ) -> Result<Bytes32, BinError> {
         let (bin_reserve_x, bin_reserve_y) = bin_reserves.decode();
 
         // Rounding down in the context of token distributions or liquidity removal is a conservative approach
@@ -137,7 +137,9 @@ impl BinHelper {
             0u128
         };
 
-        Ok((amount_x_out_from_bin, amount_y_out_from_bin))
+        let amounts_out = Bytes32::encode(amount_x_out_from_bin, amount_y_out_from_bin);
+
+        Ok(amounts_out)
     }
 
     /// Returns the share and the effective amounts in when adding liquidity.
@@ -290,7 +292,8 @@ impl BinHelper {
             bin_reserves.add(amounts_in),
             shares,
             total_supply + shares,
-        )?;
+        )?
+        .decode();
 
         let mut fees = Bytes32::default();
 
