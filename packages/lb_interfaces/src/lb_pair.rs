@@ -81,7 +81,7 @@ pub trait LbPairEventExt {
     }
 
     fn static_fee_parameters_set(
-        sender: Addr,
+        sender: &Addr,
         base_factor: u16,
         filter_period: u16,
         decay_period: u16,
@@ -122,7 +122,7 @@ pub trait LbPairEventExt {
             .add_attribute_plaintext("sender", sender)
             .add_attribute_plaintext("receiver", receiver)
             .add_attribute_plaintext("active_id", active_id.to_string())
-            .add_attribute_plaintext("amounts", BASE64_STANDARD.encode(total_fees))
+            .add_attribute_plaintext("amounts", BASE64_STANDARD.encode(amounts))
             .add_attribute_plaintext("total_fees", BASE64_STANDARD.encode(total_fees))
             .add_attribute_plaintext("protocol_fees", BASE64_STANDARD.encode(protocol_fees))
     }
@@ -548,7 +548,7 @@ pub struct SwapOutResponse {
 
 #[cw_serde]
 pub struct LbTokenResponse {
-    pub contract: ContractInfo,
+    pub lb_token: ContractInfo,
 }
 
 #[cw_serde]
