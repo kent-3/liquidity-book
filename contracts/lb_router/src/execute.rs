@@ -7,8 +7,8 @@ use crate::{
     state::*,
 };
 use cosmwasm_std::{
-    to_binary, Addr, ContractInfo, CosmosMsg, DepsMut, Env, MessageInfo, Response, SubMsg, Uint128,
-    Uint256, Uint64,
+    to_binary, Addr, ContractInfo, DepsMut, Env, MessageInfo, Response, SubMsg, Uint128, Uint256,
+    Uint64,
 };
 use lb_interfaces::{
     lb_factory,
