@@ -9,10 +9,7 @@ use lb_interfaces::{
 };
 use lb_libraries::{math::uint256_to_u256::ConvertU256, pair_parameter_helper::PairParameters};
 // TODO: any chance we can do away with these dependencies?
-use shade_protocol::{
-    swap::core::{TokenAmount, TokenType},
-    utils::asset::RawContract,
-};
+use shade_protocol::{swap::core::TokenType, utils::asset::RawContract};
 use std::{
     env,
     fs::File,
@@ -168,7 +165,7 @@ fn main() -> io::Result<()> {
     let get_bin_step = QueryMsg::GetBinStep {};
     let get_reserves = QueryMsg::GetReserves {};
     let get_active_id = QueryMsg::GetActiveId {};
-    let get_bin_reserves = QueryMsg::GetBin { id: ACTIVE_ID };
+    let get_bin = QueryMsg::GetBin { id: ACTIVE_ID };
     let get_next_non_empty_bin = QueryMsg::GetNextNonEmptyBin {
         swap_for_y: true,
         id: 1,
@@ -195,7 +192,7 @@ fn main() -> io::Result<()> {
     // not in joe-v2
     let get_lb_token = QueryMsg::GetLbToken {};
     let get_lb_token_supply = QueryMsg::GetLbTokenSupply { id: 1 };
-    let get_bins_reserves = QueryMsg::GetBins {
+    let get_bins = QueryMsg::GetBins {
         ids: vec![ACTIVE_ID - 1, ACTIVE_ID, ACTIVE_ID + 1],
     };
     let get_all_bins = QueryMsg::GetAllBins {
@@ -207,7 +204,7 @@ fn main() -> io::Result<()> {
     // Responses
 
     let get_lb_token_response = LbTokenResponse {
-        contract: ContractInfo::example(),
+        lb_token: ContractInfo::example(),
     };
     let get_factory_response = FactoryResponse {
         factory: Addr::contract(),
@@ -226,7 +223,7 @@ fn main() -> io::Result<()> {
     let get_active_id_response = ActiveIdResponse {
         active_id: ACTIVE_ID,
     };
-    let get_bin_reserves_response = BinResponse {
+    let get_bin_response = BinResponse {
         bin_id: ACTIVE_ID,
         bin_reserve_x: Uint128::new(1000),
         bin_reserve_y: Uint128::new(1000),
@@ -249,8 +246,8 @@ fn main() -> io::Result<()> {
             bin_reserve_y: Uint128::new(1000),
         },
     ];
-    let get_bins_reserves_response = BinsResponse(bin_responses.clone());
-    let get_all_bins_reserves_response = AllBinsResponse {
+    let get_bins_response = BinsResponse(bin_responses.clone());
+    let get_all_bins_response = AllBinsResponse {
         reserves: bin_responses.clone(),
         last_id: ACTIVE_ID + 1,
         current_block_height: 123456,
@@ -314,15 +311,13 @@ fn main() -> io::Result<()> {
 
     print_query_messages_with_responses!(
         file,
-        (get_lb_token, get_lb_token_response),
         (get_factory, get_factory_response),
         (get_token_x, get_token_x_response),
         (get_token_y, get_token_y_response),
         (get_bin_step, get_bin_step_response),
         (get_reserves, get_reserves_response),
         (get_active_id, get_active_id_response),
-        (get_bin_reserves, get_bin_reserves_response),
-        (get_bins_reserves, get_bins_reserves_response),
+        (get_bin, get_bin_response),
         (get_next_non_empty_bin, get_next_non_empty_bin_response),
         (get_protocol_fees, get_protocol_fees_response),
         (
@@ -339,7 +334,11 @@ fn main() -> io::Result<()> {
         (get_id_from_price, get_id_from_price_response),
         (get_swap_in, get_swap_in_response),
         (get_swap_out, get_swap_out_response),
+        // not in joe-v2
+        (get_lb_token, get_lb_token_response),
         (get_lb_token_supply, get_lb_token_supply_response),
+        (get_bins, get_bins_response),
+        (get_all_bins, get_all_bins_response),
     );
 
     println!("Created {}", file_path.display());

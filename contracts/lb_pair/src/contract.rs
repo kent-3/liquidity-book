@@ -1,7 +1,7 @@
 use crate::{execute::*, helper::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Reply, Response, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    MessageInfo, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{lb_token::state_structs::LbPair, Bytes32, PairParameters, TreeUint24};
@@ -22,11 +22,9 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response> {
-    // Constants
     const LB_TOKEN_DECIMALS: u8 = 18;
     // TODO: isn't this supposed to start at 0?
     const START_ORACLE_ID: u16 = 1;
-    let tree: TreeUint24 = TreeUint24::new();
 
     // Initializing the Token Contract
     let token_x_symbol = match msg.token_x.clone() {
@@ -108,27 +106,47 @@ pub fn instantiate(
     let state = State {
         creator: info.sender,
         factory: msg.factory,
-        token_x: msg.token_x,
-        token_y: msg.token_y,
+        // token_x: msg.token_x,
+        // token_y: msg.token_y,
         bin_step: msg.bin_step,
-        pair_parameters,
-        reserves: [0u8; 32],
-        protocol_fees: [0u8; 32],
+        // pair_parameters,
+        // reserves: [0u8; 32],
+        // protocol_fees: [0u8; 32],
 
         // ContractInfo for lb_token is intentionally empty and will be filled in later
-        lb_token: ContractInfo {
-            address: Addr::unchecked(""),
-            code_hash: "".to_string(),
-        },
+        // lb_token: ContractInfo {
+        //     address: Addr::unchecked(""),
+        //     code_hash: "".to_string(),
+        // },
         viewing_key,
         protocol_fees_recipient: msg.protocol_fee_recipient,
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
+        // TODO: why do we need this?
         last_swap_timestamp: env.block.time,
     };
 
+    // TODO: rename?
     STATE.save(deps.storage, &state)?;
+
+    TOKEN_X.save(deps.storage, &msg.token_x)?;
+    TOKEN_Y.save(deps.storage, &msg.token_y)?;
+    BIN_STEP.save(deps.storage, &msg.bin_step)?;
+
+    PARAMETERS.save(deps.storage, &pair_parameters)?;
+    RESERVES.save(deps.storage, &Bytes32::default())?;
+    PROTOCOL_FEES.save(deps.storage, &Bytes32::default())?;
+
+    BIN_TREE.save(deps.storage, &TreeUint24::new())?;
+
+    LB_TOKEN.save(
+        deps.storage,
+        &ContractInfo {
+            address: Addr::unchecked(""),
+            code_hash: "".to_string(),
+        },
+    )?;
+
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
-    BIN_TREE.save(deps.storage, &tree)?;
     EPHEMERAL_STORAGE.save(
         deps.storage,
         &EphemeralStruct {
@@ -210,13 +228,17 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             hooks_parameters,
             on_hooks_set_data,
         } => todo!(),
-        ExecuteMsg::ForceDecay {} => force_decay(deps, env, info),
+        ExecuteMsg::ForceDecay {} => {
+            // TODO: this is kinda neat, but I think it's better to keep it inside the function
+            only_factory(&info.sender, &FACTORY.load(deps.storage)?.address)?;
+            force_decay(deps, env, info)
+        }
         ExecuteMsg::BatchTransferFrom {
             from,
             to,
             ids,
             amounts,
-        } => todo!(),
+        } => batch_transfer_from(deps, env, info, from, to, ids, amounts),
 
         // not in joe-v2
         ExecuteMsg::SetContractStatus { contract_status } => {
@@ -253,8 +275,6 @@ pub fn receiver_callback(
 ) -> Result<Response> {
     let msg = msg.ok_or(Error::ReceiverMsgEmpty)?;
 
-    let config = STATE.load(deps.storage)?;
-
     let response = match from_binary(&msg)? {
         InvokeMsg::Swap { swap_for_y, to } => {
             // this check needs to be here instead of in execute() because it is impossible to (cleanly) distinguish between swaps and lp withdraws until this point
@@ -263,8 +283,8 @@ pub fn receiver_callback(
                 return Err(Error::TransactionBlock());
             }
 
-            if info.sender != config.token_x.unique_key()
-                && info.sender != config.token_y.unique_key()
+            if info.sender != TOKEN_X.load(deps.storage)?.unique_key()
+                && info.sender != TOKEN_Y.load(deps.storage)?.unique_key()
             {
                 return Err(Error::NoMatchingTokenInPair);
             }
@@ -275,8 +295,6 @@ pub fn receiver_callback(
     Ok(response)
 }
 
-/////////////// QUERY ///////////////
-
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
@@ -286,14 +304,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         QueryMsg::GetBinStep {} => to_binary(&query_bin_step(deps)?),
         QueryMsg::GetReserves {} => to_binary(&query_reserves(deps)?),
         QueryMsg::GetActiveId {} => to_binary(&query_active_id(deps)?),
-        QueryMsg::GetBin { id } => to_binary(&query_bin_reserves(deps, id)?),
+        QueryMsg::GetBin { id } => to_binary(&query_bin(deps, id)?),
         QueryMsg::GetNextNonEmptyBin { swap_for_y, id } => {
             to_binary(&query_next_non_empty_bin(deps, swap_for_y, id)?)
         }
         QueryMsg::GetProtocolFees {} => to_binary(&query_protocol_fees(deps)?),
-        QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_params(deps)?),
+        QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_parameters(deps)?),
         QueryMsg::GetLbHooksParameters {} => todo!(),
-        QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_params(deps)?),
+        QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_parameters(deps)?),
         QueryMsg::GetOracleParameters {} => to_binary(&query_oracle_params(deps)?),
         QueryMsg::GetOracleSampleAt { lookup_timestamp } => {
             to_binary(&query_oracle_sample_at(deps, env, lookup_timestamp)?)
@@ -312,12 +330,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         // not in joe-v2
         QueryMsg::GetLbToken {} => to_binary(&query_lb_token(deps)?),
         QueryMsg::GetLbTokenSupply { id } => to_binary(&query_total_supply(deps, id)?),
-        QueryMsg::GetBins { ids } => to_binary(&query_bins_reserves(deps, ids)?),
+        QueryMsg::GetBins { ids } => to_binary(&query_bins(deps, ids)?),
         QueryMsg::GetAllBins {
             id,
             page,
             page_size,
-        } => to_binary(&query_all_bins_reserves(deps, env, page, page_size, id)?),
+        } => to_binary(&query_all_bins(deps, env, page, page_size, id)?),
     }
     .map_err(Error::CwErr)
 }
@@ -327,18 +345,27 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
         (INSTANTIATE_LP_TOKEN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
-                // TODO: do we need to trim the string like this?
+                // TODO: decide which way I like best
+
                 // let contract_address_string = &String::from_utf8(x.to_vec())?;
                 // let trimmed_str = contract_address_string.trim_matches('\"');
                 // let address = deps.api.addr_validate(trimmed_str)?;
 
-                let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
+                // let address: String = from_binary(&x)?;
+                // let address: Addr = deps.api.addr_validate(&address)?;
+
+                // let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
+
+                let address = deps.api.addr_validate(&from_binary::<String>(&x)?)?;
                 let code_hash = EPHEMERAL_STORAGE.load(deps.storage)?.lb_token_code_hash;
 
-                STATE.update(deps.storage, |mut state| -> StdResult<_> {
-                    state.lb_token = ContractInfo { address, code_hash };
-                    Ok(state)
-                })?;
+                // TODO: delete this after checking the other way works OK
+                // STATE.update(deps.storage, |mut state| -> StdResult<_> {
+                //     state.lb_token = ContractInfo { address, code_hash };
+                //     Ok(state)
+                // })?;
+
+                LB_TOKEN.save(deps.storage, &ContractInfo { address, code_hash })?;
 
                 let response =
                     Response::new().set_data(env.contract.address.to_string().as_bytes());
