@@ -267,7 +267,7 @@ pub enum ExecuteMsg {
     FlashLoan {
         receiver: ContractInfo,
         amounts: Bytes32,
-        data: Binary,
+        data: Option<Binary>,
     },
     Mint {
         to: String,

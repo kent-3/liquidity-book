@@ -1,14 +1,16 @@
-use crate::{helper::*, prelude::*, state::*};
+use crate::{contract::FLASH_LOAN_REPLY_ID, helper::*, prelude::*, state::*};
 use cosmwasm_std::{
-    to_binary, wasm_execute, Addr, Binary, ContractInfo, CosmosMsg, DepsMut, Env, Event,
-    MessageInfo, Response, StdResult, Uint256,
+    to_binary, wasm_execute, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Empty, Env,
+    Event, MessageInfo, Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use ethnum::U256;
 use lb_interfaces::{
+    lb_flash_loan_callback,
     lb_pair::{self, *},
     lb_token::{self, LbTokenEventExt},
 };
 use lb_libraries::{
+    constants::PRECISION,
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
     math::{
         u24::U24,
@@ -17,6 +19,8 @@ use lb_libraries::{
     BinHelper, Bytes32, LiquidityConfiguration, OracleMap, PackedUint128Math, PairParameters,
     PriceHelper, U256x256Math,
 };
+use std::ops::Add;
+use std::ops::Div;
 
 static MAX_TOTAL_FEE: u128 = 100_000_000_000_000_000; // 10% of 1e18
 
@@ -287,24 +291,123 @@ pub fn swap(
 /// Flash loan tokens from the pool to a receiver contract and execute a callback function.
 /// The receiver contract is expected to return the tokens plus a fee to this contract.
 /// The fee is calculated as a percentage of the amount borrowed, and is the same for both tokens.
+///
+/// # Arguments
+///
+/// * `receiver` - The contract that will receive the tokens and execute the callback function
+/// * `amounts` - The encoded amounts of token X and token Y to flash loan
+/// * `data` - Any data that will be passed to the callback function
 pub fn flash_loan(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
-    _receiver: ContractInfo,
-    _amounts: Bytes32,
-    _data: Binary,
+    info: MessageInfo,
+    receiver: ContractInfo,
+    amounts: Bytes32,
+    data: Option<Binary>,
 ) -> Result<Response> {
-    // let event = Event::flash_loan(
-    //     info.sender,
-    //     receiver.address,
-    //     params.get_active_id(),
-    //     amounts,
-    //     total_fees,
-    //     protocol_fees,
-    // );
+    if amounts == [0u8; 32] {
+        return Err(Error::ZeroBorrowAmount);
+    }
 
-    todo!()
+    let hooks_parameters = HOOKS_PARAMETERS.load(deps.storage)?;
+
+    let reserves_before = RESERVES.load(deps.storage)?;
+    let total_fees = _get_flash_loan_fees(deps.as_ref(), amounts)?;
+
+    // TODO: Hooks
+    //     Hooks.beforeFlashLoan(hooksParameters, msg.sender, address(receiver), amounts);
+
+    // TODO: transfer the requested token amounts to the receiver
+    //     amounts.transfer(_tokenX(), _tokenY(), address(receiver));
+
+    // TODO: Create a SubMsg to execute the LBFlashLoanCallback message on the receiver contract.
+    //     (bool success, bytes memory rData) = address(receiver).call(
+    //         abi.encodeWithSelector(
+    //             ILBFlashLoanCallback.LBFlashLoanCallback.selector,
+    //             msg.sender,
+    //             _tokenX(),
+    //             _tokenY(),
+    //             amounts,
+    //             totalFees,
+    //             data
+    //         )
+    //     );
+    //
+
+    // TODO: how to handle the native token case?
+    let token_x = TOKEN_X.load(deps.storage)?.into_contract_info().unwrap();
+    let token_y = TOKEN_Y.load(deps.storage)?.into_contract_info().unwrap();
+
+    let msg = lb_flash_loan_callback::ExecuteMsg::LbFlashLoanCallback {
+        address: info.sender.to_string(),
+        token_x,
+        token_y,
+        amounts,
+        total_fees,
+        data,
+    };
+
+    // TODO: what does setting Empty do exactly?
+    let msg = SubMsg::<Empty>::reply_on_success(
+        WasmMsg::Execute {
+            contract_addr: receiver.address.to_string(),
+            code_hash: receiver.code_hash,
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        },
+        FLASH_LOAN_REPLY_ID,
+    );
+
+    EPHEMERAL_FLASH_LOAN.save(
+        deps.storage,
+        &EphemeralFlashLoan {
+            reserves_before,
+            total_fees,
+            sender: info.sender,
+            receiver: receiver.address,
+            amounts,
+        },
+    )?;
+
+    let response = Response::new().add_submessage(msg);
+
+    Ok(response)
+
+    // TODO: Handle the rest of this function in the Reply.
+}
+
+/// Returns the encoded fees amounts for a flash loan
+///
+/// # Arguments
+///
+/// * `amounts` - The amounts of the flash loan
+pub fn _get_flash_loan_fees(deps: Deps, amounts: Bytes32) -> Result<Bytes32> {
+    let fee = FACTORY
+        .load(deps.storage)?
+        .get_flash_loan_fee(deps.querier)?;
+    let (x, y) = amounts.decode();
+
+    // TODO: Double check this math.
+    // I think we can avoid some of the checks because PRECISION is constant.
+    let precision_sub_one = Uint256::from(PRECISION - 1);
+    let x: Uint128 = Uint128::new(x)
+        .full_mul(fee)
+        .add(precision_sub_one)
+        .div(Uint256::from(PRECISION))
+        .try_into()?;
+    let y: Uint128 = Uint128::new(y)
+        .full_mul(fee)
+        .add(precision_sub_one)
+        .div(Uint256::from(PRECISION))
+        .try_into()?;
+
+    //     unchecked {
+    //         uint256 precisionSubOne = Constants.PRECISION - 1;
+    //         x = ((uint256(x) * fee + precisionSubOne) / Constants.PRECISION).safe128();
+    //         y = ((uint256(y) * fee + precisionSubOne) / Constants.PRECISION).safe128();
+    //     }
+
+    Ok(PackedUint128Math::encode(x.u128(), y.u128()))
 }
 
 /// Mint liquidity tokens by depositing tokens into the pool.

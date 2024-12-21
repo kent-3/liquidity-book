@@ -1,6 +1,6 @@
 //! ### Custom Errors for LB_Pair contract.
 
-use cosmwasm_std::{StdError, Uint128, Uint256};
+use cosmwasm_std::{ConversionOverflowError, StdError, Uint128, Uint256};
 use lb_libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
@@ -11,6 +11,7 @@ use lb_libraries::{
     oracle_helper::OracleError,
     pair_parameter_helper::PairParametersError,
 };
+use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 
 #[derive(thiserror::Error, Debug)]
@@ -96,7 +97,11 @@ pub enum LbPairError {
     #[error(transparent)]
     FromUtf8Error(#[from] FromUtf8Error),
     #[error(transparent)]
+    Utf8Error(#[from] Utf8Error),
+    #[error(transparent)]
     CwErr(#[from] StdError),
+    #[error(transparent)]
+    ConversionOverflowError(#[from] ConversionOverflowError),
     #[error(transparent)]
     LbErr(#[from] lb_libraries::Error),
     #[error(transparent)]

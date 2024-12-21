@@ -1,6 +1,7 @@
 use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, ContractInfo, Event, QuerierWrapper, StdResult, Uint128};
+use lb_libraries::Bytes32;
 use serde::{Deserialize, Serialize};
 use shade_protocol::{
     swap::core::TokenType,
@@ -137,6 +138,16 @@ impl ILbFactory {
                 &QueryMsg::GetFeeRecipient {},
             )
             .map(|response| response.fee_recipient)
+    }
+
+    pub fn get_flash_loan_fee(&self, querier: QuerierWrapper) -> StdResult<Uint128> {
+        querier
+            .query_wasm_smart::<FlashLoanFeeResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetFlashLoanFee {},
+            )
+            .map(|response| response.flash_loan_fee)
     }
 
     pub fn get_all_lb_pairs(

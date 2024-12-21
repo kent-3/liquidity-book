@@ -1,19 +1,21 @@
 use crate::{execute::*, helper::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    Event, MessageInfo, Reply, Response, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use lb_interfaces::{lb_pair::*, lb_token};
-use lb_libraries::{lb_token::state_structs::LbPair, Bytes32, PairParameters, TreeUint24};
+use lb_libraries::{
+    constants, lb_token::state_structs::LbPair, BinHelper, Bytes32, PackedUint128Math,
+    PairParameters, TreeUint24,
+};
 // TODO: get rid of admin stuff and shade_protocol dependency
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},
     swap::core::{TokenType, ViewingKey},
 };
-use std::vec;
 
 pub const INSTANTIATE_LP_TOKEN_REPLY_ID: u64 = 1u64;
-pub const MINT_REPLY_ID: u64 = 1u64;
+pub const FLASH_LOAN_REPLY_ID: u64 = 999u64;
 
 #[entry_point]
 pub fn instantiate(
@@ -369,6 +371,76 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 let response =
                     Response::new().set_data(env.contract.address.to_string().as_bytes());
+
+                Ok(response)
+            }
+            None => Err(Error::ReplyDataMissing),
+        },
+        (FLASH_LOAN_REPLY_ID, SubMsgResult::Err(_error_message)) => {
+            // TODO: should we include the receiver contract's error message in ours?
+            Err(Error::FlashLoanCallbackFailed)
+        }
+        (FLASH_LOAN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
+            Some(r_data) => {
+                if r_data != constants::CALLBACK_SUCCESS {
+                    return Err(Error::FlashLoanCallbackFailed);
+                }
+
+                // TODO: store viewing key in a separate Item?
+                let state = STATE.load(deps.storage)?;
+                let token_x = TOKEN_X.load(deps.storage)?;
+                let token_y = TOKEN_Y.load(deps.storage)?;
+
+                let token_x_balance = token_x.query_balance(
+                    deps.as_ref(),
+                    env.contract.address.to_string(),
+                    state.viewing_key.to_string(),
+                )?;
+                let token_y_balance = token_y.query_balance(
+                    deps.as_ref(),
+                    env.contract.address.to_string(),
+                    state.viewing_key.to_string(),
+                )?;
+
+                // NOTE: This is written to match the original, but in our case it only encodes the token balances.
+                let balances_after =
+                    [0u8; 32].received(token_x_balance.u128(), token_y_balance.u128());
+
+                let EphemeralFlashLoan {
+                    reserves_before,
+                    total_fees,
+                    sender,
+                    receiver,
+                    amounts,
+                } = EPHEMERAL_FLASH_LOAN.load(deps.storage)?;
+
+                // TODO: check that this explicit type of lt or gt is being used elsewhere
+                if PackedUint128Math::lt(&balances_after, reserves_before.add(total_fees)) {
+                    return Err(Error::FlashLoanInsufficientAmount);
+                }
+
+                let fees_received = balances_after.sub(reserves_before);
+
+                RESERVES.save(deps.storage, &balances_after)?;
+                PROTOCOL_FEES.update(deps.storage, |protocol_fees| -> StdResult<_> {
+                    Ok(protocol_fees.add(fees_received))
+                })?;
+
+                let parameters = PARAMETERS.load(deps.storage)?;
+
+                let event = Event::flash_loan(
+                    &sender,
+                    &receiver,
+                    parameters.get_active_id(),
+                    &amounts,
+                    &fees_received,
+                    &fees_received,
+                );
+
+                // TODO: Hooks
+                //     Hooks.afterFlashLoan(hooksParameters, msg.sender, address(receiver), totalFees, feesReceived);
+
+                let response = Response::new().add_event(event);
 
                 Ok(response)
             }

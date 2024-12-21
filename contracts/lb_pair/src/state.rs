@@ -51,6 +51,7 @@ pub const LB_TOKEN: Item<ContractInfo> = Item::new("lb_token");
 pub const HOOKS_PARAMETERS: Item<Bytes32> = Item::new("hooks_parameters");
 
 // TODO: store some of these things under separate keys? especially reserves
+pub const EPHEMERAL_FLASH_LOAN: Item<EphemeralFlashLoan> = Item::new("ephemeral_flash_loan");
 #[cw_serde]
 pub struct State {
     // Contract and creator information
@@ -78,4 +79,13 @@ pub struct State {
 #[cw_serde]
 pub struct EphemeralStruct {
     pub lb_token_code_hash: String,
+}
+
+#[cw_serde]
+pub struct EphemeralFlashLoan {
+    pub reserves_before: Bytes32,
+    pub total_fees: Bytes32,
+    pub sender: Addr,
+    pub receiver: Addr,
+    pub amounts: Bytes32,
 }
