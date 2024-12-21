@@ -23,7 +23,7 @@ pub trait FeeHelper {
     fn verify_protocol_share(&self) -> Result<(), FeeError>;
 
     /// Calculates the fee amount from the amount with fees, rounding up.
-    fn get_fee_amount_from(&self, amount_with_fees: u128) -> Result<u128, FeeError>;
+    fn get_fee_amount_from(&self, total_fee: u128) -> Result<u128, FeeError>;
 
     /// Calculates the fee amount that will be charged, rounding up.
     fn get_fee_amount(&self, total_fee: u128) -> Result<u128, FeeError>;
@@ -54,11 +54,11 @@ impl FeeHelper for u128 {
         Ok(())
     }
 
-    fn get_fee_amount_from(&self, amount_with_fees: u128) -> Result<u128, FeeError> {
-        self.verify_fee()?;
+    fn get_fee_amount_from(&self, total_fee: u128) -> Result<u128, FeeError> {
+        total_fee.verify_fee()?;
 
         // Can't overflow, max(result) = (type(uint128).max * 0.1e18 + 1e18 - 1) / 1e18 < 2^128
-        let fee_amount = (U256::from(amount_with_fees) * *self + PRECISION - 1) / PRECISION;
+        let fee_amount = (U256::from(*self) * total_fee + PRECISION - 1) / PRECISION;
 
         Ok(fee_amount.as_u128())
     }
