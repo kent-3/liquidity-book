@@ -486,8 +486,8 @@ pub fn query_oracle_sample_at(
 ///
 /// * `price` - The price corresponding to this id
 pub fn query_price_from_id(deps: Deps, id: u32) -> Result<PriceFromIdResponse> {
-    let state = STATE.load(deps.storage)?;
-    let price = PriceHelper::get_price_from_id(id, state.bin_step)?.u256_to_uint256();
+    let bin_step = BIN_STEP.load(deps.storage)?;
+    let price = PriceHelper::get_price_from_id(id, bin_step)?.u256_to_uint256();
 
     let response = PriceFromIdResponse { price };
 

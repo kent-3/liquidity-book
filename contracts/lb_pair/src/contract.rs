@@ -14,7 +14,7 @@ use shade_protocol::{
     swap::core::{TokenType, ViewingKey},
 };
 
-pub const INSTANTIATE_LP_TOKEN_REPLY_ID: u64 = 1u64;
+pub const INSTANTIATE_LB_TOKEN_REPLY_ID: u64 = 1u64;
 pub const FLASH_LOAN_REPLY_ID: u64 = 999u64;
 
 #[entry_point]
@@ -75,7 +75,7 @@ pub fn instantiate(
             funds: vec![],
             admin: None,
         }),
-        INSTANTIATE_LP_TOKEN_REPLY_ID,
+        INSTANTIATE_LB_TOKEN_REPLY_ID,
     ));
 
     let mut pair_parameters = PairParameters::default();
@@ -107,15 +107,13 @@ pub fn instantiate(
 
     let state = State {
         creator: info.sender,
-        factory: msg.factory,
+        // factory: msg.factory,
         // token_x: msg.token_x,
         // token_y: msg.token_y,
-        bin_step: msg.bin_step,
+        // bin_step: msg.bin_step,
         // pair_parameters,
         // reserves: [0u8; 32],
         // protocol_fees: [0u8; 32],
-
-        // ContractInfo for lb_token is intentionally empty and will be filled in later
         // lb_token: ContractInfo {
         //     address: Addr::unchecked(""),
         //     code_hash: "".to_string(),
@@ -123,8 +121,7 @@ pub fn instantiate(
         viewing_key,
         protocol_fees_recipient: msg.protocol_fee_recipient,
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
-        // TODO: why do we need this?
-        last_swap_timestamp: env.block.time,
+        // last_swap_timestamp: env.block.time,
     };
 
     // TODO: rename?
@@ -149,10 +146,10 @@ pub fn instantiate(
     )?;
 
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
-    EPHEMERAL_STORAGE.save(
+    EPHEMERAL_LB_TOKEN.save(
         deps.storage,
-        &EphemeralStruct {
-            lb_token_code_hash: msg.lb_token_implementation.code_hash,
+        &EphemeralLbToken {
+            code_hash: msg.lb_token_implementation.code_hash,
         },
     )?;
 
@@ -345,9 +342,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
 #[entry_point]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
-        (INSTANTIATE_LP_TOKEN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
+        (INSTANTIATE_LB_TOKEN_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
                 // TODO: decide which way I like best
+                // Is the string returned a JSON encoded string?
 
                 // let contract_address_string = &String::from_utf8(x.to_vec())?;
                 // let trimmed_str = contract_address_string.trim_matches('\"');
@@ -356,16 +354,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                 // let address: String = from_binary(&x)?;
                 // let address: Addr = deps.api.addr_validate(&address)?;
 
-                // let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
+                // let address = deps.api.addr_validate(std::str::from_utf8(&x)?)?;
 
                 let address = deps.api.addr_validate(&from_binary::<String>(&x)?)?;
-                let code_hash = EPHEMERAL_STORAGE.load(deps.storage)?.lb_token_code_hash;
-
-                // TODO: delete this after checking the other way works OK
-                // STATE.update(deps.storage, |mut state| -> StdResult<_> {
-                //     state.lb_token = ContractInfo { address, code_hash };
-                //     Ok(state)
-                // })?;
+                let code_hash = EPHEMERAL_LB_TOKEN.load(deps.storage)?.code_hash;
 
                 LB_TOKEN.save(deps.storage, &ContractInfo { address, code_hash })?;
 
