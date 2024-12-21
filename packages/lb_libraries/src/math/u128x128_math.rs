@@ -25,9 +25,15 @@ const LOG_SCALE: U256 = U256::new(1u128 << LOG_SCALE_OFFSET.as_u128());
 // This is 2^254 = 28948022309329048855892746252171976963317496166410141009864396001978282409984
 const LOG_SCALE_SQUARED: U256 = U256::from_words(1u128 << (LOG_SCALE_OFFSET.as_u128() - 1), 0);
 
-pub struct U128x128Math;
+pub trait U128x128Math {
+    /// Calculates the binary logarithm of x.
+    fn log2(&self) -> Result<I256, U128x128MathError>;
 
-impl U128x128Math {
+    /// Returns the value of x^y. It calculates `1 / x^abs(y)` if x is bigger than 2^128.
+    fn pow(&self, y: I256) -> Result<U256, U128x128MathError>;
+}
+
+impl U128x128Math for U256 {
     /// Calculates the binary logarithm of x.
     ///
     /// Based on the iterative approximation algorithm.
@@ -49,13 +55,13 @@ impl U128x128Math {
     /// # Returns
     ///
     /// * `result` - The binary logarithm as a signed 128.128-binary fixed-point number.
-    pub fn log2(x: U256) -> Result<I256, U128x128MathError> {
+    fn log2(&self) -> Result<I256, U128x128MathError> {
         // Convert x to a unsigned 129.127-binary fixed-point number to optimize the multiplication.
         // If we use an offset of 128 bits, y would need 129 bits and y**2 would would overflow and we would have to
         // use mulDiv, by reducing x to 129.127-binary fixed-point number we assert that y will use 128 bits, and we
         // can use the regular multiplication
 
-        let mut x = x;
+        let mut x = *self;
 
         if x == 1 {
             return Ok(I256::from(-128));
@@ -121,7 +127,7 @@ impl U128x128Math {
     ///
     /// * `x` - The unsigned 128.128-binary fixed-point number for which to calculate the power
     /// * `y` - A relative number without any decimals, needs to be between ]2^21; 2^21[
-    pub fn pow(x: U256, y: I256) -> Result<U256, U128x128MathError> {
+    fn pow(&self, y: I256) -> Result<U256, U128x128MathError> {
         let mut invert = false;
         let abs_y = y.abs().as_u128();
 
@@ -136,8 +142,8 @@ impl U128x128Math {
         let mut result = SCALE;
 
         if abs_y < 0x100000 {
-            let mut squared = x;
-            if x > U256::from(0xffffffffffffffffffffffffffffffffu128) {
+            let mut squared = *self;
+            if *self > U256::from(0xffffffffffffffffffffffffffffffffu128) {
                 squared = U256::MAX / squared;
                 invert = !invert;
             }
@@ -152,7 +158,7 @@ impl U128x128Math {
 
         // revert if y is too big or if x^y underflowed
         if result == 0 {
-            return Err(U128x128MathError::PowUnderflow(x, y));
+            return Err(U128x128MathError::PowUnderflow(*self, y));
         }
 
         if invert {
@@ -172,10 +178,10 @@ mod tests {
 
     #[test]
     fn test_pow() {
-        let x = (U256::from((1.0001 * PRECISION as f64) as u128) << 128) / PRECISION;
+        let x: U256 = (U256::from((1.0001 * PRECISION as f64) as u128) << 128) / PRECISION;
         let y = 100_000;
-        let res = U128x128Math::pow(x, y.into()).unwrap();
-        // let expected = U256::from(7491471493045233295460405875225305845649644);
+        let res = U128x128Math::pow(&x, y.into()).unwrap();
+        // TODO: I don't think bitxor is what was intended here
         let tolerance = 10 ^ 12;
 
         let expected = U256::from_str("7491471493045233295460405875225305845649644").unwrap();
@@ -188,9 +194,9 @@ mod tests {
 
     #[test]
     fn test_pow_and_log() {
-        let x = (U256::from((1.0001 * PRECISION as f64) as u128) << 128) / PRECISION;
+        let x: U256 = (U256::from((1.0001 * PRECISION as f64) as u128) << 128) / PRECISION;
         let y = 100_000;
-        let res = U128x128Math::pow(x, y.into()).unwrap();
+        let res = U128x128Math::pow(&x, y.into()).unwrap();
         let tolerance = 10 ^ 12;
 
         let expected = U256::from_str("7491471493045233295460405875225305845649644").unwrap();
@@ -200,13 +206,13 @@ mod tests {
             "test_Pow::1 failed"
         );
 
-        let base_log2 = U128x128Math::log2(x).unwrap();
+        let base_log2 = U128x128Math::log2(&x).unwrap();
 
         assert_eq!(
             base_log2,
             I256::from_str("49089913871092318234424474366155884").unwrap()
         );
-        let res = U128x128Math::log2(res).unwrap() / base_log2;
+        let res = U128x128Math::log2(&res).unwrap() / base_log2;
         let expected = 100000;
 
         assert_eq!(res, I256::from_str("100000").unwrap());
@@ -220,14 +226,14 @@ mod tests {
     #[test]
     fn test_log2_x_equals_1() {
         let x = U256::ONE;
-        let result = U128x128Math::log2(x).unwrap();
+        let result = U128x128Math::log2(&x).unwrap();
         assert_eq!(result, I256::from(-128));
     }
 
     #[test]
     fn test_log2_x_equals_0() {
         let x = U256::ZERO;
-        let result = U128x128Math::log2(x);
+        let result = U128x128Math::log2(&x);
 
         assert!(matches!(result, Err(U128x128MathError::LogUnderflow)));
     }
@@ -236,7 +242,7 @@ mod tests {
     fn test_pow_y_equals_0() {
         let x = U256::from(123456789u128);
         let y = I256::ZERO;
-        let result = U128x128Math::pow(x, y).unwrap();
+        let result = U128x128Math::pow(&x, y).unwrap();
         assert_eq!(result, SCALE);
     }
 
@@ -244,7 +250,7 @@ mod tests {
     fn test_pow_y_negative() {
         let x = U256::from(123456789u128);
         let y = I256::from(-1);
-        let _result = U128x128Math::pow(x, y).unwrap();
+        let _result = U128x128Math::pow(&x, y).unwrap();
         assert_eq!(
             _result.to_string(),
             "937915931357296158282320018939484225960793332034907890237268231623237"
@@ -255,7 +261,7 @@ mod tests {
     fn test_pow_y_positive() {
         let x = U256::from(123456789u128);
         let y = I256::from(1);
-        let _result = U128x128Math::pow(x, y).unwrap();
+        let _result = U128x128Math::pow(&x, y).unwrap();
         assert_eq!(_result.to_string(), "123456789");
     }
 
@@ -263,7 +269,7 @@ mod tests {
     fn test_pow_invert_result() {
         let x = U256::from(0xffffffffffffffffffffffffffffffffu128);
         let y = I256::from(-1);
-        let _result = U128x128Math::pow(x, y).unwrap();
+        let _result = U128x128Math::pow(&x, y).unwrap();
         assert_eq!(
             _result.to_string(),
             "340282366920938463463374607431768211457"

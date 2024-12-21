@@ -189,6 +189,7 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     fn add(&self, y: Bytes32) -> Self {
         let (x1, x2) = self.decode();
         let (y1, y2) = y.decode();
+        // TODO: is this the desired behavior?
         let z1 = x1.checked_add(y1).expect("Addition overflowed");
         let z2 = x2.checked_add(y2).expect("Addition overflowed");
 

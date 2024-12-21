@@ -10,19 +10,12 @@ use lb_interfaces::{
 };
 use lb_libraries::{
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
-    // TODO: write these type conversions better
     math::{
         u24::U24,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
-    BinHelper,
-    Bytes32,
-    LiquidityConfiguration,
-    OracleMap,
-    PackedUint128Math,
-    PairParameters,
-    PriceHelper,
-    U256x256Math,
+    BinHelper, Bytes32, LiquidityConfiguration, OracleMap, PackedUint128Math, PairParameters,
+    PriceHelper, U256x256Math,
 };
 
 static MAX_TOTAL_FEE: u128 = 100_000_000_000_000_000; // 10% of 1e18
@@ -185,9 +178,9 @@ pub fn swap(
     // TODO: write these as methods on Bins, or at least Bytes32
     // example: reserves.received_x(token_x_balance);
     let mut amounts_left = if swap_for_y {
-        BinHelper::received_x(reserves, token_x_balance.u128())
+        reserves.received_x(token_x_balance.u128())
     } else {
-        BinHelper::received_y(reserves, token_y_balance.u128())
+        reserves.received_y(token_y_balance.u128())
     };
     if amounts_left == [0; 32] {
         return Err(Error::InsufficientAmountIn);
@@ -211,18 +204,10 @@ pub fn swap(
             .load(deps.storage, active_id)
             .map_err(|_| Error::ZeroBinReserve { active_id })?;
 
-        if !BinHelper::is_empty(bin_reserves, !swap_for_y) {
-            let price = PriceHelper::get_price_from_id(active_id, bin_step)?;
+        if !bin_reserves.is_empty(!swap_for_y) {
             parameters.update_volatility_accumulator(active_id)?;
-            let (mut amounts_in_with_fees, amounts_out_of_bin, total_fees) =
-                BinHelper::get_amounts(
-                    bin_reserves,
-                    parameters,
-                    bin_step,
-                    swap_for_y,
-                    amounts_left,
-                    price,
-                )?;
+            let (mut amounts_in_with_fees, amounts_out_of_bin, total_fees) = bin_reserves
+                .get_amounts(parameters, bin_step, swap_for_y, active_id, amounts_left)?;
 
             if amounts_in_with_fees > [0u8; 32] {
                 amounts_left = amounts_left.sub(amounts_in_with_fees);
@@ -385,8 +370,7 @@ pub fn mint(
         state.viewing_key.to_string(),
     )?;
 
-    let amounts_received =
-        BinHelper::received(reserves, token_x_balance.u128(), token_y_balance.u128());
+    let amounts_received = reserves.received(token_x_balance.u128(), token_y_balance.u128());
 
     let mut messages: Vec<CosmosMsg> = Vec::new();
     let mut events: Vec<Event> = Vec::new();
@@ -561,24 +545,18 @@ fn update_bin(
     let supply = _query_total_supply(deps.as_ref(), id)?;
 
     let (mut shares, amounts_in) =
-        BinHelper::get_shares_and_effective_amounts_in(bin_reserves, amounts_in, price, supply)?;
+        bin_reserves.get_shares_and_effective_amounts_in(amounts_in, price, supply)?;
     let amounts_in_to_bin = amounts_in;
 
     if id == active_id {
         parameters.update_volatility_parameters(id, env.block.time.seconds())?;
 
         // Helps calculate fee if there's an implict swap.
-        let fees = BinHelper::get_composition_fees(
-            bin_reserves,
-            parameters,
-            bin_step,
-            amounts_in,
-            supply,
-            shares,
-        )?;
+        let fees =
+            bin_reserves.get_composition_fees(parameters, bin_step, amounts_in, supply, shares)?;
 
         if fees != [0u8; 32] {
-            let user_liquidity = BinHelper::get_liquidity(amounts_in.sub(fees), price)?;
+            let user_liquidity = amounts_in.sub(fees).get_liquidity(price)?;
             let protocol_c_fees =
                 fees.scalar_mul_div_basis_point_round_down(parameters.get_protocol_share().into())?;
 
@@ -590,11 +568,11 @@ fn update_bin(
                 })?;
             }
 
-            // TODO: once again, it would read a lot better if 'get_liquidity' was a method on
-            // Bytes32
-            let bin_liquidity =
-                BinHelper::get_liquidity(bin_reserves.add(fees.sub(protocol_c_fees)), price)?;
-            shares = U256x256Math::mul_div_round_down(user_liquidity, supply, bin_liquidity)?;
+            let bin_liquidity = bin_reserves
+                .add(fees.sub(protocol_c_fees))
+                .get_liquidity(price)?;
+            shares = user_liquidity.mul_div_round_down(supply, bin_liquidity)?;
+            // shares = U256x256Math::mul_div_round_down(user_liquidity, supply, bin_liquidity)?;
 
             parameters =
                 ORACLE.update_oracle(deps.storage, env.block.time.seconds(), parameters, id)?;
@@ -608,7 +586,7 @@ fn update_bin(
             ));
         }
     } else {
-        BinHelper::verify_amounts(amounts_in, active_id, id)?;
+        amounts_in.verify_amounts(active_id, id)?;
     }
 
     if shares == 0 || amounts_in_to_bin == [0u8; 32] {
@@ -698,11 +676,8 @@ pub fn burn(
             }],
         });
 
-        let amounts_out_from_bin = BinHelper::get_amount_out_of_bin(
-            bin_reserves,
-            amount_to_burn.uint256_to_u256(),
-            supply,
-        )?;
+        let amounts_out_from_bin =
+            bin_reserves.get_amount_out_of_bin(amount_to_burn.uint256_to_u256(), supply)?;
 
         if amounts_out_from_bin == [0u8; 32] {
             return Err(Error::ZeroAmountsOut {

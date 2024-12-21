@@ -34,13 +34,13 @@ impl PriceHelper {
         let base = Self::get_base(bin_step);
         let exponent = Self::get_exponent(id);
 
-        U128x128Math::pow(base, exponent)
+        U128x128Math::pow(&base, exponent)
     }
 
     /// Calculates the id from the price and the bin step.
     pub fn get_id_from_price(price: U256, bin_step: u16) -> Result<u32, U128x128MathError> {
         let base = Self::get_base(bin_step);
-        let real_id = U128x128Math::log2(price)? / U128x128Math::log2(base)?;
+        let real_id = price.log2()? / base.log2()?;
 
         u32::safe24(
             (REAL_ID_SHIFT + real_id).as_u32(),
@@ -60,12 +60,12 @@ impl PriceHelper {
 
     /// Converts a price with 18 decimals to a 128.128-binary fixed-point number.
     pub fn convert_decimal_price_to128x128(price: U256) -> Result<U256, U256x256MathError> {
-        U256x256Math::shift_div_round_down(price, SCALE_OFFSET, PRECISION.into())
+        U256x256Math::shift_div_round_down(&price, SCALE_OFFSET, PRECISION.into())
     }
 
     /// Converts a 128.128-binary fixed-point number to a price with 18 decimals.
     pub fn convert128x128_price_to_decimal(price128x128: U256) -> Result<U256, U256x256MathError> {
-        U256x256Math::mul_shift_round_down(price128x128, PRECISION.into(), SCALE_OFFSET)
+        U256x256Math::mul_shift_round_down(&price128x128, PRECISION.into(), SCALE_OFFSET)
     }
 }
 

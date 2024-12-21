@@ -1,5 +1,6 @@
 use crate::{helper::*, prelude::*, state::*};
 use cosmwasm_std::{Addr, Deps, Env, Uint128, Uint256};
+use ethnum::U256;
 use lb_interfaces::lb_pair::*;
 use lb_libraries::{
     constants::SCALE_OFFSET,
@@ -489,6 +490,7 @@ pub fn query_price_from_id(deps: Deps, id: u32) -> Result<PriceFromIdResponse> {
     let price = PriceHelper::get_price_from_id(id, state.bin_step)?.u256_to_uint256();
 
     let response = PriceFromIdResponse { price };
+
     Ok(response)
 }
 
@@ -565,14 +567,14 @@ pub fn query_swap_in(
             parameters.update_volatility_accumulator(id)?;
 
             let amount_in_without_fee = if swap_for_y {
-                U256x256Math::shift_div_round_up(amount_out_of_bin.into(), SCALE_OFFSET, price)?
+                U256::from(amount_out_of_bin).shift_div_round_up(SCALE_OFFSET, price)?
             } else {
-                U256x256Math::mul_shift_round_up(amount_out_of_bin.into(), price, SCALE_OFFSET)?
+                U256::from(amount_out_of_bin).mul_shift_round_up(price, SCALE_OFFSET)?
             }
             .as_u128();
 
             let total_fee = parameters.get_total_fee(bin_step)?;
-            let fee_amount = FeeHelper::get_fee_amount(amount_in_without_fee, total_fee)?;
+            let fee_amount = amount_in_without_fee.get_fee_amount(total_fee)?;
 
             amount_in += amount_in_without_fee + fee_amount;
             amount_out_left -= amount_out_of_bin;
@@ -639,19 +641,11 @@ pub fn query_swap_out(
 
     loop {
         let bin_reserves = BIN_MAP.load(deps.storage, id).unwrap_or_default();
-        if !BinHelper::is_empty(bin_reserves, !swap_for_y) {
-            let price = PriceHelper::get_price_from_id(id, bin_step)?;
-
+        if !bin_reserves.is_empty(!swap_for_y) {
             parameters.update_volatility_accumulator(id)?;
 
-            let (amounts_in_with_fees, amounts_out_of_bin, total_fees) = BinHelper::get_amounts(
-                bin_reserves,
-                parameters,
-                bin_step,
-                swap_for_y,
-                amounts_in_left,
-                price,
-            )?;
+            let (amounts_in_with_fees, amounts_out_of_bin, total_fees) =
+                bin_reserves.get_amounts(parameters, bin_step, swap_for_y, id, amounts_in_left)?;
 
             if amounts_in_with_fees > [0u8; 32] {
                 amounts_in_left = amounts_in_left.sub(amounts_in_with_fees);
