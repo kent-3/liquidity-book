@@ -425,19 +425,6 @@ impl TreeUint24 {
             != U256::ZERO
     }
 
-    pub fn contains_2(&self, id: u32) -> bool {
-        // Use bit shifting to divide by 256
-        let key2 = (U256::from(id) >> 8u8).to_le_bytes(); // Faster than id / 256
-
-        // Get the U256 bucket from the tree (or zero)
-        let bucket = U256::from_le_bytes(*self.level2.get(&key2).unwrap_or(&[0u8; 32]));
-
-        // Check if the bit at (id % 256) is set using bitwise AND (faster than %)
-        let bit_position = U256::ONE << (id & 255u32);
-
-        (bucket & bit_position) != U256::ZERO
-    }
-
     /// Adds the given `id` to the tree.
     ///
     /// Returns `true` if the `id` was not already in the tree.
