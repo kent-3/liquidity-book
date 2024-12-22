@@ -171,7 +171,7 @@ impl ILbPair {
             .query_wasm_smart::<ActiveIdResponse>(
                 self.0.code_hash.clone(),
                 self.0.address.clone(),
-                &QueryMsg::GetTokenY {},
+                &QueryMsg::GetActiveId {},
             )
             .map(|response| response.active_id)
     }
