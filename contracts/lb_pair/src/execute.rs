@@ -13,7 +13,7 @@ use lb_libraries::{
     constants::PRECISION,
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
     math::{
-        tree_math::TREE,
+        // tree_math::TREE,
         u24::U24,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
@@ -1090,6 +1090,7 @@ pub fn batch_transfer_from(
     Ok(Response::new().add_message(msg))
 }
 
+// TODO: can we get rid of this?
 pub fn approx_div(a: Uint256, b: Uint256) -> Uint256 {
     if b == Uint256::zero() {
         panic!("Division by zero");

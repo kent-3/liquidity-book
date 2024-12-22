@@ -1,12 +1,10 @@
-use crate::{prelude::*, state::LB_TOKEN};
+use crate::{prelude::*, state::*};
 use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult, Storage};
 use ethnum::U256;
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
     math::{
-        packed_u128_math::PackedUint128Math,
-        tree_math::{TreeUint24, TREE},
-        u24::U24,
+        packed_u128_math::PackedUint128Math, tree_math::TreeUint24, u24::U24,
         uint256_to_u256::ConvertUint256,
     },
     Bytes32,
@@ -250,7 +248,7 @@ pub fn _query_total_supply(deps: Deps, id: u32) -> Result<U256> {
 
     let total_supply_uint256 = match res {
         lb_token::QueryAnswer::IdTotalBalance { amount } => amount,
-        _ => panic!("{}", format!("Wrong response for lb_token")),
+        _ => return Err(Error::Generic("Wrong response for lb_token".to_string())),
     };
 
     Ok(total_supply_uint256.uint256_to_u256())
@@ -267,7 +265,7 @@ pub fn query_token_symbol(deps: Deps, code_hash: String, address: Addr) -> Resul
 
     let symbol = match res {
         snip20::QueryAnswer::TokenInfo { symbol, .. } => symbol,
-        _ => panic!("{}", format!("Token {} not valid", address)),
+        _ => return Err(Error::Generic(format!("Token {} not valid", address))),
     };
 
     Ok(symbol)

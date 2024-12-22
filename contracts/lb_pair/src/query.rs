@@ -5,7 +5,6 @@ use lb_interfaces::lb_pair::*;
 use lb_libraries::{
     constants::SCALE_OFFSET,
     math::{
-        tree_math::TREE,
         u24::U24,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
