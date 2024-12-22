@@ -1,10 +1,12 @@
 use crate::{prelude::*, state::LB_TOKEN};
-use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult};
+use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult, Storage};
 use ethnum::U256;
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
     math::{
-        packed_u128_math::PackedUint128Math, tree_math::TreeUint24, u24::U24,
+        packed_u128_math::PackedUint128Math,
+        tree_math::{TreeUint24, TREE},
+        u24::U24,
         uint256_to_u256::ConvertUint256,
     },
     Bytes32,
@@ -276,11 +278,11 @@ pub fn query_token_symbol(deps: Deps, code_hash: String, address: Addr) -> Resul
 /// # Arguments
 /// * `swap_for_y Whether the swap is for Y
 /// * `id` - The id of the bin
-pub fn _get_next_non_empty_bin(tree: &TreeUint24, swap_for_y: bool, id: u32) -> u32 {
+pub fn _get_next_non_empty_bin(storage: &dyn Storage, swap_for_y: bool, id: u32) -> u32 {
     if swap_for_y {
-        tree.find_first_right(id)
+        TREE.find_first_right(storage, id)
     } else {
-        tree.find_first_left(id)
+        TREE.find_first_left(storage, id)
     }
 }
 

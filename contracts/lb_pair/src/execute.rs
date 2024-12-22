@@ -13,6 +13,7 @@ use lb_libraries::{
     constants::PRECISION,
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
     math::{
+        tree_math::TREE,
         u24::U24,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
@@ -250,7 +251,7 @@ pub fn swap(
         if amounts_left == [0; 32] {
             break;
         } else {
-            let next_id = _get_next_non_empty_bin(&tree, swap_for_y, active_id);
+            let next_id = _get_next_non_empty_bin(deps.storage, swap_for_y, active_id);
             if next_id == 0 || next_id == (U24::MAX) {
                 return Err(Error::OutOfLiquidity);
             }
@@ -697,10 +698,11 @@ fn update_bin(
     }
 
     if supply == 0 {
-        BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
-            tree.add(id);
-            Ok(tree)
-        })?;
+        TREE.add(deps.storage, id);
+        // BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
+        //     tree.add(id);
+        //     Ok(tree)
+        // })?;
     }
 
     BIN_MAP.save(deps.storage, id, &bin_reserves.add(amounts_in_to_bin))?;
@@ -793,15 +795,14 @@ pub fn burn(
         let bin_reserves = bin_reserves.sub(amounts_out_from_bin);
 
         if supply == amount_to_burn.uint256_to_u256() {
-            BIN_MAP.remove(deps.storage, id);
-            BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
-                tree.remove(id);
-                Ok(tree)
-            })?;
-        } else {
-            BIN_MAP.save(deps.storage, id, &bin_reserves)?;
+            TREE.remove(deps.storage, id);
+            // BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
+            //     tree.remove(id);
+            //     Ok(tree)
+            // })?;
         }
 
+        BIN_MAP.save(deps.storage, id, &bin_reserves)?;
         amounts[i] = amounts_out_from_bin;
         amounts_out = amounts_out.add(amounts_out_from_bin);
     }

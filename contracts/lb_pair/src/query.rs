@@ -5,6 +5,7 @@ use lb_interfaces::lb_pair::*;
 use lb_libraries::{
     constants::SCALE_OFFSET,
     math::{
+        tree_math::TREE,
         u24::U24,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
@@ -300,8 +301,8 @@ pub fn query_next_non_empty_bin(
     swap_for_y: bool,
     id: u32,
 ) -> Result<NextNonEmptyBinResponse> {
-    let tree = BIN_TREE.load(deps.storage)?;
-    let next_id = _get_next_non_empty_bin(&tree, swap_for_y, id);
+    // let tree = BIN_TREE.load(deps.storage)?;
+    let next_id = _get_next_non_empty_bin(deps.storage, swap_for_y, id);
 
     let response = NextNonEmptyBinResponse { next_id };
 
@@ -541,7 +542,7 @@ pub fn query_swap_in(
     let mut fee = 0u128;
 
     let bin_step = BIN_STEP.load(deps.storage)?;
-    let tree = BIN_TREE.load(deps.storage)?;
+    // let tree = BIN_TREE.load(deps.storage)?;
 
     let mut parameters = PARAMETERS.load(deps.storage)?;
 
@@ -585,7 +586,7 @@ pub fn query_swap_in(
         if amount_out_left == 0 {
             break;
         } else {
-            let next_id = _get_next_non_empty_bin(&tree, swap_for_y, id);
+            let next_id = _get_next_non_empty_bin(deps.storage, swap_for_y, id);
 
             if next_id == 0 || next_id == U24::MAX {
                 break;
@@ -631,7 +632,7 @@ pub fn query_swap_out(
     let mut fee = 0u128;
 
     let bin_step = BIN_STEP.load(deps.storage)?;
-    let tree = BIN_TREE.load(deps.storage)?;
+    // let tree = BIN_TREE.load(deps.storage)?;
 
     let mut parameters = PARAMETERS.load(deps.storage)?;
 
@@ -657,7 +658,7 @@ pub fn query_swap_out(
         if amounts_in_left == [0u8; 32] {
             break;
         } else {
-            let next_id = _get_next_non_empty_bin(&tree, swap_for_y, id);
+            let next_id = _get_next_non_empty_bin(deps.storage, swap_for_y, id);
 
             if next_id == 0 || next_id == U24::MAX {
                 break;
