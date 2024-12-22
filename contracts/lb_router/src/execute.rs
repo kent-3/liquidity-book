@@ -50,7 +50,6 @@ pub fn add_liquidity(
 ) -> Result<Response> {
     ensure(&env, liquidity_parameters.deadline.u64())?;
 
-    // TODO: the LiquidityParameters token inputs should really be ContractInfo instead
     let token_x = liquidity_parameters
         .token_x
         .clone()
@@ -64,15 +63,13 @@ pub fn add_liquidity(
 
     let pair = ILbPair(_get_lb_pair_information(
         deps.as_ref(),
-        token_x,
-        token_y,
+        token_x.clone(),
+        token_y.clone(),
         liquidity_parameters.bin_step,
         Version::V2_2,
     )?);
 
-    let token_x = pair.get_token_x(deps.querier)?;
-
-    if liquidity_parameters.token_x != token_x.into() {
+    if liquidity_parameters.token_x != pair.get_token_x(deps.querier)?.into() {
         return Err(Error::WrongTokenOrder);
     }
 
@@ -81,23 +78,25 @@ pub fn add_liquidity(
     // sender would be this contract, not the user.
 
     // TODO: Transfer tokens from sender to the pair contract.
-    let transfer_x_msg = secret_toolkit::snip20::transfer_msg(
+    let transfer_x_msg = secret_toolkit::snip20::transfer_from_msg(
+        info.sender.to_string(),
         pair.0.address.to_string(),
         liquidity_parameters.amount_x,
         None,
         None,
         32,
-        pair.0.code_hash.clone(),
-        pair.0.address.to_string(),
+        token_x.code_hash.clone(),
+        token_x.address.to_string(),
     )?;
-    let transfer_y_msg = secret_toolkit::snip20::transfer_msg(
+    let transfer_y_msg = secret_toolkit::snip20::transfer_from_msg(
+        info.sender.to_string(),
         pair.0.address.to_string(),
         liquidity_parameters.amount_y,
         None,
         None,
         32,
-        pair.0.code_hash.clone(),
-        pair.0.address.to_string(),
+        token_y.code_hash.clone(),
+        token_y.address.to_string(),
     )?;
 
     let response = Response::new().add_messages(vec![transfer_x_msg, transfer_y_msg]);
