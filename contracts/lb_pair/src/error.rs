@@ -5,7 +5,8 @@ use lb_libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
     math::{
-        liquidity_configurations::LiquidityConfigurationsError, u128x128_math::U128x128MathError,
+        liquidity_configurations::LiquidityConfigurationsError,
+        packed_u128_math::PackedUint128MathError, u128x128_math::U128x128MathError,
         u256x256_math::U256x256MathError,
     },
     oracle_helper::OracleError,
@@ -118,6 +119,8 @@ pub enum LbPairError {
     U128Err(#[from] U128x128MathError),
     #[error(transparent)]
     U256Err(#[from] U256x256MathError),
+    #[error(transparent)]
+    PackedUint128MathError(#[from] PackedUint128MathError),
 
     // Complex Scenarios and Calculations Errors
     #[error(

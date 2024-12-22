@@ -7,7 +7,7 @@ use crate::{
     constants::{SCALE, SCALE_OFFSET},
     fee_helper::{FeeError, FeeHelper},
     math::{
-        packed_u128_math::PackedUint128Math,
+        packed_u128_math::{PackedUint128Math, PackedUint128MathError},
         u128x128_math::U128x128MathError,
         u256x256_math::{U256x256Math, U256x256MathError},
     },
@@ -35,6 +35,9 @@ pub enum BinError {
 
     #[error(transparent)]
     ParamsErr(#[from] PairParametersError),
+
+    #[error(transparent)]
+    PackedUint128MathErr(#[from] PackedUint128MathError),
 }
 
 pub trait BinHelper {
@@ -283,7 +286,7 @@ impl BinHelper for Bytes32 {
         let (amount_x, amount_y) = amounts_in.decode();
 
         let (received_amount_x, received_amount_y) =
-            Self::get_amount_out_of_bin(&self.add(amounts_in), shares, total_supply + shares)?
+            Self::get_amount_out_of_bin(&self.add(amounts_in)?, shares, total_supply + shares)?
                 .decode();
 
         let mut fees = Bytes32::default();
@@ -423,7 +426,7 @@ impl BinHelper for Bytes32 {
     ///     * [0 - 128[: amount_x
     ///     * [128 - 256[: amount_y
     fn received(&self, token_x: u128, token_y: u128) -> Bytes32 {
-        Bytes32::encode(token_x, token_y).sub(*self)
+        Bytes32::encode(token_x, token_y).sub(*self).unwrap() // TODO: return Result instead
     }
 
     /// Returns the encoded amounts that were transferred to the contract, only for token X.

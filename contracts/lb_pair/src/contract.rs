@@ -1,7 +1,8 @@
 use crate::{execute::*, helper::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
-    Event, MessageInfo, Reply, Response, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    Event, MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128,
+    WasmMsg,
 };
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
@@ -407,15 +408,17 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                 } = EPHEMERAL_FLASH_LOAN.load(deps.storage)?;
 
                 // TODO: check that this explicit type of lt or gt is being used elsewhere
-                if PackedUint128Math::lt(&balances_after, reserves_before.add(total_fees)) {
+                if PackedUint128Math::lt(&balances_after, reserves_before.add(total_fees)?) {
                     return Err(Error::FlashLoanInsufficientAmount);
                 }
 
-                let fees_received = balances_after.sub(reserves_before);
+                let fees_received = balances_after.sub(reserves_before)?;
 
                 RESERVES.save(deps.storage, &balances_after)?;
                 PROTOCOL_FEES.update(deps.storage, |protocol_fees| -> StdResult<_> {
-                    Ok(protocol_fees.add(fees_received))
+                    protocol_fees
+                        .add(fees_received)
+                        .map_err(|e| StdError::GenericErr { msg: e.to_string() })
                 })?;
 
                 let parameters = PARAMETERS.load(deps.storage)?;

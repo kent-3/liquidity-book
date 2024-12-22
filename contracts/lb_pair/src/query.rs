@@ -154,7 +154,7 @@ pub fn query_bin_step(deps: Deps) -> Result<BinStepResponse> {
 pub fn query_reserves(deps: Deps) -> Result<ReservesResponse> {
     let reserves = RESERVES.load(deps.storage)?;
     let protocol_fees = PROTOCOL_FEES.load(deps.storage)?;
-    let (reserve_x, reserve_y) = reserves.sub(protocol_fees).decode();
+    let (reserve_x, reserve_y) = reserves.sub(protocol_fees)?.decode();
 
     let response = ReservesResponse {
         reserve_x: reserve_x.into(),
@@ -649,7 +649,7 @@ pub fn query_swap_out(
                 bin_reserves.get_amounts(parameters, bin_step, swap_for_y, id, amounts_in_left)?;
 
             if amounts_in_with_fees > [0u8; 32] {
-                amounts_in_left = amounts_in_left.sub(amounts_in_with_fees);
+                amounts_in_left = amounts_in_left.sub(amounts_in_with_fees)?;
                 amounts_out += amounts_out_of_bin.decode_alt(!swap_for_y);
                 fee += total_fees.decode_alt(swap_for_y);
             }

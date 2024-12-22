@@ -114,4 +114,6 @@ pub enum LBRouterError {
 
     #[error(transparent)]
     LbError(#[from] lb_libraries::Error),
+    #[error(transparent)]
+    PackedUint128MathError(#[from] lb_libraries::math::packed_u128_math::PackedUint128MathError),
 }

@@ -235,7 +235,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                 } = from_binary(&data)?;
                 let liq = EPHEMERAL_ADD_LIQUIDITY.load(deps.storage)?;
 
-                let amounts_added = amounts_received.sub(amounts_left);
+                let amounts_added = amounts_received.sub(amounts_left)?;
 
                 let amount_x_added = Uint128::from(amounts_added.decode_x());
                 let amount_y_added = Uint128::from(amounts_added.decode_y());

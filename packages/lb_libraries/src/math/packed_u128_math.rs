@@ -13,6 +13,14 @@ use ethnum::U256;
 
 pub const BASIS_POINT_MAX: u128 = 10_000;
 
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
+pub enum PackedUint128MathError {
+    #[error("PackedUint128 Math Error: Addition overflowed")]
+    AddOverflow,
+    #[error("PackedUint128 Math Error: Subtraction underflowed")]
+    SubUnderflow,
+}
+
 impl PackedUint128Math for Bytes32 {}
 
 pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
@@ -182,18 +190,18 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     /// A `Bytes32` value represented as a `[u8; 32]` array, encoding the sum of `x` and `y` as follows:
     /// - [0 - 128[: x1 + y1
     /// - [128 - 256[: x2 + y2
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the addition overflows.
-    fn add(&self, y: Bytes32) -> Self {
+    fn add(&self, y: Bytes32) -> Result<Self, PackedUint128MathError> {
         let (x1, x2) = self.decode();
         let (y1, y2) = y.decode();
-        // TODO: is this the desired behavior?
-        let z1 = x1.checked_add(y1).expect("Addition overflowed");
-        let z2 = x2.checked_add(y2).expect("Addition overflowed");
 
-        Self::encode(z1, z2)
+        let z1 = x1
+            .checked_add(y1)
+            .ok_or(PackedUint128MathError::AddOverflow)?;
+        let z2 = x2
+            .checked_add(y2)
+            .ok_or(PackedUint128MathError::AddOverflow)?;
+
+        Ok(Self::encode(z1, z2))
     }
 
     /// Adds a `Bytes32` value encoded as follows:
@@ -212,11 +220,7 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     /// A `Bytes32` value represented as a `[u8; 32]` array, encoding the sum of `x` and `(y1, y2)` as follows:
     /// - [0 - 128[: x1 + y1
     /// - [128 - 256[: x2 + y2
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the addition overflows.
-    fn add_alt(&self, y1: u128, y2: u128) -> Self {
+    fn add_alt(&self, y1: u128, y2: u128) -> Result<Self, PackedUint128MathError> {
         let y = Bytes32::encode(y1, y2);
         Self::add(self, y)
     }
@@ -237,18 +241,19 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     /// A `Bytes32` value represented as a `[u8; 32]` array, encoding the difference between `x` and `y` as follows:
     /// - [0 - 128[: x1 - y1
     /// - [128 - 256[: x2 - y2
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the subtraction underflows.
-    fn sub(&self, y: Self) -> Self {
+    fn sub(&self, y: Self) -> Result<Self, PackedUint128MathError> {
         let (x1, x2) = self.decode();
         let (y1, y2) = y.decode();
 
-        let z1 = x1.checked_sub(y1).expect("Subtraction underflowed");
-        let z2 = x2.checked_sub(y2).expect("Subtraction underflowed");
+        let z1 = x1
+            .checked_sub(y1)
+            .ok_or(PackedUint128MathError::SubUnderflow)?;
 
-        Self::encode(z1, z2)
+        let z2 = x2
+            .checked_sub(y2)
+            .ok_or(PackedUint128MathError::SubUnderflow)?;
+
+        Ok(Self::encode(z1, z2))
     }
 
     /// Subtracts a `Bytes32` value encoded as follows:
@@ -267,11 +272,7 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     /// A `Bytes32` value represented as a `[u8; 32]` array, encoding the difference between `x` and `(y1, y2)` as follows:
     /// - [0 - 128[: x1 - y1
     /// - [128 - 256[: x2 - y2
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the subtraction underflows.
-    fn sub_alt(&self, y1: u128, y2: u128) -> Self {
+    fn sub_alt(&self, y1: u128, y2: u128) -> Result<Self, PackedUint128MathError> {
         let y = Self::encode(y1, y2);
         Self::sub(self, y)
     }
@@ -334,10 +335,6 @@ pub trait PackedUint128Math: From<[u8; 32]> + AsRef<[u8]> {
     /// Returns the product of x and multiplier encoded as follows:
     /// * `[0 - 128[` : floor((x1 * multiplier) / 10_000)
     /// * `[128 - 256[` : floor((x2 * multiplier) / 10_000)
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if the `multiplier` argument is larger than the constant `BASIS_POINT_MAX`.
     fn scalar_mul_div_basis_point_round_down(&self, multiplier: u128) -> Result<Self, Error> {
         if multiplier == 0 {
             return Ok(Self::min());
@@ -546,19 +543,19 @@ mod tests {
         // Basic Test Case
         let bytes1 = Bytes32::encode(15, 25);
         let bytes2 = Bytes32::encode(10, 20);
-        let result = Bytes32::add(&bytes1, bytes2);
+        let result = Bytes32::add(&bytes1, bytes2).unwrap();
         assert_eq!(result.decode(), (25, 45));
 
         // Max Value Test Case
         let bytes1 = Bytes32::encode(u128::MAX - 1, 0);
         let bytes2 = Bytes32::encode(1, 0);
-        let result = Bytes32::add(&bytes1, bytes2);
+        let result = Bytes32::add(&bytes1, bytes2).unwrap();
         assert_eq!(result.decode(), (u128::MAX, 0));
 
         // Zero Test Case
         let bytes1 = Bytes32::encode(15, 25);
         let bytes2 = Bytes32::encode(0, 0);
-        let result = Bytes32::add(&bytes1, bytes2);
+        let result = Bytes32::add(&bytes1, bytes2).unwrap();
         assert_eq!(result.decode(), (15, 25));
     }
 
@@ -566,17 +563,17 @@ mod tests {
     fn test_add_alt() {
         // Basic Test Case
         let bytes1 = Bytes32::encode(15, 25);
-        let result = Bytes32::add_alt(&bytes1, 10, 20);
+        let result = Bytes32::add_alt(&bytes1, 10, 20).unwrap();
         assert_eq!(result.decode(), (25, 45));
 
         // Max Value Test Case
         let bytes1 = Bytes32::encode(u128::MAX - 1, 0);
-        let result = Bytes32::add_alt(&bytes1, 1, 0);
+        let result = Bytes32::add_alt(&bytes1, 1, 0).unwrap();
         assert_eq!(result.decode(), (u128::MAX, 0));
 
         // Zero Test Case
         let bytes1 = Bytes32::encode(15, 25);
-        let result = Bytes32::add_alt(&bytes1, 0, 0);
+        let result = Bytes32::add_alt(&bytes1, 0, 0).unwrap();
         assert_eq!(result.decode(), (15, 25));
     }
 
@@ -585,7 +582,7 @@ mod tests {
         // Basic Test Case
         let bytes1 = Bytes32::encode(25, 45);
         let bytes2 = Bytes32::encode(10, 20);
-        let result = Bytes32::sub(&bytes1, bytes2);
+        let result = Bytes32::sub(&bytes1, bytes2).unwrap();
         assert_eq!(result.decode(), (15, 25));
 
         // Underflow Test Case
@@ -599,7 +596,7 @@ mod tests {
         // Zero Test Case
         let bytes1 = Bytes32::encode(25, 45);
         let bytes2 = Bytes32::encode(0, 0);
-        let result = Bytes32::sub(&bytes1, bytes2);
+        let result = Bytes32::sub(&bytes1, bytes2).unwrap();
         assert_eq!(result.decode(), (25, 45));
     }
 
@@ -607,12 +604,12 @@ mod tests {
     fn test_sub_alt() {
         // Basic Test Case
         let bytes1 = Bytes32::encode(25, 45);
-        let result = Bytes32::sub_alt(&bytes1, 10, 20);
+        let result = Bytes32::sub_alt(&bytes1, 10, 20).unwrap();
         assert_eq!(result.decode(), (15, 25));
 
         // Zero Test Case
         let bytes1 = Bytes32::encode(25, 45);
-        let result = Bytes32::sub_alt(&bytes1, 0, 0);
+        let result = Bytes32::sub_alt(&bytes1, 0, 0).unwrap();
         assert_eq!(result.decode(), (25, 45));
     }
 
@@ -622,6 +619,7 @@ mod tests {
         // Underflow Test Case
         let bytes1 = Bytes32::encode(0, 0);
         // This should panic
+        // TODO: not anymore
         let _result = Bytes32::sub_alt(&bytes1, 10, 20);
     }
 

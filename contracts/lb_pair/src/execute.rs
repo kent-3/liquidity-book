@@ -1,7 +1,7 @@
 use crate::{contract::FLASH_LOAN_REPLY_ID, helper::*, prelude::*, state::*};
 use cosmwasm_std::{
     to_binary, wasm_execute, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Empty, Env,
-    Event, MessageInfo, Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    Event, MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use ethnum::U256;
 use lb_interfaces::{
@@ -193,7 +193,7 @@ pub fn swap(
 
     // Hooks.beforeSwap(hooksParameters, msg.sender, to, swapForY_, amountsLeft);
 
-    reserves = reserves.add(amounts_left);
+    reserves = reserves.add(amounts_left)?;
 
     let mut parameters = PARAMETERS.load(deps.storage)?;
     let bin_step = BIN_STEP.load(deps.storage)?;
@@ -215,24 +215,24 @@ pub fn swap(
                 .get_amounts(parameters, bin_step, swap_for_y, active_id, amounts_left)?;
 
             if amounts_in_with_fees > [0u8; 32] {
-                amounts_left = amounts_left.sub(amounts_in_with_fees);
-                amounts_out = amounts_out.add(amounts_out_of_bin);
+                amounts_left = amounts_left.sub(amounts_in_with_fees)?;
+                amounts_out = amounts_out.add(amounts_out_of_bin)?;
 
                 let p_fees = total_fees.scalar_mul_div_basis_point_round_down(
                     parameters.get_protocol_share().into(),
                 )?;
 
                 if p_fees > [0u8; 32] {
-                    protocol_fees = protocol_fees.add(p_fees);
-                    amounts_in_with_fees = amounts_in_with_fees.sub(p_fees);
+                    protocol_fees = protocol_fees.add(p_fees)?;
+                    amounts_in_with_fees = amounts_in_with_fees.sub(p_fees)?;
                 }
 
                 BIN_MAP.save(
                     deps.storage,
                     active_id,
                     &bin_reserves
-                        .add(amounts_in_with_fees)
-                        .sub(amounts_out_of_bin),
+                        .add(amounts_in_with_fees)?
+                        .sub(amounts_out_of_bin)?,
                 )?;
 
                 events.push(Event::swap(
@@ -263,7 +263,7 @@ pub fn swap(
         return Err(Error::InsufficientAmountOut);
     }
 
-    RESERVES.save(deps.storage, &reserves.sub(amounts_out))?;
+    RESERVES.save(deps.storage, &reserves.sub(amounts_out)?)?;
     PROTOCOL_FEES.save(deps.storage, &protocol_fees)?;
 
     // volume_tracker = volume_tracker.add(amounts_out);
@@ -493,7 +493,7 @@ pub fn mint(
 
     RESERVES.save(
         deps.storage,
-        &reserves.add(amounts_received.sub(amounts_left)),
+        &reserves.add(amounts_received.sub(amounts_left)?)?,
     )?;
 
     let liquidity_minted = arrays
@@ -584,7 +584,7 @@ fn mint_bins(
             parameters,
         )?;
 
-        amounts_left = amounts_left.sub(amounts_in);
+        amounts_left = amounts_left.sub(amounts_in)?;
 
         arrays.ids[i] = id;
         arrays.amounts[i] = amounts_in_to_bin;
@@ -660,20 +660,22 @@ fn update_bin(
             bin_reserves.get_composition_fees(parameters, bin_step, amounts_in, supply, shares)?;
 
         if fees != [0u8; 32] {
-            let user_liquidity = amounts_in.sub(fees).get_liquidity(price)?;
+            let user_liquidity = amounts_in.sub(fees)?.get_liquidity(price)?;
             let protocol_c_fees =
                 fees.scalar_mul_div_basis_point_round_down(parameters.get_protocol_share().into())?;
 
             if protocol_c_fees != [0u8; 32] {
                 let _amounts_in_to_bin = amounts_in_to_bin.sub(protocol_c_fees);
                 PROTOCOL_FEES.update(deps.storage, |mut p_fees| -> StdResult<_> {
-                    p_fees = p_fees.add(protocol_c_fees);
+                    p_fees = p_fees
+                        .add(protocol_c_fees)
+                        .map_err(|e| StdError::generic_err(e.to_string()))?;
                     Ok(p_fees)
                 })?;
             }
 
             let bin_liquidity = bin_reserves
-                .add(fees.sub(protocol_c_fees))
+                .add(fees.sub(protocol_c_fees)?)?
                 .get_liquidity(price)?;
             shares = user_liquidity.mul_div_round_down(supply, bin_liquidity)?;
             // shares = U256x256Math::mul_div_round_down(user_liquidity, supply, bin_liquidity)?;
@@ -705,7 +707,7 @@ fn update_bin(
         // })?;
     }
 
-    BIN_MAP.save(deps.storage, id, &bin_reserves.add(amounts_in_to_bin))?;
+    BIN_MAP.save(deps.storage, id, &bin_reserves.add(amounts_in_to_bin)?)?;
 
     Ok((shares, amounts_in, amounts_in_to_bin))
 }
@@ -792,7 +794,7 @@ pub fn burn(
             });
         }
 
-        let bin_reserves = bin_reserves.sub(amounts_out_from_bin);
+        let bin_reserves = bin_reserves.sub(amounts_out_from_bin)?;
 
         if supply == amount_to_burn.uint256_to_u256() {
             TREE.remove(deps.storage, id);
@@ -804,7 +806,7 @@ pub fn burn(
 
         BIN_MAP.save(deps.storage, id, &bin_reserves)?;
         amounts[i] = amounts_out_from_bin;
-        amounts_out = amounts_out.add(amounts_out_from_bin);
+        amounts_out = amounts_out.add(amounts_out_from_bin)?;
     }
 
     let lb_token = LB_TOKEN.load(deps.storage)?;
@@ -821,7 +823,9 @@ pub fn burn(
     )?;
 
     RESERVES.update(deps.storage, |reserves| -> StdResult<Bytes32> {
-        Ok(reserves.sub(amounts_out))
+        Ok(reserves
+            .sub(amounts_out)
+            .map_err(|e| StdError::generic_err(e.to_string()))?)
     })?;
 
     // TODO: events
@@ -864,12 +868,12 @@ pub fn collect_protocol_fees(deps: DepsMut, _env: Env, info: MessageInfo) -> Res
 
     //The purpose of subtracting ones from the protocolFees is to leave a small amount (1 unit of each token) in the protocol fees.
     //This is done to avoid completely draining the fees and possibly causing any issues with calculations that depend on non-zero values
-    let collected_protocol_fees = protocol_fees.sub(ones);
+    let collected_protocol_fees = protocol_fees.sub(ones)?;
 
     if collected_protocol_fees != [0u8; 32] {
         // This is setting the protocol fees to the smallest possible values
         PROTOCOL_FEES.save(deps.storage, &ones)?;
-        RESERVES.save(deps.storage, &reserves.sub(collected_protocol_fees))?;
+        RESERVES.save(deps.storage, &reserves.sub(collected_protocol_fees)?)?;
 
         let event = Event::collected_protocol_fees(&info.sender, &collected_protocol_fees);
 
