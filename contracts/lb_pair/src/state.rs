@@ -31,6 +31,7 @@ impl BinTree for Item<'_, TreeUint24, Bincode2> {
 }
 pub const STATE: Item<State> = Item::new("state");
 pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new("contract_status");
+pub const VIEWING_KEY: Item<ViewingKey> = Item::new("contract_viewing_key");
 
 pub const FACTORY: Item<ILbFactory> = Item::new("factory");
 pub const LB_TOKEN: Item<ContractInfo> = Item::new("lb_token");
@@ -54,25 +55,9 @@ pub const EPHEMERAL_FLASH_LOAN: Item<EphemeralFlashLoan> = Item::new("ephemeral_
 // TODO: clean this up
 #[cw_serde]
 pub struct State {
-    // Contract and creator information
     pub creator: Addr,
-    // pub factory: ContractInfo,
-    // pub lb_token: ContractInfo,
-
-    // Token and trading pair information
-    // pub token_x: TokenType,
-    // pub token_y: TokenType,
-    // pub pair_parameters: PairParameters,
-    pub viewing_key: ViewingKey,
-
-    // Administrative and operational fields
+    // pub viewing_key: ViewingKey,
     pub admin_auth: Contract,
-    // why did we need this?
-    // pub last_swap_timestamp: Timestamp,
-
-    // Financial fields
-    // pub reserves: Bytes32,
-    // pub protocol_fees: Bytes32,
 }
 
 #[cw_serde]
@@ -106,12 +91,18 @@ pub const EPHEMERAL_STORAGE: Item<Binary> = Item::new("ephemeral_storage");
 use ethnum::U256;
 use lb_libraries::math::bit_math::BitMath;
 use lb_libraries::math::u24::U24;
-use secret_toolkit::storage::{Item as Item2, Keymap};
+use secret_toolkit::storage::{Item as Item2, Keymap, KeymapBuilder, WithoutIter};
 
 pub static TREE: TreeUint24_ = TreeUint24_ {};
-static LEVEL0: Item2<Bytes32> = Item2::new(b"bin_tree_level0");
-static LEVEL1: Keymap<Bytes32, Bytes32> = Keymap::new(b"bin_tree_level1");
-static LEVEL2: Keymap<Bytes32, Bytes32> = Keymap::new(b"bin_tree_level2");
+pub static LEVEL0: Item2<Bytes32> = Item2::new(b"bin_tree_level0");
+pub static LEVEL1: Keymap<Bytes32, Bytes32, secret_toolkit::serialization::Bincode2, WithoutIter> =
+    KeymapBuilder::new(b"bin_tree_level1")
+        .without_iter()
+        .build();
+pub static LEVEL2: Keymap<Bytes32, Bytes32, secret_toolkit::serialization::Bincode2, WithoutIter> =
+    KeymapBuilder::new(b"bin_tree_level2")
+        .without_iter()
+        .build();
 
 pub struct TreeUint24_ {}
 
@@ -130,7 +121,7 @@ impl TreeUint24_ {
         (bucket & bit_position) != U256::ZERO
     }
 
-    pub fn add(&self, storage: &mut dyn Storage, id: u32) -> bool {
+    pub fn add(&self, storage: &mut dyn Storage, id: u32) -> StdResult<bool> {
         let key2 = U256::from(id) >> 8u8;
 
         let leaves = U256::from_le_bytes(
@@ -141,9 +132,7 @@ impl TreeUint24_ {
         let new_leaves = leaves | U256::ONE << (id & u8::MAX as u32);
 
         if leaves != new_leaves {
-            LEVEL2
-                .insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())
-                .expect("why would this ever fail?");
+            LEVEL2.insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())?;
 
             if leaves == U256::ZERO {
                 let key1 = key2 >> 8u8;
@@ -155,23 +144,21 @@ impl TreeUint24_ {
 
                 let value1 = leaves | (U256::ONE << (key2 & U256::from(u8::MAX)));
 
-                LEVEL1
-                    .insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())
-                    .expect("why would this ever fail?");
+                LEVEL1.insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())?;
 
                 if leaves == U256::ZERO {
-                    let value0 = U256::from_le_bytes(LEVEL0.load(storage).unwrap())
+                    let value0 = U256::from_le_bytes(LEVEL0.load(storage).unwrap_or([0u8; 32]))
                         | (U256::ONE << (key1 & U256::from(u8::MAX)));
-                    LEVEL0.save(storage, &value0.to_le_bytes()).unwrap();
+                    LEVEL0.save(storage, &value0.to_le_bytes())?;
                 }
             }
-            return true;
+            return Ok(true);
         }
 
-        false
+        Ok(false)
     }
 
-    pub fn remove(&self, storage: &mut dyn Storage, id: u32) -> bool {
+    pub fn remove(&self, storage: &mut dyn Storage, id: u32) -> StdResult<bool> {
         let key2 = U256::from(id) >> 8u8;
 
         let leaves = U256::from_le_bytes(
@@ -182,9 +169,7 @@ impl TreeUint24_ {
         let new_leaves = leaves & !(U256::ONE << (id & u8::MAX as u32));
 
         if leaves != new_leaves {
-            LEVEL2
-                .insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())
-                .expect("why would this ever fail?");
+            LEVEL2.insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())?;
 
             if new_leaves == U256::ZERO {
                 let key1 = key2 >> 8u8;
@@ -195,20 +180,18 @@ impl TreeUint24_ {
                 );
 
                 let value1 = leaves & !(U256::ONE << (key2 & U256::from(u8::MAX)));
-                LEVEL1
-                    .insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())
-                    .expect("why would this ever fail?");
+                LEVEL1.insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())?;
 
                 if leaves == U256::ZERO {
-                    let value0 = U256::from_le_bytes(LEVEL0.load(storage).unwrap())
+                    let value0 = U256::from_le_bytes(LEVEL0.load(storage).unwrap_or([0u8; 32]))
                         & !(U256::ONE << (key1 & U256::from(u8::MAX)));
-                    LEVEL0.save(storage, &value0.to_le_bytes()).unwrap();
+                    LEVEL0.save(storage, &value0.to_le_bytes())?;
                 }
             }
-            return true;
+            return Ok(true);
         }
 
-        false
+        Ok(false)
     }
 
     /// Finds the first `id` in the tree that is less than or equal to the given `id`.

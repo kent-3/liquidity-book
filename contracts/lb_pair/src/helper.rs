@@ -276,11 +276,11 @@ pub fn query_token_symbol(deps: Deps, code_hash: String, address: Addr) -> Resul
 /// # Arguments
 /// * `swap_for_y Whether the swap is for Y
 /// * `id` - The id of the bin
-pub fn _get_next_non_empty_bin(tree: &TreeUint24, swap_for_y: bool, id: u32) -> u32 {
+pub fn _get_next_non_empty_bin(deps: Deps, swap_for_y: bool, id: u32) -> u32 {
     if swap_for_y {
-        tree.find_first_right(id)
+        TREE.find_first_right(deps.storage, id)
     } else {
-        tree.find_first_left(id)
+        TREE.find_first_left(deps.storage, id)
     }
 }
 

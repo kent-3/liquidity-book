@@ -97,36 +97,21 @@ pub fn instantiate(
     let mut messages = vec![];
     let viewing_key = ViewingKey::from(msg.viewing_key.as_str());
     for token in [&msg.token_x, &msg.token_y] {
-        if let TokenType::CustomToken {
-            contract_addr: _,
-            token_code_hash: _,
-        } = token
-        {
+        if let TokenType::CustomToken { .. } = token {
             register_pair_token(&env, &mut messages, token, &viewing_key)?;
         }
     }
 
     let state = State {
         creator: info.sender,
-        // factory: msg.factory,
-        // token_x: msg.token_x,
-        // token_y: msg.token_y,
-        // bin_step: msg.bin_step,
-        // pair_parameters,
-        // reserves: [0u8; 32],
-        // protocol_fees: [0u8; 32],
-        // lb_token: ContractInfo {
-        //     address: Addr::unchecked(""),
-        //     code_hash: "".to_string(),
-        // },
-        viewing_key,
-        protocol_fees_recipient: msg.protocol_fee_recipient,
+        // viewing_key,
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
-        // last_swap_timestamp: env.block.time,
     };
 
     // TODO: rename?
     STATE.save(deps.storage, &state)?;
+    CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
+    VIEWING_KEY.save(deps.storage, &viewing_key);
 
     TOKEN_X.save(deps.storage, &msg.token_x)?;
     TOKEN_Y.save(deps.storage, &msg.token_y)?;
@@ -136,7 +121,7 @@ pub fn instantiate(
     RESERVES.save(deps.storage, &Bytes32::default())?;
     PROTOCOL_FEES.save(deps.storage, &Bytes32::default())?;
 
-    BIN_TREE.save(deps.storage, &TreeUint24::new())?;
+    // BIN_TREE.save(deps.storage, &TreeUint24::new())?;
 
     LB_TOKEN.save(
         deps.storage,
@@ -146,7 +131,6 @@ pub fn instantiate(
         },
     )?;
 
-    CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
     EPHEMERAL_LB_TOKEN.save(
         deps.storage,
         &EphemeralLbToken {
@@ -379,20 +363,19 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                     return Err(Error::FlashLoanCallbackFailed);
                 }
 
-                // TODO: store viewing key in a separate Item?
-                let state = STATE.load(deps.storage)?;
                 let token_x = TOKEN_X.load(deps.storage)?;
                 let token_y = TOKEN_Y.load(deps.storage)?;
+                let viewing_key = VIEWING_KEY.load(deps.storage)?;
 
                 let token_x_balance = token_x.query_balance(
                     deps.as_ref(),
                     env.contract.address.to_string(),
-                    state.viewing_key.to_string(),
+                    viewing_key.to_string(),
                 )?;
                 let token_y_balance = token_y.query_balance(
                     deps.as_ref(),
                     env.contract.address.to_string(),
-                    state.viewing_key.to_string(),
+                    viewing_key.to_string(),
                 )?;
 
                 // NOTE: This is written to match the original, but in our case it only encodes the token balances.

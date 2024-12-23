@@ -61,7 +61,7 @@ pub fn swap(
 ) -> Result<Response> {
     let to = deps.api.addr_validate(&to)?;
 
-    let tree = BIN_TREE.load(deps.storage)?;
+    // let tree = BIN_TREE.load(deps.storage)?;
 
     // bytes32 hooksParameters = _hooksParameters;
 
@@ -70,9 +70,9 @@ pub fn swap(
 
     let mut amounts_out: [u8; 32] = [0; 32];
 
-    let state = STATE.load(deps.storage)?;
     let token_x = TOKEN_X.load(deps.storage)?;
     let token_y = TOKEN_Y.load(deps.storage)?;
+    let viewing_key = VIEWING_KEY.load(deps.storage)?;
 
     // NOTE: These balance queries should never fail.
     // A few different options here...
@@ -103,12 +103,12 @@ pub fn swap(
     let token_x_balance = token_x.query_balance(
         deps.as_ref(),
         env.contract.address.to_string(),
-        state.viewing_key.to_string(),
+        viewing_key.to_string(),
     )?;
     let token_y_balance = token_y.query_balance(
         deps.as_ref(),
         env.contract.address.to_string(),
-        state.viewing_key.to_string(),
+        viewing_key.to_string(),
     )?;
 
     // Internal helper function (not much better because we need so many args):
@@ -251,7 +251,7 @@ pub fn swap(
         if amounts_left == [0; 32] {
             break;
         } else {
-            let next_id = _get_next_non_empty_bin(&tree, swap_for_y, active_id);
+            let next_id = _get_next_non_empty_bin(deps.as_ref(), swap_for_y, active_id);
             if next_id == 0 || next_id == (U24::MAX) {
                 return Err(Error::OutOfLiquidity);
             }
@@ -459,19 +459,19 @@ pub fn mint(
 
     let reserves = RESERVES.load(deps.storage)?;
 
-    let state = STATE.load(deps.storage)?;
     let token_x = TOKEN_X.load(deps.storage)?;
     let token_y = TOKEN_Y.load(deps.storage)?;
+    let viewing_key = VIEWING_KEY.load(deps.storage)?;
 
     let token_x_balance = token_x.query_balance(
         deps.as_ref(),
         env.contract.address.to_string(),
-        state.viewing_key.to_string(),
+        viewing_key.to_string(),
     )?;
     let token_y_balance = token_y.query_balance(
         deps.as_ref(),
         env.contract.address.to_string(),
-        state.viewing_key.to_string(),
+        viewing_key.to_string(),
     )?;
 
     let amounts_received = reserves.received(token_x_balance.u128(), token_y_balance.u128());
@@ -700,11 +700,11 @@ fn update_bin(
     }
 
     if supply == 0 {
-        // TREE.add(deps.storage, id);
-        BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
-            tree.add(id);
-            Ok(tree)
-        })?;
+        TREE.add(deps.storage, id)?;
+        // BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
+        //     tree.add(id);
+        //     Ok(tree)
+        // })?;
     }
 
     BIN_MAP.save(deps.storage, id, &bin_reserves.add(amounts_in_to_bin)?)?;
@@ -731,7 +731,7 @@ fn update_bin(
 pub fn burn(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     from: String,
     to: String,
     ids: Vec<u32>,
@@ -797,11 +797,12 @@ pub fn burn(
         let bin_reserves = bin_reserves.sub(amounts_out_from_bin)?;
 
         if supply == amount_to_burn.uint256_to_u256() {
-            // TREE.remove(deps.storage, id);
-            BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
-                tree.remove(id);
-                Ok(tree)
-            })?;
+            TREE.remove(deps.storage, id)?;
+            // TODO: try replacing BIN_TREE with only TREE
+            // BIN_TREE.update(deps.storage, |mut tree| -> StdResult<_> {
+            //     tree.remove(id);
+            //     Ok(tree)
+            // })?;
         }
 
         BIN_MAP.save(deps.storage, id, &bin_reserves)?;
@@ -828,9 +829,16 @@ pub fn burn(
             .map_err(|e| StdError::generic_err(e.to_string()))?)
     })?;
 
-    // TODO: events
-    // emit TransferBatch(msg.sender, from_, address(0), ids, amountsToBurn);
-    // emit WithdrawnFromBins(msg.sender, to, ids, amounts);
+    let events = vec![
+        Event::transfer_batch(
+            &info.sender,
+            &from,
+            &Addr::unchecked(""), // TODO: what address to represent address(0) from solidity?
+            &ids,
+            &amounts_to_burn,
+        ),
+        Event::withdrawn_from_bins(&info.sender, &to, &ids, &amounts),
+    ];
 
     let transfer_messages = bin_transfer(amounts_out, token_x, token_y, to);
 
@@ -839,13 +847,9 @@ pub fn burn(
     Ok(Response::default()
         .set_data(response_data)
         .add_message(burn_tokens_msg)
-        .add_messages(transfer_messages))
-
-    // the burn and transfer messages are "fire and forget"
-    // the amounts burned go back to the router contract that called this execute message
+        .add_messages(transfer_messages)
+        .add_events(events))
 }
-
-// Administrative functions
 
 /// Collect the protocol fees from the pool.
 pub fn collect_protocol_fees(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response> {
