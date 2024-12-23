@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use lb_interfaces::{lb_pair::*, lb_token};
 use lb_libraries::{
     constants, lb_token::state_structs::LbPair, BinHelper, Bytes32, PackedUint128Math,
-    PairParameters, TreeUint24,
+    PairParameters,
 };
 // TODO: get rid of admin stuff and shade_protocol dependency
 use shade_protocol::{

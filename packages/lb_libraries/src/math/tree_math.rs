@@ -12,412 +12,41 @@ use std::collections::HashMap;
 // TODO: This module is likely inefficient because we don't have bit ops for Bytes32, so we have to
 // convert into U256 a lot. Other parts of the library could also benefit from Bytes32 bit ops.
 
-// TODO: IDEALLY this data structure would be some abstraction over cosmwasm_storage types, to
-// avoid needing to load and save the entire tree each time. However, it doesn't seem like too high
-// a cost, so that optimazation can wait!
-
-// experiment: replace HashMaps with Keymaps
-// - I can probably use the more advanced keymap builder to make one that doesn't have key iteration
-
-use cosmwasm_std::Storage;
-use secret_toolkit::storage::{Item, Keymap};
-
-pub static TREE: TreeUint24_ = TreeUint24_ {};
-static LEVEL0: Item<Bytes32> = Item::new(b"bin_tree_level0");
-static LEVEL1: Keymap<Bytes32, Bytes32> = Keymap::new(b"bin_tree_level1");
-static LEVEL2: Keymap<Bytes32, Bytes32> = Keymap::new(b"bin_tree_level2");
-
-pub struct TreeUint24_ {}
-
-impl TreeUint24_ {
-    pub fn contains(&self, storage: &dyn Storage, id: u32) -> bool {
-        let key2 = U256::from(id) >> 8u8;
-
-        let bucket = U256::from_le_bytes(
-            LEVEL2
-                .get(storage, &key2.to_le_bytes())
-                .unwrap_or([0u8; 32]),
-        );
-
-        let bit_position = U256::ONE << (id & 255u32);
-
-        (bucket & bit_position) != U256::ZERO
-    }
-
-    pub fn add(&self, storage: &mut dyn Storage, id: u32) -> bool {
-        let key2 = U256::from(id) >> 8u8;
-
-        let leaves = U256::from_le_bytes(
-            LEVEL2
-                .get(storage, &key2.to_le_bytes())
-                .unwrap_or([0u8; 32]),
-        );
-        let new_leaves = leaves | U256::ONE << (id & u8::MAX as u32);
-
-        if leaves != new_leaves {
-            LEVEL2
-                .insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())
-                .expect("why would this ever fail?");
-
-            if leaves == U256::ZERO {
-                let key1 = key2 >> 8u8;
-                let leaves = U256::from_le_bytes(
-                    LEVEL1
-                        .get(storage, &key1.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                let value1 = leaves | (U256::ONE << (key2 & U256::from(u8::MAX)));
-
-                LEVEL1
-                    .insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())
-                    .expect("why would this ever fail?");
-
-                if leaves == U256::ZERO {
-                    let value0 = U256::from_le_bytes(LEVEL0.load(storage).unwrap())
-                        | (U256::ONE << (key1 & U256::from(u8::MAX)));
-                    LEVEL0.save(storage, &value0.to_le_bytes()).unwrap();
-                }
-            }
-            return true;
-        }
-
-        false
-    }
-
-    pub fn remove(&self, storage: &mut dyn Storage, id: u32) -> bool {
-        let key2 = U256::from(id) >> 8u8;
-
-        let leaves = U256::from_le_bytes(
-            LEVEL2
-                .get(storage, &key2.to_le_bytes())
-                .unwrap_or([0u8; 32]),
-        );
-        let new_leaves = leaves & !(U256::ONE << (id & u8::MAX as u32));
-
-        if leaves != new_leaves {
-            LEVEL2
-                .insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())
-                .expect("why would this ever fail?");
-
-            if new_leaves == U256::ZERO {
-                let key1 = key2 >> 8u8;
-                let leaves = U256::from_le_bytes(
-                    LEVEL1
-                        .get(storage, &key1.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                let value1 = leaves & !(U256::ONE << (key2 & U256::from(u8::MAX)));
-                LEVEL1
-                    .insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())
-                    .expect("why would this ever fail?");
-
-                if leaves == U256::ZERO {
-                    let value0 = U256::from_le_bytes(LEVEL0.load(storage).unwrap())
-                        & !(U256::ONE << (key1 & U256::from(u8::MAX)));
-                    LEVEL0.save(storage, &value0.to_le_bytes()).unwrap();
-                }
-            }
-            return true;
-        }
-
-        false
-    }
-
-    /// Finds the first `id` in the tree that is less than or equal to the given `id`.
-    ///
-    /// Returns the found `id`, or `U24::MAX` if there is no such `id` in the tree.
-    pub fn find_first_right(&self, storage: &dyn Storage, id: u32) -> u32 {
-        let mut leaves: U256;
-
-        let key2 = U256::from(id >> 8);
-        let mut bit = (id & u32::from(u8::MAX)) as u8;
-
-        if bit != 0 {
-            leaves = U256::from_le_bytes(
-                LEVEL2
-                    .get(storage, &key2.to_le_bytes())
-                    .unwrap_or([0u8; 32]),
-            );
-            let closest_bit = Self::_closest_bit_right(leaves, bit);
-
-            if closest_bit != U256::MAX {
-                return (key2 << 8u8).as_u32() | closest_bit.as_u32();
-            }
-        }
-
-        let key1 = key2 >> 8u8;
-        bit = (key2 & U256::from(u8::MAX)).as_u8();
-
-        if bit != 0 {
-            leaves = U256::from_le_bytes(
-                LEVEL1
-                    .get(storage, &key1.to_le_bytes())
-                    .unwrap_or([0u8; 32]),
-            );
-            let closest_bit = Self::_closest_bit_right(leaves, bit);
-
-            if closest_bit != U256::MAX {
-                let key2 = key1 << 8u8 | closest_bit;
-                leaves = U256::from_le_bytes(
-                    LEVEL2
-                        .get(storage, &key2.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                return (key2 << 8u8).as_u32() | BitMath::most_significant_bit(leaves) as u32;
-            }
-        }
-
-        bit = (key1 & U256::from(u8::MAX)).as_u8();
-
-        if bit != 0 {
-            leaves = U256::from_le_bytes(LEVEL0.load(storage).unwrap_or([0u8; 32]));
-            let closest_bit = Self::_closest_bit_right(leaves, bit);
-
-            if closest_bit != U256::MAX {
-                let key1 = closest_bit;
-                leaves = U256::from_le_bytes(
-                    LEVEL1
-                        .get(storage, &key1.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                let key2 = key1 << 8u8 | U256::from(BitMath::most_significant_bit(leaves));
-                leaves = U256::from_le_bytes(
-                    LEVEL2
-                        .get(storage, &key2.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                return (key2 << 8u8).as_u32() | BitMath::most_significant_bit(leaves) as u32;
-            }
-        }
-
-        U24::MAX
-    }
-
-    /// Finds the first `id` in the tree that is greater than or equal to the given `id`.
-    ///
-    /// Returns the found `id`, or `0` if there is no such `id` in the tree.
-    pub fn find_first_left(&self, storage: &dyn Storage, id: u32) -> u32 {
-        let mut leaves: U256;
-
-        let key2 = U256::from(id >> 8);
-        let mut bit = (id & u32::from(u8::MAX)) as u8;
-
-        if bit != u8::MAX {
-            leaves = U256::from_le_bytes(
-                LEVEL2
-                    .get(storage, &key2.to_le_bytes())
-                    .unwrap_or([0u8; 32]),
-            );
-            let closest_bit = Self::_closest_bit_left(leaves, bit);
-
-            if closest_bit != U256::MAX {
-                return (key2 << 8u8).as_u32() | closest_bit.as_u32();
-            }
-        }
-
-        let key1 = key2 >> 8u8;
-        bit = (key2 & U256::from(u8::MAX)).as_u8();
-
-        if bit != u8::MAX {
-            leaves = U256::from_le_bytes(
-                LEVEL1
-                    .get(storage, &key1.to_le_bytes())
-                    .unwrap_or([0u8; 32]),
-            );
-            let closest_bit = Self::_closest_bit_left(leaves, bit);
-
-            if closest_bit != U256::MAX {
-                let key2 = key1 << 8u8 | closest_bit;
-                leaves = U256::from_le_bytes(
-                    LEVEL2
-                        .get(storage, &key2.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                return (key2 << 8u8).as_u32() | BitMath::least_significant_bit(leaves) as u32;
-            }
-        }
-
-        bit = (key1 & U256::from(u8::MAX)).as_u8();
-
-        if bit != u8::MAX {
-            leaves = U256::from_le_bytes(LEVEL0.load(storage).unwrap_or([0u8; 32]));
-            let closest_bit = Self::_closest_bit_left(leaves, bit);
-
-            if closest_bit != U256::MAX {
-                let key1 = closest_bit;
-                leaves = U256::from_le_bytes(
-                    LEVEL1
-                        .get(storage, &key1.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                let key2 = key1 << 8u8 | U256::from(BitMath::least_significant_bit(leaves));
-                leaves = U256::from_le_bytes(
-                    LEVEL2
-                        .get(storage, &key2.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                return (key2 << 8u8).as_u32() | BitMath::least_significant_bit(leaves) as u32;
-            }
-        }
-
-        0u32
-    }
-
-    /// Helper function: finds the first bit in the given `leaves` that is strictly lower than the given `bit`.
-    ///
-    /// Returns the found bit, or `U256::MAX` if there is no such bit.
-    fn _closest_bit_right(leaves: U256, bit: u8) -> U256 {
-        BitMath::closest_bit_right(leaves, bit - 1)
-    }
-
-    /// Helper function: finds the first bit in the given `leaves` that is strictly higher than the given `bit`.
-    ///
-    /// Returns the found bit, or `U256::MAX` if there is no such bit.
-    fn _closest_bit_left(leaves: U256, bit: u8) -> U256 {
-        BitMath::closest_bit_left(leaves, bit + 1)
-    }
-}
-
-pub trait TreeUint24Trait {
-    fn contains(&self, storage: &dyn Storage, id: u32) -> bool;
-    fn add(&mut self, storage: &mut dyn Storage, id: u32) -> bool;
-    fn remove(&mut self, storage: &mut dyn Storage, id: u32) -> bool;
-}
-
-impl TreeUint24Trait for Item<'_, Bytes32> {
-    fn contains(&self, storage: &dyn Storage, id: u32) -> bool {
-        let key2 = U256::from(id) >> 8u8;
-
-        let bucket = U256::from_le_bytes(
-            LEVEL2
-                .get(storage, &key2.to_le_bytes())
-                .unwrap_or([0u8; 32]),
-        );
-
-        let bit_position = U256::ONE << (id & 255u32);
-
-        (bucket & bit_position) != U256::ZERO
-    }
-
-    fn add(&mut self, storage: &mut dyn Storage, id: u32) -> bool {
-        let key2 = U256::from(id) >> 8u8;
-
-        let leaves = U256::from_le_bytes(
-            LEVEL2
-                .get(storage, &key2.to_le_bytes())
-                .unwrap_or([0u8; 32]),
-        );
-        let new_leaves = leaves | U256::ONE << (id & u8::MAX as u32);
-
-        if leaves != new_leaves {
-            LEVEL2
-                .insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())
-                .expect("why would this ever fail?");
-
-            if leaves == U256::ZERO {
-                let key1 = key2 >> 8u8;
-                let leaves = U256::from_le_bytes(
-                    LEVEL1
-                        .get(storage, &key1.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                let value1 = leaves | (U256::ONE << (key2 & U256::from(u8::MAX)));
-
-                LEVEL1
-                    .insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())
-                    .expect("why would this ever fail?");
-
-                if leaves == U256::ZERO {
-                    let value0 = U256::from_le_bytes(self.load(storage).unwrap())
-                        | (U256::ONE << (key1 & U256::from(u8::MAX)));
-                    self.save(storage, &value0.to_le_bytes()).unwrap();
-                }
-            }
-            return true;
-        }
-
-        false
-    }
-
-    fn remove(&mut self, storage: &mut dyn Storage, id: u32) -> bool {
-        let key2 = U256::from(id) >> 8u8;
-
-        let leaves = U256::from_le_bytes(
-            LEVEL2
-                .get(storage, &key2.to_le_bytes())
-                .unwrap_or([0u8; 32]),
-        );
-        let new_leaves = leaves & !(U256::ONE << (id & u8::MAX as u32));
-
-        if leaves != new_leaves {
-            LEVEL2
-                .insert(storage, &key2.to_le_bytes(), &new_leaves.to_le_bytes())
-                .expect("why would this ever fail?");
-
-            if new_leaves == U256::ZERO {
-                let key1 = key2 >> 8u8;
-                let leaves = U256::from_le_bytes(
-                    LEVEL1
-                        .get(storage, &key1.to_le_bytes())
-                        .unwrap_or([0u8; 32]),
-                );
-
-                let value1 = leaves & !(U256::ONE << (key2 & U256::from(u8::MAX)));
-                LEVEL1
-                    .insert(storage, &key1.to_le_bytes(), &value1.to_le_bytes())
-                    .expect("why would this ever fail?");
-
-                if leaves == U256::ZERO {
-                    let value0 = U256::from_le_bytes(self.load(storage).unwrap())
-                        & !(U256::ONE << (key1 & U256::from(u8::MAX)));
-                    self.save(storage, &value0.to_le_bytes()).unwrap();
-                }
-            }
-            return true;
-        }
-
-        false
-    }
+pub trait TreeUint24 {
+    fn contains(&self, id: u32) -> bool;
+    fn add(&mut self, id: u32) -> bool;
+    fn remove(&mut self, id: u32) -> bool;
+    fn find_first_right(&self, id: u32) -> u32;
+    fn find_first_left(&self, id: u32) -> u32;
+    fn _closest_bit_right(leaves: U256, bit: u8) -> U256;
+    fn _closest_bit_left(leaves: U256, bit: u8) -> U256;
 }
 
 /// Can store 256^3 = 2^24 = 16,777,216 values.
 /// Each bit represents whether a bin is non-empty (1) or empty (0).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct TreeUint24 {
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MockTreeUint24 {
     pub level0: Bytes32,                   // 256 possible values
     pub level1: HashMap<Bytes32, Bytes32>, // 256^2 possible values
     pub level2: HashMap<Bytes32, Bytes32>, // 256^3 possible values
 }
 
-impl Default for TreeUint24 {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TreeUint24 {
+impl MockTreeUint24 {
     /// Creates a new empty TreeUint24.
     pub fn new() -> Self {
-        TreeUint24 {
+        MockTreeUint24 {
             level0: Bytes32::default(),
             level1: HashMap::<Bytes32, Bytes32>::new(),
             level2: HashMap::<Bytes32, Bytes32>::new(),
         }
     }
+}
 
+impl TreeUint24 for MockTreeUint24 {
     /// Checks if the tree contains the given `id`.
     ///
     /// Returns `true` if the tree contains the `id`.
-    pub fn contains(&self, id: u32) -> bool {
+    fn contains(&self, id: u32) -> bool {
         let key2 = U256::from(id) >> 8u8;
 
         U256::from_le_bytes(*self.level2.get(&key2.to_le_bytes()).unwrap_or(&[0u8; 32]))
@@ -429,7 +58,7 @@ impl TreeUint24 {
     ///
     /// Returns `true` if the `id` was not already in the tree.
     /// If the `id` was already in the tree, no changes are made and `false` is returned.
-    pub fn add(&mut self, id: u32) -> bool {
+    fn add(&mut self, id: u32) -> bool {
         let key2 = U256::from(id) >> 8u8;
 
         let leaves =
@@ -466,7 +95,7 @@ impl TreeUint24 {
     ///
     /// Returns `true` if the `id` was in the tree.
     /// If the `id` was not in the tree, no changes are made and `false` is returned.
-    pub fn remove(&mut self, id: u32) -> bool {
+    fn remove(&mut self, id: u32) -> bool {
         let key2 = U256::from(id) >> 8u8;
 
         let leaves =
@@ -501,7 +130,7 @@ impl TreeUint24 {
     /// Finds the first `id` in the tree that is less than or equal to the given `id`.
     ///
     /// Returns the found `id`, or `U24::MAX` if there is no such `id` in the tree.
-    pub fn find_first_right(&self, id: u32) -> u32 {
+    fn find_first_right(&self, id: u32) -> u32 {
         let mut leaves: U256;
 
         let key2 = U256::from(id >> 8);
@@ -562,7 +191,7 @@ impl TreeUint24 {
     /// Finds the first `id` in the tree that is greater than or equal to the given `id`.
     ///
     /// Returns the found `id`, or `0` if there is no such `id` in the tree.
-    pub fn find_first_left(&self, id: u32) -> u32 {
+    fn find_first_left(&self, id: u32) -> u32 {
         let mut leaves: U256;
 
         let key2 = U256::from(id >> 8);
@@ -641,7 +270,7 @@ mod tests {
 
     #[test]
     fn test_contains() {
-        let tree = TreeUint24::new();
+        let tree = MockTreeUint24::new();
         let ids: Vec<u32> = vec![1, 2, 3, 4, 5];
 
         for id in ids {
@@ -652,7 +281,7 @@ mod tests {
 
     #[test]
     fn test_add_to_tree_min() {
-        let mut tree: TreeUint24 = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let ids: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
 
         for id in ids {
@@ -669,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_add_to_tree_max() {
-        let mut tree: TreeUint24 = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let max = U24::MAX;
         let ids: Vec<u32> = vec![max - 1, max - 2, max - 3, max - 4, max - 5, max - 6];
 
@@ -687,7 +316,7 @@ mod tests {
 
     #[test]
     fn test_remove_from_tree() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let ids: Vec<u32> = vec![0, 1, 2, 3, 4, 5];
 
         // First add all the ids to the tree
@@ -710,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_remove_to_tree_max() {
-        let mut tree: TreeUint24 = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let max = U24::MAX;
         let ids: Vec<u32> = vec![max - 1, max - 2, max - 3, max - 4, max - 5, max - 6];
 
@@ -734,7 +363,7 @@ mod tests {
 
     #[test]
     fn test_remove_logic_and_search_right() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let id = 3;
 
         tree.add(id);
@@ -756,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_remove_logic_and_search_left() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let id = U24::MAX - 1;
 
         tree.add(id);
@@ -778,7 +407,7 @@ mod tests {
 
     #[test]
     fn test_find_first() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
 
         tree.add(0);
         tree.add(1);
@@ -794,7 +423,7 @@ mod tests {
 
     #[test]
     fn test_find_first_far() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
 
         tree.add(0);
         tree.add(U24::MAX); // Equivalent to type(uint24).max in Solidity
@@ -805,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_fuzz_find_first() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let ids = vec![1, 5, 10, 15, 25];
 
         for &id in &ids {
@@ -830,7 +459,7 @@ mod tests {
 
     #[test]
     fn test_test() {
-        let mut tree = TreeUint24::new();
+        let mut tree = MockTreeUint24::new();
         let id = 8363961;
 
         tree.add(id + 1);
