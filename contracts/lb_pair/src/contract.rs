@@ -111,7 +111,7 @@ pub fn instantiate(
     // TODO: rename?
     STATE.save(deps.storage, &state)?;
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
-    VIEWING_KEY.save(deps.storage, &viewing_key);
+    VIEWING_KEY.save(deps.storage, &viewing_key)?;
 
     TOKEN_X.save(deps.storage, &msg.token_x)?;
     TOKEN_Y.save(deps.storage, &msg.token_y)?;
