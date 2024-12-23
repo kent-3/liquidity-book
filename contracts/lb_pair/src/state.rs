@@ -1,39 +1,45 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, ContractInfo, StdResult, Storage};
-use lb_interfaces::lb_factory::ILbFactory;
-use lb_interfaces::lb_pair::ContractStatus;
+use cosmwasm_std::{Addr, ContractInfo, StdResult, Storage};
+use lb_interfaces::{lb_factory::ILbFactory, lb_pair::ContractStatus};
 use lb_libraries::{Bytes32, OracleSample, PairParameters};
 // TODO: sort out viewing key strategy
-use shade_protocol::swap::core::ViewingKey;
+use ethnum::U256;
+use lb_libraries::math::{bit_math::BitMath, u24::U24};
+use secret_toolkit::{
+    serialization::{Bincode2, Json},
+    storage::{Item, Keymap, KeymapBuilder, WithoutIter},
+};
 use shade_protocol::{
-    secret_storage_plus::{Item, Map},
-    swap::core::TokenType,
+    swap::core::{TokenType, ViewingKey},
     Contract,
 };
 
-pub const STATE: Item<State> = Item::new("state");
+pub static STATE: Item<State> = Item::new(b"state");
 
-pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new("contract_status");
-pub const VIEWING_KEY: Item<ViewingKey> = Item::new("contract_viewing_key");
+pub static CONTRACT_STATUS: Item<ContractStatus, Json> = Item::new(b"contract_status");
+pub static VIEWING_KEY: Item<ViewingKey> = Item::new(b"contract_viewing_key");
 
-pub const FACTORY: Item<ILbFactory> = Item::new("factory");
-pub const LB_TOKEN: Item<ContractInfo> = Item::new("lb_token");
+pub static FACTORY: Item<ILbFactory> = Item::new(b"lb_factory");
+pub static LB_TOKEN: Item<ContractInfo> = Item::new(b"lb_token");
 
-pub const TOKEN_X: Item<TokenType> = Item::new("token_x");
-pub const TOKEN_Y: Item<TokenType> = Item::new("token_y");
-pub const BIN_STEP: Item<u16> = Item::new("bin_step");
+pub static TOKEN_X: Item<TokenType, Json> = Item::new(b"token_x");
+pub static TOKEN_Y: Item<TokenType, Json> = Item::new(b"token_y");
+pub static BIN_STEP: Item<u16> = Item::new(b"bin_step");
 
-pub const BIN_MAP: Map<u32, Bytes32> = Map::new("bin_map");
-// pub const BIN_TREE: Item<TreeUint24, Bincode2> = Item::new("bin_tree");
-pub const ORACLE: Map<u16, OracleSample> = Map::new("oracle");
+pub static BINS: Keymap<u32, Bytes32, Bincode2, WithoutIter> =
+    KeymapBuilder::new(b"bin_map").without_iter().build();
 
-pub const PARAMETERS: Item<PairParameters> = Item::new("pair_parameters");
-pub const RESERVES: Item<Bytes32> = Item::new("reserves");
-pub const PROTOCOL_FEES: Item<Bytes32> = Item::new("protocol_fees");
-pub const HOOKS_PARAMETERS: Item<Bytes32> = Item::new("hooks_parameters");
+pub static TREE: TreeUint24 = TreeUint24 {}; // see implementation below
+pub static ORACLE: Keymap<u16, OracleSample, Bincode2, WithoutIter> =
+    KeymapBuilder::new(b"oracle").without_iter().build();
 
-pub const EPHEMERAL_LB_TOKEN: Item<EphemeralLbToken> = Item::new("ephemeral_lb_token");
-pub const EPHEMERAL_FLASH_LOAN: Item<EphemeralFlashLoan> = Item::new("ephemeral_flash_loan");
+pub static PARAMETERS: Item<PairParameters> = Item::new(b"pair_parameters");
+pub static RESERVES: Item<Bytes32> = Item::new(b"reserves");
+pub static PROTOCOL_FEES: Item<Bytes32> = Item::new(b"protocol_fees");
+pub static HOOKS_PARAMETERS: Item<Bytes32> = Item::new(b"hooks_parameters");
+
+pub static EPHEMERAL_LB_TOKEN: Item<EphemeralLbToken> = Item::new(b"ephemeral_lb_token");
+pub static EPHEMERAL_FLASH_LOAN: Item<EphemeralFlashLoan> = Item::new(b"ephemeral_flash_loan");
 
 // TODO: do we even need this?
 #[cw_serde]
@@ -56,31 +62,20 @@ pub struct EphemeralFlashLoan {
     pub amounts: Bytes32,
 }
 
-// TODO: (maybe) We could just have one storage key that can store any of the epehemeral storage
-// types, as long as they are serializable. But maybe it's better not to?
+// TODO: (maybe) We could just have one storage key that can store any epehemeral storage
+// type, as long as they are serializable. But maybe it's better not to?
 // example:
-//     EPHEMERAL_STORAGE.save(
+
+// pub const EPHEMERAL_STORAGE: Item<Binary> = Item::new(b"ephemeral_storage");
+//
+// EPHEMERAL_STORAGE.save(
 //     deps.storage,
 //     &to_binary(&EphemeralLbToken {
 //         code_hash: msg.lb_token_implementation.code_hash,
 //     })?,
 // )?;
 
-pub const EPHEMERAL_STORAGE: Item<Binary> = Item::new("ephemeral_storage");
-
-// experimental!
-
-use ethnum::U256;
-use lb_libraries::math::{bit_math::BitMath, u24::U24};
-use secret_toolkit::{
-    serialization::Bincode2,
-    storage::{Item as Item2, Keymap, KeymapBuilder, WithoutIter},
-};
-
-// use this one
-pub static TREE: TreeUint24 = TreeUint24 {};
-
-static LEVEL0: Item2<Bytes32> = Item2::new(b"bin_tree_level0");
+static LEVEL0: Item<Bytes32> = Item::new(b"bin_tree_level0");
 static LEVEL1: Keymap<Bytes32, Bytes32, Bincode2, WithoutIter> =
     KeymapBuilder::new(b"bin_tree_level1")
         .without_iter()

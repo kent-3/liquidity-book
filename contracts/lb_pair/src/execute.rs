@@ -204,9 +204,9 @@ pub fn swap(
     let mut events: Vec<Event> = Vec::new();
 
     loop {
-        let bin_reserves = BIN_MAP
-            .load(deps.storage, active_id)
-            .map_err(|_| Error::ZeroBinReserve { active_id })?;
+        let bin_reserves = BINS
+            .get(deps.storage, &active_id)
+            .ok_or_else(|| Error::ZeroBinReserve { active_id })?;
 
         if !bin_reserves.is_empty(!swap_for_y) {
             parameters.update_volatility_accumulator(active_id)?;
@@ -226,9 +226,9 @@ pub fn swap(
                     amounts_in_with_fees = amounts_in_with_fees.sub(p_fees)?;
                 }
 
-                BIN_MAP.save(
+                BINS.insert(
                     deps.storage,
-                    active_id,
+                    &active_id,
                     &bin_reserves
                         .add(amounts_in_with_fees)?
                         .sub(amounts_out_of_bin)?,
@@ -642,7 +642,7 @@ fn update_bin(
     amounts_in: Bytes32,
     mut parameters: PairParameters,
 ) -> Result<(U256, Bytes32, Bytes32)> {
-    let bin_reserves = BIN_MAP.load(deps.storage, id).unwrap_or_default();
+    let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
 
     let price = PriceHelper::get_price_from_id(id, bin_step)?;
     let supply = _query_total_supply(deps.as_ref(), id)?;
@@ -706,7 +706,7 @@ fn update_bin(
         // })?;
     }
 
-    BIN_MAP.save(deps.storage, id, &bin_reserves.add(amounts_in_to_bin)?)?;
+    BINS.insert(deps.storage, &id, &bin_reserves.add(amounts_in_to_bin)?)?;
 
     Ok((shares, amounts_in, amounts_in_to_bin))
 }
@@ -765,9 +765,9 @@ pub fn burn(
         }
 
         // TODO: this error doesn't seem right. maybe a let-else would make more sense?
-        let bin_reserves = BIN_MAP
-            .load(deps.storage, id)
-            .map_err(|_| Error::ZeroBinReserve {
+        let bin_reserves = BINS
+            .get(deps.storage, &id)
+            .ok_or_else(|| Error::ZeroBinReserve {
                 active_id: i as u32,
             })?;
 
@@ -804,7 +804,7 @@ pub fn burn(
             // })?;
         }
 
-        BIN_MAP.save(deps.storage, id, &bin_reserves)?;
+        BINS.insert(deps.storage, &id, &bin_reserves)?;
         amounts[i] = amounts_out_from_bin;
         amounts_out = amounts_out.add(amounts_out_from_bin)?;
     }

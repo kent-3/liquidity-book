@@ -18,6 +18,7 @@ use crate::{
 };
 use cosmwasm_std::Storage;
 use ethnum::U256;
+use secret_toolkit::{serialization::Bincode2, storage::WithoutIter};
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
@@ -364,6 +365,260 @@ pub trait OracleMap {
     ) -> Result<(), StdError>;
 }
 
+impl OracleMap for secret_toolkit::storage::Keymap<'_, u16, OracleSample, Bincode2, WithoutIter> {
+    /// Modifier to check that the oracle id is valid.
+    fn check_oracle_id(oracle_id: u16) -> Result<(), StdError> {
+        if oracle_id == 0 {
+            return Err(OracleError::InvalidOracleId.into());
+        }
+
+        Ok(())
+    }
+
+    /// Returns the sample at the given oracleId.
+    fn get_sample(&self, storage: &dyn Storage, oracle_id: u16) -> Result<OracleSample, StdError> {
+        Self::check_oracle_id(oracle_id)?;
+
+        Ok(self.get(storage, &(oracle_id - 1)).unwrap_or_default())
+    }
+
+    fn get_active_sample_and_size(
+        &self,
+        storage: &dyn Storage,
+        oracle_id: u16,
+    ) -> Result<(OracleSample, u16), StdError> {
+        let active_sample = self.get_sample(storage, oracle_id)?;
+        let mut active_size = active_sample.get_oracle_length();
+
+        if oracle_id != active_size {
+            active_size = self.get_sample(storage, active_size)?.get_oracle_length();
+            active_size = if oracle_id > active_size {
+                oracle_id
+            } else {
+                active_size
+            };
+        }
+
+        Ok((active_sample, active_size))
+    }
+
+    fn get_sample_at(
+        &self,
+        storage: &dyn Storage,
+        oracle_id: u16,
+        look_up_timestamp: u64,
+    ) -> Result<(u64, u64, u64, u64), StdError> {
+        let (active_sample, active_size) = self.get_active_sample_and_size(storage, oracle_id)?;
+
+        // if OracleSample::get_sample_last_update(&self.samples[&(oracle_id % active_size)])
+        if self
+            .get(storage, &(oracle_id % active_size))
+            .unwrap_or_default() // this will return all zeroes
+            .get_sample_last_update() // so this will also return zero
+            > look_up_timestamp
+        {
+            return Err(StdError::generic_err(
+                OracleError::LookUpTimestampTooOld.to_string(),
+            ));
+        }
+
+        let mut last_update = active_sample.get_sample_last_update();
+        if last_update <= look_up_timestamp {
+            return Ok((
+                last_update,
+                active_sample.get_cumulative_id(),
+                active_sample.get_cumulative_volatility(),
+                active_sample.get_cumulative_bin_crossed(),
+            ));
+        } else {
+            last_update = look_up_timestamp;
+        }
+        let (prev_sample, next_sample) =
+            self.binary_search(storage, oracle_id, look_up_timestamp, active_size)?;
+        println!("look_up_timestamp: {:?}", look_up_timestamp);
+        println!(
+            "next_sample last update: {:?}",
+            next_sample.get_sample_last_update()
+        );
+        println!(
+            "prev_sample last update: {:?}",
+            prev_sample.get_sample_last_update()
+        );
+        println!(
+            "prev_sample creation: {:?}",
+            prev_sample.get_sample_creation()
+        );
+        let weight_prev = next_sample.get_sample_last_update() - look_up_timestamp;
+        let weight_next = look_up_timestamp - prev_sample.get_sample_last_update();
+        println!("weight_prev: {:?}", weight_prev);
+        println!("weight_next: {:?}", weight_next);
+
+        let (cumulative_id, cumulative_volatility, cumulative_bin_crossed) =
+            OracleSample::get_weighted_average(prev_sample, next_sample, weight_prev, weight_next);
+        println!("cumulative_id: {:?}", cumulative_id);
+
+        Ok((
+            last_update,
+            cumulative_id,
+            cumulative_volatility,
+            cumulative_bin_crossed,
+        ))
+    }
+
+    fn binary_search(
+        &self,
+        storage: &dyn Storage,
+        mut oracle_id: u16,
+        look_up_timestamp: u64,
+        length: u16,
+    ) -> Result<(OracleSample, OracleSample), StdError> {
+        let mut low = U256::ZERO;
+        let mut high = U256::from(length - 1);
+
+        let mut sample = OracleSample::default();
+        let mut sample_last_update = 0;
+
+        let start_id = U256::from(oracle_id); // oracleId is 1-based
+        while low <= high {
+            let mid: U256 = (low + high) >> 1;
+
+            // TODO: check if this is the best way to do this
+            oracle_id = addmod(start_id, mid, length.into()).as_u16();
+
+            sample = self.get(storage, &oracle_id).unwrap_or_default();
+            sample_last_update = sample.get_sample_last_update();
+
+            match sample_last_update.cmp(&look_up_timestamp) {
+                Greater => high = mid - 1,
+                Less => low = mid + 1,
+                Equal => return Ok((sample, sample)),
+            }
+        }
+
+        if look_up_timestamp < sample_last_update {
+            if oracle_id == 0 {
+                oracle_id = length;
+            }
+
+            let prev_sample = self.get(storage, &(oracle_id - 1)).unwrap_or_default();
+
+            Ok((prev_sample, sample))
+        } else {
+            oracle_id = addmod(oracle_id.into(), U256::ONE, length.into()).as_u16();
+
+            let next_sample = self.get(storage, &oracle_id).unwrap_or_default();
+
+            Ok((sample, next_sample))
+        }
+    }
+
+    fn set_sample(
+        &self,
+        storage: &mut dyn Storage,
+        oracle_id: u16,
+        sample: OracleSample,
+    ) -> Result<(), StdError> {
+        Self::check_oracle_id(oracle_id)?;
+
+        self.insert(storage, &(oracle_id - 1), &sample)
+    }
+
+    fn update_oracle(
+        &self,
+        storage: &mut dyn Storage,
+        time: u64,
+        mut parameters: PairParameters,
+        active_id: u32, // this is the new active_id
+    ) -> Result<PairParameters, StdError> {
+        let mut oracle_id = parameters.get_oracle_id();
+        if oracle_id == 0 {
+            return Ok(parameters);
+        }
+
+        let sample = self.get_sample(storage, oracle_id)?;
+
+        let mut created_at = sample.get_sample_creation();
+        let last_updated_at = created_at + sample.get_sample_lifetime() as u64;
+
+        if time > last_updated_at {
+            let (cumulative_id, cumulative_volatility, cumulative_bin_crossed) = sample.update(
+                time - last_updated_at,
+                parameters.get_active_id(), // this gets the current active_id
+                parameters.get_volatility_accumulator(),
+                parameters.get_delta_id(active_id),
+            );
+
+            let length = sample.get_oracle_length();
+            let lifetime = time - created_at;
+
+            if lifetime > MAX_SAMPLE_LIFETIME as u64 {
+                oracle_id = (oracle_id % length) + 1;
+                created_at = time;
+            }
+
+            let new_sample = OracleSample::encode(
+                length,
+                cumulative_id,
+                cumulative_volatility,
+                cumulative_bin_crossed,
+                lifetime as u8,
+                created_at,
+            );
+
+            self.set_sample(storage, oracle_id, new_sample)?;
+
+            parameters.set_oracle_id(oracle_id);
+
+            return Ok(parameters);
+        }
+
+        Ok(parameters)
+    }
+
+    fn increase_length(
+        &self,
+        storage: &mut dyn Storage,
+        oracle_id: u16,
+        new_length: u16,
+    ) -> Result<(), StdError> {
+        let sample = self.get_sample(storage, oracle_id)?;
+        let length = sample.get_oracle_length();
+
+        if length >= new_length {
+            return Err(StdError::generic_err(
+                OracleError::NewLengthTooSmall.to_string(),
+            ));
+        }
+
+        let last_sample = if length == oracle_id {
+            sample
+        } else if length == 0 {
+            OracleSample::default()
+        } else {
+            self.get_sample(storage, length)?
+        };
+
+        let mut active_size = last_sample.get_oracle_length();
+        active_size = if oracle_id > active_size {
+            oracle_id
+        } else {
+            active_size
+        };
+
+        // New samples are initialized and stored. The only information they contain is the length of the oracle.
+        for i in length..new_length {
+            self.insert(storage, &i, &OracleSample::from(active_size))?;
+        }
+
+        let new_sample =
+            OracleSample::from((U256::from(sample) ^ U256::from(length)) | U256::from(new_length));
+
+        self.set_sample(storage, oracle_id, new_sample)?;
+
+        Ok(())
+    }
+}
+
 impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
     /// Modifier to check that the oracle id is valid.
     fn check_oracle_id(oracle_id: u16) -> Result<(), StdError> {
@@ -411,7 +666,8 @@ impl OracleMap for secret_storage_plus::Map<'_, u16, OracleSample> {
 
         // if OracleSample::get_sample_last_update(&self.samples[&(oracle_id % active_size)])
         if self
-            .load(storage, oracle_id % active_size)?
+            .load(storage, oracle_id % active_size)
+            .unwrap_or_default()
             .get_sample_last_update()
             > look_up_timestamp
         {

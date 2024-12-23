@@ -191,7 +191,7 @@ pub fn query_active_id(deps: Deps) -> Result<ActiveIdResponse> {
 /// * `bin_reserve_x` - The reserve of token X in the bin
 /// * `bin_reserve_y` - The reserve of token Y in the bin
 pub fn query_bin(deps: Deps, id: u32) -> Result<BinResponse> {
-    let bin_reserves = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
+    let bin_reserves = BINS.get(deps.storage, &id).unwrap_or([0u8; 32]);
     let (bin_reserve_x, bin_reserve_y) = bin_reserves.decode();
 
     let response = BinResponse {
@@ -216,7 +216,7 @@ pub fn query_bin(deps: Deps, id: u32) -> Result<BinResponse> {
 pub fn query_bins(deps: Deps, ids: Vec<u32>) -> Result<BinsResponse> {
     let mut bin_responses = Vec::new();
     for id in ids {
-        let bin: Bytes32 = BIN_MAP.load(deps.storage, id).unwrap_or([0u8; 32]);
+        let bin: Bytes32 = BINS.get(deps.storage, &id).unwrap_or([0u8; 32]);
         let (bin_reserve_x, bin_reserve_y) = bin.decode();
         bin_responses.push(BinResponse {
             bin_reserve_x: bin_reserve_x.into(),
@@ -261,7 +261,7 @@ pub fn query_all_bins(
         }
 
         let (bin_reserve_x, bin_reserve_y) =
-            BIN_MAP.load(deps.storage, id).unwrap_or_default().decode();
+            BINS.get(deps.storage, &id).unwrap_or_default().decode();
         bin_responses.push(BinResponse {
             bin_reserve_x: bin_reserve_x.into(),
             bin_reserve_y: bin_reserve_y.into(),
@@ -550,8 +550,8 @@ pub fn query_swap_in(
     parameters.update_references(env.block.time.seconds())?;
 
     loop {
-        let bin_reserves = BIN_MAP
-            .load(deps.storage, id)
+        let bin_reserves = BINS
+            .get(deps.storage, &id)
             .unwrap_or_default()
             .decode_alt(!swap_for_y);
 
@@ -640,7 +640,7 @@ pub fn query_swap_out(
     parameters.update_references(env.block.time.seconds())?;
 
     loop {
-        let bin_reserves = BIN_MAP.load(deps.storage, id).unwrap_or_default();
+        let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
         if !bin_reserves.is_empty(!swap_for_y) {
             parameters.update_volatility_accumulator(id)?;
 
