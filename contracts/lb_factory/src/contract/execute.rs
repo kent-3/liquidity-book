@@ -214,7 +214,6 @@ pub fn create_lb_pair(
                 lb_token_implementation: config.lb_token_implementation,
                 viewing_key,
                 entropy,
-                protocol_fee_recipient: config.fee_recipient,
                 admin_auth: config.admin_auth.into(),
                 query_auth: config.query_auth.into(),
             })?,

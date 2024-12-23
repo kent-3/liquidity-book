@@ -247,7 +247,6 @@ pub struct InstantiateMsg {
     pub lb_token_implementation: ContractImplementation,
     pub viewing_key: String,
     pub entropy: String,
-    pub protocol_fee_recipient: Addr,
     // TODO: Decide about getting rid of these.
     pub admin_auth: RawContract,
     pub query_auth: RawContract,

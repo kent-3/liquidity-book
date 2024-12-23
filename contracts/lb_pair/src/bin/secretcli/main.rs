@@ -102,7 +102,6 @@ fn main() -> io::Result<()> {
         lb_token_implementation: ContractImplementation::default(),
         viewing_key: String::from("viewing_key"),
         entropy: String::from("entropy"),
-        protocol_fee_recipient: Addr::funds_recipient(),
         query_auth: RawContract::example(),
     };
 

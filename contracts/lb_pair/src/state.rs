@@ -66,7 +66,6 @@ pub struct State {
     pub viewing_key: ViewingKey,
 
     // Administrative and operational fields
-    pub protocol_fees_recipient: Addr,
     pub admin_auth: Contract,
     // why did we need this?
     // pub last_swap_timestamp: Timestamp,
