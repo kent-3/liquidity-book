@@ -18,7 +18,7 @@ pub use crate::{
     error::Error,
     fee_helper::FeeHelper,
     math::{
-        encoded::Encoded, liquidity_configurations::LiquidityConfiguration,
+        encoded::Encoded, liquidity_configurations::LiquidityConfigurations,
         packed_u128_math::PackedUint128Math, sample_math::OracleSample, tree_math::TreeUint24,
         u128x128_math::U128x128Math, u256x256_math::U256x256Math,
     },

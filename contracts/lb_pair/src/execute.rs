@@ -16,7 +16,7 @@ use lb_libraries::{
         u24::U24,
         uint256_to_u256::{ConvertU256, ConvertUint256},
     },
-    BinHelper, Bytes32, LiquidityConfiguration, OracleMap, PackedUint128Math, PairParameters,
+    BinHelper, Bytes32, LiquidityConfigurations, OracleMap, PackedUint128Math, PairParameters,
     PriceHelper, U256x256Math,
 };
 use std::ops::Add;
@@ -437,7 +437,7 @@ pub fn mint(
     env: Env,
     info: MessageInfo,
     to: String,
-    liquidity_configs: Vec<LiquidityConfiguration>,
+    liquidity_configs: Vec<LiquidityConfigurations>,
     refund_to: String,
 ) -> Result<Response> {
     if liquidity_configs.is_empty() {
@@ -446,15 +446,6 @@ pub fn mint(
 
     let to = deps.api.addr_validate(&to)?;
     let refund_to = deps.api.addr_validate(&refund_to)?;
-
-    // TODO: these don't need to be U256 types. I think they just do that in EVM land.
-    // ids should be u24/u32
-    // liquidity_minted might still be U256 or Uint256
-    let mut arrays = MintArrays {
-        ids: vec![0u32; liquidity_configs.len()],
-        amounts: vec![[0u8; 32]; liquidity_configs.len()],
-        liquidity_minted: vec![U256::ZERO; liquidity_configs.len()],
-    };
 
     let reserves = RESERVES.load(deps.storage)?;
 
@@ -477,6 +468,19 @@ pub fn mint(
 
     let mut messages: Vec<CosmosMsg> = Vec::new();
     let mut events: Vec<Event> = Vec::new();
+
+    // TODO: these don't need to be U256 types. I think they just do that in EVM land.
+    // ids should be u24/u32
+    // liquidity_minted might still be U256 or Uint256
+    let mut arrays = MintArrays {
+        ids: vec![0u32; liquidity_configs.len()],
+        amounts: vec![[0u8; 32]; liquidity_configs.len()],
+        liquidity_minted: vec![U256::ZERO; liquidity_configs.len()],
+    };
+
+    deps.api.debug("gonna mint some bins");
+    let gas = deps.api.check_gas()?;
+    deps.api.debug(&gas.to_string());
 
     let amounts_left = mint_bins(
         &mut deps,
@@ -555,7 +559,7 @@ fn mint_bins(
     info: &MessageInfo,
     messages: &mut Vec<CosmosMsg>,
     events: &mut Vec<Event>,
-    liquidity_configs: Vec<LiquidityConfiguration>,
+    liquidity_configs: Vec<LiquidityConfigurations>,
     amounts_received: Bytes32,
     to: Addr,
     arrays: &mut MintArrays,
@@ -569,8 +573,8 @@ fn mint_bins(
 
     let mut mint_tokens: Vec<TokenAmount> = Vec::new();
 
-    for (i, liq_conf) in liquidity_configs.iter().enumerate() {
-        let (max_amounts_in_to_bin, id) = liq_conf.get_amounts_and_id(amounts_received)?;
+    for (i, liquidity_config) in liquidity_configs.iter().enumerate() {
+        let (max_amounts_in_to_bin, id) = liquidity_config.get_amounts_and_id(amounts_received)?;
         let (shares, amounts_in, amounts_in_to_bin) = update_bin(
             deps,
             env,
@@ -677,7 +681,6 @@ fn update_bin(
                 .add(fees.sub(protocol_c_fees)?)?
                 .get_liquidity(price)?;
             shares = user_liquidity.mul_div_round_down(supply, bin_liquidity)?;
-            // shares = U256x256Math::mul_div_round_down(user_liquidity, supply, bin_liquidity)?;
 
             parameters =
                 ORACLE.update_oracle(deps.storage, env.block.time.seconds(), parameters, id)?;

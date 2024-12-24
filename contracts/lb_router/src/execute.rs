@@ -15,7 +15,7 @@ use lb_interfaces::{
     lb_pair::{self, ILbPair, LiquidityParameters},
     lb_router::{Path, Version},
 };
-use lb_libraries::LiquidityConfiguration;
+use lb_libraries::LiquidityConfigurations;
 use shade_protocol::{swap::core::TokenType, utils::ExecuteCallback};
 
 pub fn create_lb_pair(
@@ -77,7 +77,7 @@ pub fn add_liquidity(
     // Could increasing allowances be done via submessages? I don't think so, because the message
     // sender would be this contract, not the user.
 
-    // TODO: Transfer tokens from sender to the pair contract.
+    // Transfer tokens from sender to the pair contract.
     let transfer_x_msg = secret_toolkit::snip20::transfer_from_msg(
         info.sender.to_string(),
         pair.0.address.to_string(),
@@ -124,8 +124,7 @@ pub fn _add_liquidity(
         });
     }
 
-    // TODO: encode these as Bytes32
-    let mut liquidity_configs = vec![LiquidityConfiguration::default(); liq.delta_ids.len()];
+    let mut liquidity_configs = vec![LiquidityConfigurations::default(); liq.delta_ids.len()];
     let mut deposit_ids = Vec::with_capacity(liq.delta_ids.len());
 
     let active_id = pair.get_active_id(deps.querier)?;
@@ -145,12 +144,11 @@ pub fn _add_liquidity(
 
         deposit_ids.push(id as u32);
 
-        // TODO: encode these as Bytes32
-        *liquidity_config = LiquidityConfiguration {
-            distribution_x: liq.distribution_x[i].u64(),
-            distribution_y: liq.distribution_y[i].u64(),
-            id: id as u32,
-        };
+        *liquidity_config = LiquidityConfigurations::encode_params(
+            liq.distribution_x[i].u64(),
+            liq.distribution_y[i].u64(),
+            id as u32,
+        );
     }
 
     EPHEMERAL_ADD_LIQUIDITY.save(
