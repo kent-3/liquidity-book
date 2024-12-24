@@ -263,13 +263,12 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 // TODO: Decide between response attributes vs response data.
                 Ok(
-                    Response::new()
-                        .set_data(to_binary(&data)?)
-                        .add_attribute("amount_x_added", amount_x_added)
-                        .add_attribute("amount_y_added", amount_y_added)
-                        .add_attribute("amount_x_left", amount_x_left)
-                        .add_attribute("amount_y_left", amount_y_left), // .add_attribute("deposit_ids", deposit_ids)
-                                                                        // .add_attribute("liquidity_minted", liquidity_minted)
+                    Response::new().set_data(to_binary(&data)?), // .add_attribute("amount_x_added", amount_x_added)
+                                                                 // .add_attribute("amount_y_added", amount_y_added)
+                                                                 // .add_attribute("amount_x_left", amount_x_left)
+                                                                 // .add_attribute("amount_y_left", amount_y_left),
+                                                                 // .add_attribute("deposit_ids", deposit_ids)
+                                                                 // .add_attribute("liquidity_minted", liquidity_minted)
                 )
             }
             None => Err(Error::ReplyDataMissing),
