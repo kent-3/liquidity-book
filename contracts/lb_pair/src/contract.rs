@@ -121,8 +121,6 @@ pub fn instantiate(
     RESERVES.save(deps.storage, &Bytes32::default())?;
     PROTOCOL_FEES.save(deps.storage, &Bytes32::default())?;
 
-    // BIN_TREE.save(deps.storage, &TreeUint24::new())?;
-
     LB_TOKEN.save(
         deps.storage,
         &ContractInfo {
