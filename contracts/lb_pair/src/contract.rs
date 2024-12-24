@@ -27,7 +27,7 @@ pub fn instantiate(
 ) -> Result<Response> {
     const LB_TOKEN_DECIMALS: u8 = 18;
     // TODO: isn't this supposed to start at 0?
-    const START_ORACLE_ID: u16 = 1;
+    // const START_ORACLE_ID: u16 = 1;
 
     // Initializing the Token Contract
     let token_x_symbol = match msg.token_x.clone() {
@@ -90,7 +90,7 @@ pub fn instantiate(
         msg.pair_parameters.max_volatility_accumulator,
     )?;
     pair_parameters.set_active_id(msg.active_id)?;
-    pair_parameters.set_oracle_id(START_ORACLE_ID); // Activating the oracle
+    // pair_parameters.set_oracle_id(START_ORACLE_ID); // Activating the oracle
     pair_parameters.update_id_reference();
 
     // RegisterReceiving Token
