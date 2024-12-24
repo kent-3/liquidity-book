@@ -198,8 +198,8 @@ pub fn create_lb_pair(
             ),
             msg: to_binary(&LbPairInstantiateMsg {
                 factory: env.contract,
-                token_x,
-                token_y,
+                token_x: token_x.clone(),
+                token_y: token_y.clone(),
                 bin_step,
                 pair_parameters: StaticFeeParameters {
                     base_factor: preset.get_base_factor(),
@@ -227,8 +227,8 @@ pub fn create_lb_pair(
     EPHEMERAL_STORAGE.save(
         deps.storage,
         &NextPairKey {
-            token_a,
-            token_b,
+            token_x,
+            token_y,
             bin_step,
             code_hash: config.lb_pair_implementation.code_hash,
             // FIXME: ???

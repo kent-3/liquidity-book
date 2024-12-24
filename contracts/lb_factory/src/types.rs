@@ -5,8 +5,8 @@ use shade_protocol::swap::core::TokenType;
 
 #[cw_serde]
 pub struct NextPairKey {
-    pub token_a: TokenType,
-    pub token_b: TokenType,
+    pub token_x: TokenType,
+    pub token_y: TokenType,
     pub bin_step: u16,
     pub code_hash: String,
     pub is_open: bool,

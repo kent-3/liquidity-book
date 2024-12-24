@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{contract::helper::_sort_tokens, prelude::*};
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, Event, MessageInfo, Reply,
     Response, StdResult, SubMsgResult, Uint128,
@@ -209,17 +209,19 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
                 let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
                 let lb_pair_key = EPHEMERAL_STORAGE.load(deps.storage)?;
 
-                let token_a = lb_pair_key.token_a;
-                let token_b = lb_pair_key.token_b;
+                let token_x = lb_pair_key.token_x;
+                let token_y = lb_pair_key.token_y;
                 let bin_step = lb_pair_key.bin_step;
                 let code_hash = lb_pair_key.code_hash;
 
                 let lb_pair = LbPair {
-                    token_x: token_a.clone(),
-                    token_y: token_b.clone(),
+                    token_x: token_x.clone(),
+                    token_y: token_y.clone(),
                     bin_step,
                     contract: ContractInfo { address, code_hash },
                 };
+
+                let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
 
                 LB_PAIRS_INFO.save(
                     deps.storage,
@@ -233,22 +235,6 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
                 )?;
 
                 ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
-
-                // TODO: delete this once we're sure the 'update' code works
-                //
-                // load the different bin_step LbPairs that exist for this pair of tokens, then add the new one
-                // let mut bin_step_list = AVAILABLE_LB_PAIR_BIN_STEPS
-                //     .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
-                //     .unwrap_or_default();
-                //
-                // bin_step_list.insert(bin_step);
-                //
-                // AVAILABLE_LB_PAIR_BIN_STEPS.save(
-                //     deps.storage,
-                //     (token_a.unique_key(), token_b.unique_key()),
-                //     &bin_step_list,
-                // )?;
-
                 AVAILABLE_LB_PAIR_BIN_STEPS.update(
                     deps.storage,
                     (token_a.unique_key(), token_b.unique_key()),
@@ -262,8 +248,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
                 EPHEMERAL_STORAGE.remove(deps.storage);
 
                 let event = Event::lb_pair_created(
-                    token_a.unique_key(),
-                    token_b.unique_key(),
+                    token_x.unique_key(),
+                    token_y.unique_key(),
                     bin_step,
                     lb_pair.contract.address.to_string(),
                     ALL_LB_PAIRS.get_len(deps.storage)? - 1,
