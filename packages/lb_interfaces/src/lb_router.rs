@@ -127,10 +127,6 @@ pub enum ExecuteMsg {
         to: String,
         deadline: Uint64,
     },
-    RegisterSnip20 {
-        token_addr: String,
-        token_code_hash: String,
-    },
     Sweep {
         token: ContractInfo, // must be a snip20 token
         to: String,
@@ -142,10 +138,18 @@ pub enum ExecuteMsg {
         ids: Vec<u32>,
         amounts: Vec<Uint128>,
     },
+
+    // not in joe-v2
+    Register {
+        address: String,
+        code_hash: String,
+    },
     Receive {
-        from: String,
-        msg: Option<Binary>,
+        sender: Addr,
+        from: Addr,
         amount: Uint128,
+        memo: Option<String>,
+        msg: Binary,
     },
 }
 

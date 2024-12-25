@@ -177,8 +177,6 @@ impl ILbPair {
     }
 }
 
-// added this directly to avoid using the "snip20" feature of shade-protocol, which brings in
-// secret-storage-plus as a dependency, which was causing issues.
 #[cw_serde]
 pub struct Snip20ReceiveMsg {
     pub sender: String,

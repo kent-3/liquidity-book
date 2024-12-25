@@ -1,7 +1,7 @@
 // #![allow(unused)]
 
 use crate::{
-    contract::{ensure, BURN_REPLY_ID, CREATE_LB_PAIR_REPLY_ID, MINT_REPLY_ID, ROUTER_KEY},
+    contract::{ensure, BURN_REPLY_ID, CREATE_LB_PAIR_REPLY_ID, MINT_REPLY_ID, PUBLIC_VIEWING_KEY},
     helper::*,
     prelude::*,
     state::*,
@@ -26,18 +26,30 @@ pub fn create_lb_pair(
     active_id: u32,
     bin_step: u16,
 ) -> Result<Response> {
-    let entropy = env.block.random.unwrap_or(to_binary(b"meh")?);
+    let entropy = env.block.random.unwrap_or(to_binary(b"meh")?); // TODO:
 
     let factory = FACTORY.load(deps.storage)?;
-    let msg = lb_factory::ExecuteMsg::CreateLbPair {
+
+    // TODO: decide which version is best
+
+    let msg = factory.create_lb_pair(
         token_x,
         token_y,
         active_id,
         bin_step,
-        viewing_key: ROUTER_KEY.to_string(),
-        entropy: entropy.to_string(),
-    }
-    .to_cosmos_msg(&factory, vec![])?;
+        PUBLIC_VIEWING_KEY.to_string(),
+        entropy.to_string(),
+    )?;
+
+    // let msg = lb_factory::ExecuteMsg::CreateLbPair {
+    //     token_x,
+    //     token_y,
+    //     active_id,
+    //     bin_step,
+    //     viewing_key: PUBLIC_VIEWING_KEY.to_string(),
+    //     entropy: entropy.to_string(),
+    // }
+    // .to_cosmos_msg(&factory.0, vec![])?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(msg, CREATE_LB_PAIR_REPLY_ID)))
 }

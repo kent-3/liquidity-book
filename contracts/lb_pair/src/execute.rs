@@ -179,8 +179,6 @@ pub fn swap(
     //     _ => panic!("idk lol"),
     // };
 
-    // TODO: write these as methods on Bins, or at least Bytes32
-    // example: reserves.received_x(token_x_balance);
     let mut amounts_left = if swap_for_y {
         reserves.received_x(token_x_balance.u128())
     } else {
@@ -469,15 +467,14 @@ pub fn mint(
     let mut messages: Vec<CosmosMsg> = Vec::new();
     let mut events: Vec<Event> = Vec::new();
 
-    // TODO: these don't need to be U256 types. I think they just do that in EVM land.
-    // ids should be u24/u32
-    // liquidity_minted might still be U256 or Uint256
+    // NOTE: Liquidity is a 128.128-binary fixed-point number. It is a function of price.
     let mut arrays = MintArrays {
         ids: vec![0u32; liquidity_configs.len()],
         amounts: vec![[0u8; 32]; liquidity_configs.len()],
         liquidity_minted: vec![U256::ZERO; liquidity_configs.len()],
     };
 
+    // TODO:
     deps.api.debug("gonna mint some bins");
     let gas = deps.api.check_gas()?;
     deps.api.debug(&gas.to_string());
@@ -767,14 +764,13 @@ pub fn burn(
             return Err(Error::ZeroShares { id });
         }
 
-        // TODO: this error doesn't seem right. maybe a let-else would make more sense?
+        // TODO: this error doesn't seem right. if Some(0) was returned, it would not error.
         let bin_reserves = BINS
             .get(deps.storage, &id)
             .ok_or_else(|| Error::ZeroBinReserve {
                 active_id: i as u32,
             })?;
 
-        // TODO: starting to wonder if using this U256 type everywhere is the right approach...
         let supply = _query_total_supply(deps.as_ref(), id)?;
 
         burn_tokens.push(TokenAmount {

@@ -154,7 +154,7 @@ impl BinHelper for Bytes32 {
     ///   This is the amount of tokens that the user will actually add to the liquidity book,
     ///   and will always be less than or equal to the amounts_in.
     fn get_shares_and_effective_amounts_in(
-        &self,
+        &self, // self is the bin_reserves
         mut amounts_in: Bytes32,
         price: U256,
         total_supply: U256,
@@ -162,20 +162,18 @@ impl BinHelper for Bytes32 {
         let (mut x, mut y) = amounts_in.decode();
 
         let user_liquidity = Self::get_liquidity(&amounts_in, price)?;
-        if total_supply == U256::ZERO || user_liquidity == U256::ZERO {
-            return Ok((user_liquidity, amounts_in));
+        if user_liquidity == U256::ZERO {
+            return Ok((U256::ZERO, Bytes32::default()));
         }
 
         let bin_liquidity = Self::get_liquidity(self, price)?;
-        if bin_liquidity == U256::ZERO {
+        if bin_liquidity == U256::ZERO || total_supply == U256::ZERO {
+            // FIXME: return user_liquidity.sqrt() instead! But why???
             return Ok((user_liquidity, amounts_in));
         }
 
-        // Total supply is almost always equals to eachother
-        let shares =
-            U256x256Math::mul_div_round_down(&user_liquidity, total_supply, bin_liquidity)?;
-        let effective_liquidity =
-            U256x256Math::mul_div_round_up(&shares, bin_liquidity, total_supply)?;
+        let shares = user_liquidity.mul_div_round_down(total_supply, bin_liquidity)?;
+        let effective_liquidity = shares.mul_div_round_up(bin_liquidity, total_supply)?;
 
         // effective_liquidity and user_liquidity would be different when the total_supply is a number other than the sum of the all individual liquidities
         if user_liquidity > effective_liquidity {
@@ -199,6 +197,8 @@ impl BinHelper for Bytes32 {
 
             amounts_in = Bytes32::encode(x, y);
         }
+
+        // TODO: max liquidity thing
 
         Ok((shares, amounts_in))
     }

@@ -21,6 +21,7 @@ lb-libraries = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-storage = { workspace = true }
 cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true }
 serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }

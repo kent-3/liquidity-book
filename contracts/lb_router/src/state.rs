@@ -1,10 +1,11 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CanonicalAddr, ContractInfo, Uint128};
+use lb_interfaces::lb_factory::ILbFactory;
 use shade_protocol::{contract_interfaces::swap::core::TokenType, secret_storage_plus::Item};
 
 // TODO: Should I use secret-toolkit-storage instead?
 
-pub const FACTORY: Item<ContractInfo> = Item::new("factory");
+pub const FACTORY: Item<ILbFactory> = Item::new("factory");
 pub const EPHEMERAL_ADD_LIQUIDITY: Item<EphemeralAddLiquidity> =
     Item::new("ephemeral_add_liquidity");
 pub const EPHEMERAL_REMOVE_LIQUIDITY: Item<EphemeralRemoveLiquidity> =

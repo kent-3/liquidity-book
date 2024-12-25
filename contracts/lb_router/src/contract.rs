@@ -2,14 +2,17 @@
 
 use crate::{execute::*, msg::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsgResult, Uint128,
+    entry_point, from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Reply, Response, StdResult, SubMsgResult, Uint128,
 };
 use lb_interfaces::{
+    lb_factory::ILbFactory,
     lb_pair,
     lb_router::{self, CreateLbPairResponse, Path},
 };
 use lb_libraries::math::packed_u128_math::PackedUint128Math;
+use secret_toolkit::snip20;
+use shade_protocol::swap::core::TokenType;
 
 // TODO: How are we going to register this router contract to be able to receive every supported snip20 token?
 // I guess we can add a new ExecuteMsg type for that purpose, but if we ever deploy a new router, we'll need to
@@ -20,7 +23,9 @@ use lb_libraries::math::packed_u128_math::PackedUint128Math;
 // TODO: Implement the receive interface to support swaps.
 
 pub const BLOCK_SIZE: usize = 256;
-pub const ROUTER_KEY: &str = "lb_router";
+// TODO: should the router contract have a viewing key that's used for every create_lb_pair? or
+// should that belong to the factory?
+pub const PUBLIC_VIEWING_KEY: &str = "lb_rocks";
 
 pub const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
 pub const MINT_REPLY_ID: u64 = 2u64;
@@ -28,12 +33,11 @@ pub const BURN_REPLY_ID: u64 = 3u64;
 pub const SWAP_REPLY_ID: u64 = 10u64;
 
 // TODO: Need to be able to query the factory contract to check who the owner/admin is.
-// if (msg.sender != Ownable(address(_factory)).owner()) revert LBRouter__NotFactoryOwner();
+// Is there a way to find out the owner of a contract at the chain-level?
+// if (msg.sender != Ownable(address(_factory2_2)).owner()) revert LBRouter__NotFactoryOwner();
 pub fn only_factory_owner(deps: Deps, env: Env, info: MessageInfo) -> Result<()> {
     // let factory_owner = deps.querier.query_wasm_smart(code_hash, contract_addr, lb_factory::QueryMsg::???)
-    todo!();
-
-    Ok(())
+    todo!()
 }
 
 pub fn ensure(env: &Env, deadline: u64) -> Result<()> {
@@ -64,7 +68,12 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    FACTORY.save(deps.storage, &msg.factory)?;
+    FACTORY.save(deps.storage, &ILbFactory(msg.factory))?;
+
+    // TODO: Register all tokens with the router contract. If we ever deploy a new
+    // router, we'll need a way to register all of the tokens used by the pairs.
+    // We should probably have a seperate `Register` message type to let anyone
+    // register a token?
 
     Ok(Response::default())
 }
@@ -203,13 +212,51 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             ids,
             amounts,
         } => sweep_lb_token(deps, env, info, token, to, ids, amounts),
-        // TODO: Are these necessary?
-        ExecuteMsg::RegisterSnip20 {
-            token_addr,
-            token_code_hash,
-        } => unimplemented!(),
-        ExecuteMsg::Receive { from, msg, amount } => unimplemented!(),
+
+        // not in joe-v2
+        ExecuteMsg::Register { address, code_hash } => unimplemented!(),
+        ExecuteMsg::Receive {
+            sender,
+            from,
+            amount,
+            memo,
+            msg,
+        } => receive(deps, env, info, sender, from, amount, memo, msg),
     }
+}
+
+pub fn register(deps: DepsMut, env: Env, address: Addr, code_hash: String) -> StdResult<Response> {
+    let msg = snip20::register_receive_msg(
+        env.contract.code_hash,
+        None,
+        1,
+        address.to_string(),
+        code_hash,
+    )?;
+
+    Ok(Response::new().add_message(msg))
+}
+
+pub fn receive(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    _sender: Addr,
+    from: Addr,
+    amount: Uint128,
+    _memo: Option<String>,
+    msg: Binary,
+) -> Result<Response> {
+    let msg: ExecuteMsg = from_binary(&msg)?;
+
+    if matches!(msg, ExecuteMsg::Receive { .. }) {
+        return Err(Error::Generic(
+            "Recursive call to receive() is not allowed".to_string(),
+        ));
+    }
+
+    /* use sender & amount */
+    execute(deps, env, info, msg)
 }
 
 #[entry_point]
@@ -218,11 +265,35 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
         (CREATE_LB_PAIR_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(data) => {
                 let lb_pair: lb_pair::LbPair = from_binary(&data)?;
-                // TODO: does it make sense to return a nested response like this that only
-                // contains one value?
+
                 let data = CreateLbPairResponse { lb_pair };
 
-                Ok(Response::new().set_data(to_binary(&data)?))
+                let mut msgs: Vec<CosmosMsg> = Vec::with_capacity(2);
+
+                for token in [&data.lb_pair.token_x, &data.lb_pair.token_y] {
+                    if token.is_custom_token() {
+                        msgs.extend([
+                            snip20::set_viewing_key_msg(
+                                "hola".to_string(),
+                                None,
+                                1,
+                                token.address().to_string(),
+                                token.code_hash(),
+                            )?,
+                            snip20::register_receive_msg(
+                                env.contract.code_hash.clone(),
+                                None,
+                                1,
+                                token.address().to_string(),
+                                token.code_hash(),
+                            )?,
+                        ])
+                    }
+                }
+
+                Ok(Response::new()
+                    .set_data(to_binary(&data)?)
+                    .add_messages(msgs))
             }
             None => Err(Error::ReplyDataMissing),
         },

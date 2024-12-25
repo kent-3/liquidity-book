@@ -9,7 +9,7 @@ pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
     let factory = FACTORY.load(deps.storage)?;
 
     Ok(FactoryResponse {
-        factory: factory.address,
+        factory: factory.address.clone(),
     })
 }
 

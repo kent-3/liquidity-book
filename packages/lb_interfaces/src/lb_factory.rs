@@ -1,6 +1,9 @@
 use super::lb_pair::{LbPair, LbPairInformation};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, ContractInfo, Event, QuerierWrapper, StdResult, Uint128};
+use cosmwasm_std::{
+    to_binary, Addr, Binary, ContractInfo, CosmosMsg, Event, QuerierWrapper, StdResult, Uint128,
+    WasmMsg,
+};
 use lb_libraries::Bytes32;
 use serde::{Deserialize, Serialize};
 use shade_protocol::{
@@ -118,7 +121,9 @@ pub trait LbFactoryEventExt {
 
 impl LbFactoryEventExt for Event {}
 
-#[derive(Serialize, Deserialize)]
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with the LB Factory contract.
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ILbFactory(pub ContractInfo);
 
 impl Deref for ILbFactory {
@@ -129,7 +134,35 @@ impl Deref for ILbFactory {
     }
 }
 
+// TODO: add all the other message types
 impl ILbFactory {
+    pub fn create_lb_pair(
+        &self,
+        token_x: TokenType,
+        token_y: TokenType,
+        active_id: u32,
+        bin_step: u16,
+        viewing_key: String,
+        entropy: String,
+        // TODO: do we need to be able to set the `funds`?
+    ) -> StdResult<CosmosMsg> {
+        let msg = ExecuteMsg::CreateLbPair {
+            token_x,
+            token_y,
+            active_id,
+            bin_step,
+            viewing_key,
+            entropy,
+        };
+
+        Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        }))
+    }
+
     pub fn get_fee_recipient(&self, querier: QuerierWrapper) -> StdResult<Addr> {
         querier
             .query_wasm_smart::<FeeRecipientResponse>(
@@ -330,6 +363,8 @@ pub enum ExecuteMsg {
     SetLbTokenImplementation {
         implementation: ContractImplementation,
     },
+    // TODO: should I remove viewing_key here? since it should be a hardcoded, public key? and why
+    // entropy?
     CreateLbPair {
         token_x: TokenType,
         token_y: TokenType,

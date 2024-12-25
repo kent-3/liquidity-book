@@ -1,6 +1,6 @@
 use crate::{prelude::*, state::FACTORY};
 use cosmwasm_std::{Addr, ContractInfo, Deps, Uint128};
-use lb_interfaces::{lb_factory::ILbFactory, lb_router::Version};
+use lb_interfaces::lb_router::Version;
 
 // NOTE: We are following the joe-v2 versioning, starting from V2_2.
 
@@ -21,12 +21,8 @@ pub fn _get_lb_pair_information(
     } else {
         let factory = FACTORY.load(deps.storage)?;
 
-        let lb_pair_information = ILbFactory(factory).get_lb_pair_information(
-            deps.querier,
-            token_x,
-            token_y,
-            bin_step,
-        )?;
+        let lb_pair_information =
+            factory.get_lb_pair_information(deps.querier, token_x, token_y, bin_step)?;
 
         // let msg = lb_factory::QueryMsg::GetLbPairInformation {
         //     token_x,
