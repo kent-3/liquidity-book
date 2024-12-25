@@ -1,7 +1,7 @@
 use crate::{contract::helper::_sort_tokens, prelude::*};
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, Event, MessageInfo, Reply,
-    Response, StdResult, SubMsgResult, Uint128,
+    Response, SubMsgResult, Uint128,
 };
 use lb_interfaces::{
     lb_factory::*,
@@ -223,9 +223,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
 
                 let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
 
-                LB_PAIRS_INFO.save(
+                LB_PAIRS_INFO.insert(
                     deps.storage,
-                    (token_a.unique_key(), token_b.unique_key(), bin_step),
+                    &(token_a.unique_key(), token_b.unique_key(), bin_step),
                     &LbPairInformation {
                         bin_step: lb_pair_key.bin_step,
                         lb_pair: lb_pair.clone(),
@@ -235,14 +235,17 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
                 )?;
 
                 ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
-                AVAILABLE_LB_PAIR_BIN_STEPS.update(
+
+                // TODO: annoying that I have to get and insert rather than update in place
+
+                let available_bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
+                    .get(deps.storage, &(token_a.unique_key(), token_b.unique_key()))
+                    .unwrap_or_default();
+
+                AVAILABLE_LB_PAIR_BIN_STEPS.insert(
                     deps.storage,
-                    (token_a.unique_key(), token_b.unique_key()),
-                    |bin_steps| -> StdResult<_> {
-                        let mut bin_steps = bin_steps.unwrap_or_default();
-                        bin_steps.insert(bin_step);
-                        Ok(bin_steps)
-                    },
+                    &(token_a.unique_key(), token_b.unique_key()),
+                    &available_bin_steps,
                 )?;
 
                 EPHEMERAL_STORAGE.remove(deps.storage);

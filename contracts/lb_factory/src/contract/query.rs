@@ -1,5 +1,5 @@
 use super::{
-    helper::{_get_lb_pair_information, _is_preset_open, _sort_tokens},
+    helper::{_is_preset_open, _sort_tokens},
     state::*,
     MAX_FLASH_LOAN_FEE, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
@@ -161,25 +161,30 @@ pub fn query_is_quote_asset(deps: Deps, token: TokenType) -> Result<IsQuoteAsset
     Ok(response)
 }
 
-/// Returns the LbPairInformation if it exists, if not, then the address 0 is returned.
+/// Returns the LbPairInformation if it exists, if not, then the address 0 is returned. The order doesn't matter
 ///
 /// # Arguments
 ///
-/// * `token_a` - The address of the first token of the pair.
-/// * `token_b` - The address of the second token of the pair.
-/// * `bin_step` - The bin step of the LbPair.
+/// * `token_a` - The address of the first token of the pair
+/// * `token_b` - The address of the second token of the pair
+/// * `bin_step` - The bin step of the LbPair
 ///
 /// # Returns
 ///
-/// * `lb_pair_information` - The LbPairInformation.
+/// * The LbPairInformation
 pub fn query_lb_pair_information(
     deps: Deps,
     token_a: TokenType,
     token_b: TokenType,
     bin_step: u16,
 ) -> Result<LbPairInformationResponse> {
-    let lb_pair_information: LbPairInformation =
-        _get_lb_pair_information(deps, token_a, token_b, bin_step)?;
+    let (token_a, token_b) = _sort_tokens(token_a, token_b);
+    let lb_pair_information = LB_PAIRS_INFO
+        .get(
+            deps.storage,
+            &(token_a.unique_key(), token_b.unique_key(), bin_step),
+        )
+        .unwrap_or_default();
 
     let response = LbPairInformationResponse {
         lb_pair_information,
@@ -205,13 +210,13 @@ pub fn query_lb_pair_information(
 /// * `max_volatility_accumulator` - The max volatility accumulator of the preset.
 /// * `is_open` - Whether the preset is open or not.
 pub fn query_preset(deps: Deps, bin_step: u16) -> Result<PresetResponse> {
-    if !PRESETS.has(deps.storage, bin_step) {
+    if !PRESETS.contains(deps.storage, &bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
     // NOTE: each preset is an encoded Bytes32.
     // The PairParameters wrapper provides methods to decode specific values.
-    let preset = PRESETS.load(deps.storage, bin_step).unwrap();
+    let preset = PRESETS.get(deps.storage, &bin_step).unwrap();
 
     let base_factor = preset.get_base_factor();
     let filter_period = preset.get_filter_period();
@@ -276,7 +281,7 @@ pub fn query_open_bin_steps(deps: Deps) -> Result<OpenBinStepsResponse> {
     let mut open_bin_steps = Vec::<u16>::new();
 
     for bin_step in hashset {
-        let preset = PRESETS.load(deps.storage, bin_step)?;
+        let preset = PRESETS.get(deps.storage, &bin_step).unwrap_or_default();
 
         if _is_preset_open(preset.0) {
             open_bin_steps.push(bin_step)
@@ -306,22 +311,21 @@ pub fn query_all_lb_pairs(
     let (token_a, token_b) = _sort_tokens(token_x, token_y);
 
     let bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
-        .load(deps.storage, (token_a.unique_key(), token_b.unique_key()))
-        .map_err(|_| Error::Generic("This token pair is not in the map".to_string()))?;
+        .get(deps.storage, &(token_a.unique_key(), token_b.unique_key()))
+        .unwrap_or_default(); // the default is an empty HashSet
 
     let lb_pairs_available: Vec<LbPairInformation> = bin_steps
         .into_iter()
-        .map(|bin_step| {
-            LB_PAIRS_INFO
-                .load(
-                    deps.storage,
-                    (token_a.unique_key(), token_b.unique_key(), bin_step),
-                )
-                .map_err(|_| Error::Generic("Error retrieving LbPairInformation".to_string()))
+        .filter_map(|bin_step| {
+            LB_PAIRS_INFO.get(
+                deps.storage,
+                &(token_a.unique_key(), token_b.unique_key(), bin_step),
+            )
         })
-        .collect::<Result<Vec<LbPairInformation>>>()?;
+        .collect::<Vec<LbPairInformation>>();
 
     let response = AllLbPairsResponse { lb_pairs_available };
 
+    // NOTE: This cannot fail, but I'm keeping it `Result` to match all the other queries.
     Ok(response)
 }

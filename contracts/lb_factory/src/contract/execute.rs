@@ -124,13 +124,13 @@ pub fn create_lb_pair(
 ) -> Result<Response> {
     let config = STATE.load(deps.storage)?;
 
-    if !PRESETS.has(deps.storage, bin_step) {
+    if !PRESETS.contains(deps.storage, &bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
     let preset = PRESETS
-        .load(deps.storage, bin_step)
-        .map_err(|_| Error::BinStepHasNoPreset { bin_step })?;
+        .get(deps.storage, &bin_step)
+        .ok_or_else(|| Error::BinStepHasNoPreset { bin_step })?;
     let is_owner = info.sender == config.owner;
 
     if !_is_preset_open(preset.0) && !is_owner {
@@ -166,11 +166,11 @@ pub fn create_lb_pair(
     let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
 
     if LB_PAIRS_INFO
-        .load(
+        .get(
             deps.storage,
-            (token_a.unique_key(), token_b.unique_key(), bin_step),
+            &(token_a.unique_key(), token_b.unique_key(), bin_step),
         )
-        .is_ok()
+        .is_some()
     {
         return Err(Error::LbPairAlreadyExists {
             token_x: token_x.unique_key(),
@@ -313,7 +313,7 @@ pub fn set_pair_preset(
     hashset.insert(bin_step);
     PRESET_HASHSET.save(deps.storage, &hashset)?;
 
-    PRESETS.save(deps.storage, bin_step, &preset)?;
+    PRESETS.insert(deps.storage, &bin_step, &preset)?;
     STATE.save(deps.storage, &state)?;
 
     let event = Event::preset_set(
@@ -350,11 +350,10 @@ pub fn set_preset_open_state(
         info.sender.to_string(),
         &state.admin_auth,
     )?;
-    if !PRESETS.has(deps.storage, bin_step) {
-        return Err(Error::BinStepHasNoPreset { bin_step });
-    }
 
-    let mut preset = PRESETS.load(deps.storage, bin_step)?;
+    let Some(mut preset) = PRESETS.get(deps.storage, &bin_step) else {
+        return Err(Error::BinStepHasNoPreset { bin_step });
+    };
 
     if preset.0.decode_bool(OFFSET_IS_PRESET_OPEN) == is_open {
         return Err(Error::PresetOpenStateIsAlreadyInTheSameState);
@@ -362,7 +361,7 @@ pub fn set_preset_open_state(
         preset.0.set_bool(is_open, OFFSET_IS_PRESET_OPEN);
     }
 
-    PRESETS.save(deps.storage, bin_step, &preset)?;
+    PRESETS.insert(deps.storage, &bin_step, &preset)?;
 
     let event = Event::preset_open_state_changed(bin_step, is_open);
 
@@ -387,11 +386,11 @@ pub fn remove_preset(
         info.sender.to_string(),
         &state.admin_auth,
     )?;
-    if !PRESETS.has(deps.storage, bin_step) {
+    if !PRESETS.contains(deps.storage, &bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
-    PRESETS.remove(deps.storage, bin_step);
+    PRESETS.remove(deps.storage, &bin_step);
 
     let mut hashset = PRESET_HASHSET.load(deps.storage)?;
     hashset.remove(&bin_step);
@@ -440,11 +439,11 @@ pub fn set_fee_parameters_on_pair(
     )?;
     let (token_a, token_b) = _sort_tokens(token_x, token_y);
     let lb_pair = LB_PAIRS_INFO
-        .load(
+        .get(
             deps.storage,
-            (token_a.unique_key(), token_b.unique_key(), bin_step),
+            &(token_a.unique_key(), token_b.unique_key(), bin_step),
         )
-        .map_err(|_| Error::LbPairNotCreated {
+        .ok_or_else(|| Error::LbPairNotCreated {
             token_x: token_a.unique_key(),
             token_y: token_b.unique_key(),
             bin_step,
@@ -589,11 +588,11 @@ pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo, pair: LbPair) ->
 
     let (token_a, token_b) = _sort_tokens(pair.token_x, pair.token_y);
     let lb_pair = LB_PAIRS_INFO
-        .load(
+        .get(
             deps.storage,
-            (token_a.unique_key(), token_b.unique_key(), pair.bin_step),
+            &(token_a.unique_key(), token_b.unique_key(), pair.bin_step),
         )
-        .map_err(|_| Error::LbPairNotCreated {
+        .ok_or_else(|| Error::LbPairNotCreated {
             token_x: token_a.unique_key(),
             token_y: token_b.unique_key(),
             bin_step: pair.bin_step,
