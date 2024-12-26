@@ -112,7 +112,7 @@ pub fn create_lb_pair(
     token_y: TokenType,
     active_id: u32,
     bin_step: u16,
-    viewing_key: String,
+    viewing_key: String, // TODO: should this be static? should it be public?
     entropy: String,
 ) -> Result<Response> {
     let config = STATE.load(deps.storage)?;

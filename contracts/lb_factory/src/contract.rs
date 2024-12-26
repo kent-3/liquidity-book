@@ -17,10 +17,10 @@ use execute::*;
 use query::*;
 use state::*;
 
-// TODO: understand the implications of static vs const
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
 static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%
+static PUBLIC_VIEWING_KEY: &str = "lb_rocks"; // TODO: decide if this should be public and/or public
 
 const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
 
