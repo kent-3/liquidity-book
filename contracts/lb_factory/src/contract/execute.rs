@@ -1,12 +1,11 @@
 use super::{
     helper::{_is_preset_open, _sort_tokens},
     state::*,
-    INSTANTIATE_REPLY_ID, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
+    CREATE_LB_PAIR_REPLY_ID, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
 use crate::prelude::*;
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response, StdResult, SubMsg,
-    WasmMsg,
+    to_binary, Addr, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response, SubMsg, WasmMsg,
 };
 use lb_interfaces::{
     lb_factory::*,
@@ -219,7 +218,7 @@ pub fn create_lb_pair(
             funds: vec![],
             admin: None,
         },
-        INSTANTIATE_REPLY_ID,
+        CREATE_LB_PAIR_REPLY_ID,
     ));
 
     EPHEMERAL_LB_PAIR.save(

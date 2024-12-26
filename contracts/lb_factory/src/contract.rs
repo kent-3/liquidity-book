@@ -22,7 +22,7 @@ static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
 static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%
 
-const INSTANTIATE_REPLY_ID: u64 = 1u64;
+const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
 
 #[entry_point]
 pub fn instantiate(
@@ -53,7 +53,8 @@ pub fn instantiate(
 
 #[entry_point]
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {
-    // TODO: recheck this. it doesn't look right.
+    // TODO: recheck this. it doesn't look right. Why would we want to block setting
+    // implementations when FreezeAll is active? I think it's meant to be the inverse?
     match CONTRACT_STATUS.load(deps.storage)? {
         ContractStatus::FreezeAll => match msg {
             ExecuteMsg::SetLbPairImplementation { .. }
@@ -202,7 +203,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
 #[entry_point]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
-        (INSTANTIATE_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
+        (CREATE_LB_PAIR_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
                 let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
                 let EphemeralLbPair {
