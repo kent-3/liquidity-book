@@ -2,7 +2,7 @@
 
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
 use lb_interfaces::{
-    lb_factory::{ContractImplementation, StaticFeeParameters},
+    lb_factory::{Implementation, StaticFeeParameters},
     lb_pair::{LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity},
 };
 use shade_protocol::{
@@ -53,9 +53,9 @@ pub trait ExampleData {
     fn example() -> Self;
 }
 
-impl ExampleData for ContractImplementation {
+impl ExampleData for Implementation {
     fn example() -> Self {
-        ContractImplementation {
+        Implementation {
             id: 1u64,
             code_hash: "0123456789ABCDEF".to_string(),
         }

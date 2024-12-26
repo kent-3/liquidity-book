@@ -328,7 +328,7 @@ impl ILbFactory {
 
 #[cw_serde]
 #[derive(Default)]
-pub struct ContractImplementation {
+pub struct Implementation {
     pub id: u64,
     pub code_hash: String,
 }
@@ -358,10 +358,10 @@ impl InstantiateCallback for InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     SetLbPairImplementation {
-        implementation: ContractImplementation,
+        implementation: Implementation,
     },
     SetLbTokenImplementation {
-        implementation: ContractImplementation,
+        implementation: Implementation,
     },
     // TODO: should I remove viewing_key here? since it should be a hardcoded, public key? and why
     // entropy?
@@ -506,12 +506,12 @@ pub struct FlashLoanFeeResponse {
 
 #[cw_serde]
 pub struct LbPairImplementationResponse {
-    pub lb_pair_implementation: ContractImplementation,
+    pub lb_pair_implementation: Implementation,
 }
 
 #[cw_serde]
 pub struct LbTokenImplementationResponse {
-    pub lb_token_implementation: ContractImplementation,
+    pub lb_token_implementation: Implementation,
 }
 
 #[cw_serde]

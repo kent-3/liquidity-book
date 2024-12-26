@@ -30,7 +30,7 @@ pub fn set_lb_pair_implementation(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    new_lb_pair_implementation: ContractImplementation,
+    new_lb_pair_implementation: Implementation,
 ) -> Result<Response> {
     let config = STATE.load(deps.storage)?;
     validate_admin(
@@ -69,7 +69,7 @@ pub fn set_lb_token_implementation(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    new_lb_token_implementation: ContractImplementation,
+    new_lb_token_implementation: Implementation,
 ) -> Result<Response> {
     let config = STATE.load(deps.storage)?;
     validate_admin(

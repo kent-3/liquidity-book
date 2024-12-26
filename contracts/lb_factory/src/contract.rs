@@ -39,8 +39,8 @@ pub fn instantiate(
         },
         owner: msg.owner.unwrap_or_else(|| info.sender.clone()),
         fee_recipient: msg.fee_recipient,
-        lb_pair_implementation: ContractImplementation::default(),
-        lb_token_implementation: ContractImplementation::default(),
+        // lb_pair_implementation: Implementation::empty(),
+        // lb_token_implementation: Implementation::empty(),
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
         query_auth: msg.query_auth.into_valid(deps.api)?,
     };

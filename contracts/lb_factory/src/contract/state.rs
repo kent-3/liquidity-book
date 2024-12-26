@@ -2,7 +2,7 @@ use crate::types::NextPairKey;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Uint128};
 use lb_interfaces::{
-    lb_factory::ContractImplementation,
+    lb_factory::Implementation,
     lb_pair::{LbPair, LbPairInformation},
 };
 use lb_libraries::pair_parameter_helper::PairParameters;

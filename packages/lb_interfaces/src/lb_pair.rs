@@ -1,4 +1,4 @@
-use super::lb_factory::{ContractImplementation, StaticFeeParameters};
+use super::lb_factory::{Implementation, StaticFeeParameters};
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
@@ -242,7 +242,7 @@ pub struct InstantiateMsg {
     pub bin_step: u16,
     pub pair_parameters: StaticFeeParameters,
     pub active_id: u32,
-    pub lb_token_implementation: ContractImplementation,
+    pub lb_token_implementation: Implementation,
     pub viewing_key: String,
     pub entropy: String,
     // TODO: Decide about getting rid of these.

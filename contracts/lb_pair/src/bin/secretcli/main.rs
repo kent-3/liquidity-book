@@ -4,7 +4,7 @@ use cosmwasm_std::{Addr, ContractInfo, Uint128, Uint256};
 use ethnum::U256;
 use example_data::*;
 use lb_interfaces::{
-    lb_factory::{ContractImplementation, StaticFeeParameters},
+    lb_factory::{Implementation, StaticFeeParameters},
     lb_pair::*,
 };
 use lb_libraries::{math::uint256_to_u256::ConvertU256, pair_parameter_helper::PairParameters};
@@ -99,7 +99,7 @@ fn main() -> io::Result<()> {
             max_volatility_accumulator: preset.get_max_volatility_accumulator(),
         },
         active_id: ACTIVE_ID,
-        lb_token_implementation: ContractImplementation::default(),
+        lb_token_implementation: Implementation::empty(),
         viewing_key: String::from("viewing_key"),
         entropy: String::from("entropy"),
         query_auth: RawContract::example(),

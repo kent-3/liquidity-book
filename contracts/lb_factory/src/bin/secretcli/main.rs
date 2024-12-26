@@ -78,11 +78,11 @@ fn main() -> io::Result<()> {
     // -- Execute Messages
 
     let set_lb_pair_implementation = ExecuteMsg::SetLbPairImplementation {
-        implementation: ContractImplementation::example(),
+        implementation: Implementation::example(),
     };
 
     let set_lb_token_implementation = ExecuteMsg::SetLbTokenImplementation {
-        implementation: ContractImplementation::example(),
+        implementation: Implementation::example(),
     };
 
     let create_lb_pair = ExecuteMsg::CreateLbPair {
@@ -198,10 +198,10 @@ fn main() -> io::Result<()> {
         fee_recipient: Addr::recipient(),
     };
     let get_lb_pair_implementation_response = LbPairImplementationResponse {
-        lb_pair_implementation: ContractImplementation::example(),
+        lb_pair_implementation: Implementation::example(),
     };
     let get_lb_token_implementation_response = LbTokenImplementationResponse {
-        lb_token_implementation: ContractImplementation::example(),
+        lb_token_implementation: Implementation::example(),
     };
     let get_number_of_lb_pairs_response = NumberOfLbPairsResponse { lb_pair_number: 1 };
 
