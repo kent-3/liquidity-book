@@ -28,3 +28,37 @@ pub use crate::{
 };
 
 pub type Bytes32 = [u8; 32];
+
+// TODO: would there be any reason to do this?
+//
+// use schemars::JsonSchema;
+// use serde::{Deserialize, Serialize};
+//
+// #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Copy, JsonSchema, Eq, Hash)]
+// pub struct Bytes32(pub [u8; 32]);
+//
+// impl From<[u8; 32]> for Bytes32 {
+//     fn from(value: [u8; 32]) -> Self {
+//         Bytes32(value)
+//     }
+// }
+//
+// impl AsRef<[u8]> for Bytes32 {
+//     fn as_ref(&self) -> &[u8] {
+//         &self.0
+//     }
+// }
+//
+// impl std::ops::Deref for Bytes32 {
+//     type Target = [u8; 32];
+//
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
+//
+// impl std::ops::DerefMut for Bytes32 {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         &mut self.0
+//     }
+// }
