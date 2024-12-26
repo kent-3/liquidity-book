@@ -3,4 +3,3 @@
 pub mod contract;
 pub mod error;
 mod prelude;
-pub mod types;
