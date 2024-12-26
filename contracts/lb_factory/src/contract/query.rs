@@ -5,6 +5,7 @@ use super::{
 };
 use crate::prelude::*;
 use cosmwasm_std::Deps;
+use cosmwasm_std::StdResult;
 use lb_interfaces::{lb_factory::*, lb_pair::LbPairInformation};
 use lb_libraries::math::encoded::Encoded;
 use shade_protocol::swap::core::TokenType;
@@ -28,10 +29,9 @@ pub fn query_min_bin_step(_deps: Deps) -> Result<MinBinStepResponse> {
 ///
 /// * `fee_recipient` - The address of the fee recipient.
 pub fn query_fee_recipient(deps: Deps) -> Result<FeeRecipientResponse> {
-    let config = STATE.load(deps.storage)?;
-    let response = FeeRecipientResponse {
-        fee_recipient: config.fee_recipient,
-    };
+    let fee_recipient = FEE_RECIPIENT.load(deps.storage)?;
+
+    let response = FeeRecipientResponse { fee_recipient };
 
     Ok(response)
 }
@@ -53,39 +53,28 @@ pub fn query_flash_loan_fee(deps: Deps) -> Result<FlashLoanFeeResponse> {
 }
 
 /// Returns the code ID and hash of the LbPair implementation.
-///
-/// # Returns
-///
-/// * `lb_pair_implementation` - The code ID and hash of the LbPair implementation.
 pub fn query_lb_pair_implementation(deps: Deps) -> Result<LbPairImplementationResponse> {
-    let config = STATE.load(deps.storage)?;
+    let lb_pair_implementation = LB_PAIR_IMPLEMENTATION.load(deps.storage)?;
+
     let response = LbPairImplementationResponse {
-        lb_pair_implementation: config.lb_pair_implementation,
+        lb_pair_implementation,
     };
 
     Ok(response)
 }
 
-// TODO: this isn't in joe-v2
-// Returns the code ID and hash of the LbToken implementation.
-///
-/// # Returns
-///
-/// * `lb_token_implementation` - The code ID and hash of the LbToken implementation.
+/// Returns the code ID and hash of the LbToken implementation.
 pub fn query_lb_token_implementation(deps: Deps) -> Result<LbTokenImplementationResponse> {
-    let config = STATE.load(deps.storage)?;
+    let lb_token_implementation = LB_TOKEN_IMPLEMENTATION.load(deps.storage)?;
+
     let response = LbTokenImplementationResponse {
-        lb_token_implementation: config.lb_token_implementation,
+        lb_token_implementation,
     };
 
     Ok(response)
 }
 
 /// Returns the number of LbPairs created.
-///
-/// # Returns
-///
-/// * `lb_pair_number` - The number of LbPairs created.
 pub fn query_number_of_lb_pairs(deps: Deps) -> Result<NumberOfLbPairsResponse> {
     let lb_pair_number = ALL_LB_PAIRS.get_len(deps.storage)?;
 
@@ -99,10 +88,6 @@ pub fn query_number_of_lb_pairs(deps: Deps) -> Result<NumberOfLbPairsResponse> {
 /// # Arguments
 ///
 /// * `index` - The index of the LbPair.
-///
-/// # Returns
-///
-/// * lb_pair - The address of the LbPair at index `index`.
 pub fn query_lb_pair_at_index(deps: Deps, index: u32) -> Result<LbPairAtIndexResponse> {
     let lb_pair = ALL_LB_PAIRS.get_at(deps.storage, index)?;
 
@@ -112,10 +97,6 @@ pub fn query_lb_pair_at_index(deps: Deps, index: u32) -> Result<LbPairAtIndexRes
 }
 
 /// Returns the number of quote assets whitelisted.
-///
-/// # Returns
-///
-/// * `number_of_quote_assets` - The number of quote assets.
 pub fn query_number_of_quote_assets(deps: Deps) -> Result<NumberOfQuoteAssetsResponse> {
     let number_of_quote_assets = QUOTE_ASSET_WHITELIST.get_len(deps.storage)?;
 
@@ -131,10 +112,6 @@ pub fn query_number_of_quote_assets(deps: Deps) -> Result<NumberOfQuoteAssetsRes
 /// # Arguments
 ///
 /// * `index` - The index of the quote asset.
-///
-/// # Returns
-///
-/// * `asset` - The address of the quote asset at index `index`.
 pub fn query_quote_asset_at_index(deps: Deps, index: u32) -> Result<QuoteAssetAtIndexResponse> {
     let asset = QUOTE_ASSET_WHITELIST.get_at(deps.storage, index)?;
 
@@ -168,10 +145,6 @@ pub fn query_is_quote_asset(deps: Deps, token: TokenType) -> Result<IsQuoteAsset
 /// * `token_a` - The address of the first token of the pair
 /// * `token_b` - The address of the second token of the pair
 /// * `bin_step` - The bin step of the LbPair
-///
-/// # Returns
-///
-/// * The LbPairInformation
 pub fn query_lb_pair_information(
     deps: Deps,
     token_a: TokenType,
@@ -248,18 +221,10 @@ pub fn query_preset(deps: Deps, bin_step: u16) -> Result<PresetResponse> {
 ///
 /// * `bin_step_with_preset` - The list of bin steps.
 pub fn query_all_bin_steps(deps: Deps) -> Result<AllBinStepsResponse> {
-    // NOTE: iterating over the keys of the PRESETS Keymap will return all available bin_steps
-    // not too confident with this implementation...
-
-    let mut bin_step_with_preset = Vec::<u16>::new();
-
-    let hashset = PRESET_HASHSET.load(deps.storage)?;
-
-    // let iterator = PRESETS.range(deps.storage, None, None, Ascending);
-
-    for bin_step in hashset {
-        bin_step_with_preset.push(bin_step)
-    }
+    let bin_step_with_preset: Vec<u16> = PRESET_BIN_STEPS
+        .iter(deps.storage)?
+        .filter_map(|result| result.ok())
+        .collect();
 
     let response = AllBinStepsResponse {
         bin_step_with_preset,
@@ -276,11 +241,31 @@ pub fn query_all_bin_steps(deps: Deps) -> Result<AllBinStepsResponse> {
 /// * `open_bin_step` - The list of open bin steps.
 pub fn query_open_bin_steps(deps: Deps) -> Result<OpenBinStepsResponse> {
     // TODO: revisit this once we have an EnumerableMap type of storage
-    let hashset = PRESET_HASHSET.load(deps.storage)?;
+    // let hashset = PRESET_HASHSET.load(deps.storage)?;
+
+    let bin_steps: Vec<u16> = PRESET_BIN_STEPS
+        .iter(deps.storage)?
+        .collect::<StdResult<Vec<u16>>>()?;
+
+    // more concise but difficult to read
+    //
+    // let open_bin_steps: Vec<u16> = PRESET_BIN_STEPS
+    //     .iter(deps.storage)?
+    //     .filter_map(|result| {
+    //         // Handle the outer error from the iterator
+    //         result.ok().and_then(|bin_step| {
+    //             // Get the preset and handle potential error with ok()
+    //             PRESETS
+    //                 .get(deps.storage, &bin_step)
+    //                 .filter(|preset| _is_preset_open(preset.0)) // Keep only open presets
+    //                 .map(|_| bin_step) // Return the bin_step if preset is open
+    //         })
+    //     })
+    //     .collect();
 
     let mut open_bin_steps = Vec::<u16>::new();
 
-    for bin_step in hashset {
+    for bin_step in bin_steps {
         let preset = PRESETS.get(deps.storage, &bin_step).unwrap_or_default();
 
         if _is_preset_open(preset.0) {
@@ -312,7 +297,7 @@ pub fn query_all_lb_pairs(
 
     let bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
         .get(deps.storage, &(token_a.unique_key(), token_b.unique_key()))
-        .unwrap_or_default(); // the default is an empty HashSet
+        .unwrap_or_default();
 
     let lb_pairs_available: Vec<LbPairInformation> = bin_steps
         .into_iter()

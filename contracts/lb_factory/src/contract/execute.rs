@@ -3,7 +3,7 @@ use super::{
     state::*,
     INSTANTIATE_REPLY_ID, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
-use crate::{prelude::*, types::NextPairKey};
+use crate::prelude::*;
 use cosmwasm_std::{
     to_binary, Addr, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response, StdResult, SubMsg,
     WasmMsg,
@@ -40,17 +40,14 @@ pub fn set_lb_pair_implementation(
         &config.admin_auth,
     )?;
 
-    let old_lb_pair_implementation = config.lb_pair_implementation;
+    let old_lb_pair_implementation = LB_PAIR_IMPLEMENTATION.load(deps.storage)?;
     if old_lb_pair_implementation == new_lb_pair_implementation {
         return Err(Error::SameImplementation {
             implementation: old_lb_pair_implementation.id,
         });
     }
 
-    STATE.update(deps.storage, |mut config| -> StdResult<_> {
-        config.lb_pair_implementation = new_lb_pair_implementation.clone();
-        Ok(config)
-    })?;
+    LB_PAIR_IMPLEMENTATION.save(deps.storage, &new_lb_pair_implementation)?;
 
     let event = Event::lb_pair_implementation_set(
         old_lb_pair_implementation.id,
@@ -79,17 +76,14 @@ pub fn set_lb_token_implementation(
         &config.admin_auth,
     )?;
 
-    let old_lb_token_implementation = config.lb_token_implementation;
+    let old_lb_token_implementation = LB_TOKEN_IMPLEMENTATION.load(deps.storage)?;
     if old_lb_token_implementation == new_lb_token_implementation {
         return Err(Error::SameImplementation {
             implementation: old_lb_token_implementation.id,
         });
     }
 
-    STATE.update(deps.storage, |mut config| -> StdResult<_> {
-        config.lb_token_implementation = new_lb_token_implementation.clone();
-        Ok(config)
-    })?;
+    LB_TOKEN_IMPLEMENTATION.save(deps.storage, &new_lb_token_implementation)?;
 
     let event = Event::lb_token_implementation_set(
         old_lb_token_implementation.id,
@@ -124,13 +118,15 @@ pub fn create_lb_pair(
 ) -> Result<Response> {
     let config = STATE.load(deps.storage)?;
 
-    if !PRESETS.contains(deps.storage, &bin_step) {
-        return Err(Error::BinStepHasNoPreset { bin_step });
-    }
+    // TODO: I think this is redundant
+    // if !PRESETS.contains(deps.storage, &bin_step) {
+    //     return Err(Error::BinStepHasNoPreset { bin_step });
+    // }
 
     let preset = PRESETS
         .get(deps.storage, &bin_step)
         .ok_or_else(|| Error::BinStepHasNoPreset { bin_step })?;
+
     let is_owner = info.sender == config.owner;
 
     if !_is_preset_open(preset.0) && !is_owner {
@@ -143,8 +139,8 @@ pub fn create_lb_pair(
     if !QUOTE_ASSET_WHITELIST
         .iter(deps.storage)?
         .any(|result| match result {
-            Ok(t) => t.eq(&token_y) || t.eq(&token_x),
-            Err(_) => false, // Handle the error case as needed
+            Ok(t) => t.eq(&token_y),
+            Err(_) => false,
         })
     {
         return Err(Error::QuoteAssetNotWhitelisted {
@@ -158,11 +154,10 @@ pub fn create_lb_pair(
         });
     }
 
-    let config = STATE.load(deps.storage)?;
-
     // safety check, making sure that the price can be calculated
     PriceHelper::get_price_from_id(active_id, bin_step)?;
 
+    // We sort token for storage efficiency, only one input needs to be stored because they are sorted
     let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
 
     if LB_PAIRS_INFO
@@ -179,22 +174,25 @@ pub fn create_lb_pair(
         });
     }
 
-    if config.lb_pair_implementation.id == 0 {
+    let lb_pair_implementation = LB_PAIR_IMPLEMENTATION.load(deps.storage)?;
+    let lb_token_implementation = LB_TOKEN_IMPLEMENTATION.load(deps.storage)?;
+
+    if lb_pair_implementation.id == 0 {
         return Err(Error::ImplementationNotSet);
     }
 
     let mut messages = vec![];
 
     messages.push(SubMsg::reply_on_success(
-        CosmosMsg::Wasm(WasmMsg::Instantiate {
-            code_id: config.lb_pair_implementation.id,
+        WasmMsg::Instantiate {
+            code_id: lb_pair_implementation.id,
             label: format!(
                 "{}-{}-{}-pair-{}-{}",
                 token_x.unique_key(),
                 token_y.unique_key(),
                 bin_step,
                 env.contract.address,
-                config.lb_pair_implementation.id,
+                lb_pair_implementation.id,
             ),
             msg: to_binary(&LbPairInstantiateMsg {
                 factory: env.contract,
@@ -211,28 +209,27 @@ pub fn create_lb_pair(
                     max_volatility_accumulator: preset.get_max_volatility_accumulator(),
                 },
                 active_id,
-                lb_token_implementation: config.lb_token_implementation,
+                lb_token_implementation,
                 viewing_key,
                 entropy,
                 admin_auth: config.admin_auth.into(),
                 query_auth: config.query_auth.into(),
             })?,
-            code_hash: config.lb_pair_implementation.code_hash.clone(),
+            code_hash: lb_pair_implementation.code_hash.clone(),
             funds: vec![],
             admin: None,
-        }),
+        },
         INSTANTIATE_REPLY_ID,
     ));
 
-    EPHEMERAL_STORAGE.save(
+    EPHEMERAL_LB_PAIR.save(
         deps.storage,
-        &NextPairKey {
+        &EphemeralLbPair {
             token_x,
             token_y,
             bin_step,
-            code_hash: config.lb_pair_implementation.code_hash,
-            // FIXME: ???
-            is_open: is_owner,
+            code_hash: lb_pair_implementation.code_hash,
+            created_by_owner: is_owner,
         },
     )?;
 
@@ -309,9 +306,7 @@ pub fn set_pair_preset(
         preset.0.set_bool(true, OFFSET_IS_PRESET_OPEN);
     }
 
-    let mut hashset = PRESET_HASHSET.load(deps.storage)?;
-    hashset.insert(bin_step);
-    PRESET_HASHSET.save(deps.storage, &hashset)?;
+    PRESET_BIN_STEPS.insert(deps.storage, &bin_step)?;
 
     PRESETS.insert(deps.storage, &bin_step, &preset)?;
     STATE.save(deps.storage, &state)?;
@@ -386,15 +381,13 @@ pub fn remove_preset(
         info.sender.to_string(),
         &state.admin_auth,
     )?;
+
     if !PRESETS.contains(deps.storage, &bin_step) {
         return Err(Error::BinStepHasNoPreset { bin_step });
     }
 
-    PRESETS.remove(deps.storage, &bin_step);
-
-    let mut hashset = PRESET_HASHSET.load(deps.storage)?;
-    hashset.remove(&bin_step);
-    PRESET_HASHSET.save(deps.storage, &hashset)?;
+    PRESETS.remove(deps.storage, &bin_step)?;
+    PRESET_BIN_STEPS.remove(deps.storage, &bin_step)?;
 
     let event = Event::preset_removed(bin_step);
 
@@ -483,17 +476,14 @@ pub fn set_fee_recipient(
         &config.admin_auth,
     )?;
 
-    let old_fee_recipient = config.fee_recipient;
+    let old_fee_recipient = FEE_RECIPIENT.load(deps.storage)?;
     if old_fee_recipient == fee_recipient {
         return Err(Error::SameFeeRecipient {
             fee_recipient: old_fee_recipient,
         });
     }
 
-    STATE.update(deps.storage, |mut config| -> StdResult<_> {
-        config.fee_recipient = fee_recipient.clone();
-        Ok(config)
-    })?;
+    FEE_RECIPIENT.save(deps.storage, &fee_recipient)?;
 
     let event = Event::fee_recipient_set(old_fee_recipient, fee_recipient);
 

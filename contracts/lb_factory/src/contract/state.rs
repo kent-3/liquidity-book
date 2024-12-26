@@ -1,4 +1,3 @@
-use crate::types::NextPairKey;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Uint128};
 use lb_interfaces::{
@@ -7,34 +6,36 @@ use lb_interfaces::{
 };
 use lb_libraries::pair_parameter_helper::PairParameters;
 use secret_toolkit::storage::{AppendStore, Item, Keymap, Keyset};
-use shade_protocol::{
-    // secret_storage_plus::{AppendStore, Item, Map},
-    swap::core::TokenType,
-    Contract,
-};
+use shade_protocol::{swap::core::TokenType, Contract};
 use std::collections::HashSet;
 
 // TODO: unify const vs static. use secret-toolkit storage types?
 
-pub const CONTRACT_STATUS: Item<ContractStatus> = Item::new(b"contract_status");
-pub const STATE: Item<State> = Item::new(b"state");
-pub const FLASH_LOAN_FEE: Item<Uint128> = Item::new(b"flashloan_fee");
+pub static STATE: Item<State> = Item::new(b"state");
+pub static CONTRACT_STATUS: Item<ContractStatus> = Item::new(b"contract_status");
+
+pub static FEE_RECIPIENT: Item<Addr> = Item::new(b"fee_recipient");
+pub static FLASH_LOAN_FEE: Item<Uint128> = Item::new(b"flashloan_fee");
+
+pub static LB_PAIR_IMPLEMENTATION: Item<Implementation> = Item::new(b"lb_pair_implementation");
+pub static LB_TOKEN_IMPLEMENTATION: Item<Implementation> = Item::new(b"lb_token_implementation");
 
 pub static ALL_LB_PAIRS: AppendStore<LbPair> = AppendStore::new(b"all_lb_pairs");
 
 /// Mapping from a (tokenA, tokenB, binStep) to a LBPair. The tokens are ordered to save gas, but they can be
 /// in the reverse order in the actual pair.
 /// Always query one of the 2 tokens of the pair to assert the order of the 2 tokens.
-pub const LB_PAIRS_INFO: Keymap<(String, String, u16), LbPairInformation> =
+pub static LB_PAIRS_INFO: Keymap<(String, String, u16), LbPairInformation> =
     Keymap::new(b"lb_pairs_info");
 
-// TODO: is this necessary? it's not in the original
-pub const PRESET_HASHSET: Item<HashSet<u16>> = Item::new(b"preset_hashset");
-
-// TODO: I think we need the secret-toolkit Keymap to be able to iterate over the keys, to avoid
-// needing the PRESET_HASHSET.
-pub const PRESETS: Keymap<u16, PairParameters> = Keymap::new(b"presets");
-// TODO: Would a HashSet would be better for this?
+// TODO: Figure out a storage type that avoids needing a separate PRESET_BIN_STEPS.
+// In solidity this is: EnumerableMap.UintToUintMap
+// I could make an empty struct that uses both of these internally, similar to the TreeUint24...
+pub static PRESET_BIN_STEPS: Keyset<u16> = Keyset::new(b"preset_bin_steps");
+pub static PRESETS: Keymap<u16, PairParameters> = Keymap::new(b"presets");
+// TODO: Would a HashSet would be better for this? Store only addresses instead?
+// This needs to be indexable while also being fixed cost to write, and elements must be unique...
+// How are we ensuring unique elements?
 pub static QUOTE_ASSET_WHITELIST: AppendStore<TokenType> =
     AppendStore::new(b"quote_asset_whitelist");
 
@@ -47,9 +48,10 @@ pub static QUOTE_ASSET_WHITELIST: AppendStore<TokenType> =
 /// bin steps that are already used for a pair.
 /// The tokens are ordered to save gas, but they can be in the reverse order in the actual pair.
 /// Always query one of the 2 tokens of the pair to assert the order of the 2 tokens.
-pub const AVAILABLE_LB_PAIR_BIN_STEPS: Keymap<(String, String), HashSet<u16>> =
+pub static AVAILABLE_LB_PAIR_BIN_STEPS: Keymap<(String, String), HashSet<u16>> =
     Keymap::new(b"available_lb_pair_bin_steps");
 
+// TODO: decide on keeping this
 #[cw_serde]
 pub enum ContractStatus {
     Active,    // allows all operations
@@ -61,13 +63,21 @@ pub enum ContractStatus {
 pub struct State {
     pub contract_info: ContractInfo,
     pub owner: Addr,
-    // TODO: I think these should be stored with separate keys.
-    pub fee_recipient: Addr,
-    pub lb_pair_implementation: ContractImplementation,
-    pub lb_token_implementation: ContractImplementation,
+    // pub fee_recipient: Addr,
+    // pub lb_pair_implementation: Implementation,
+    // pub lb_token_implementation: Implementation,
     // TODO: change to ContractInfo, or maybe get rid of these auth contracts...
     pub admin_auth: Contract,
     pub query_auth: Contract,
 }
 
-pub const EPHEMERAL_STORAGE: Item<NextPairKey> = Item::new(b"ephemeral_storage");
+pub const EPHEMERAL_LB_PAIR: Item<EphemeralLbPair> = Item::new(b"ephemeral_lb_pair");
+
+#[cw_serde]
+pub struct EphemeralLbPair {
+    pub token_x: TokenType,
+    pub token_y: TokenType,
+    pub bin_step: u16,
+    pub code_hash: String,
+    pub created_by_owner: bool,
+}

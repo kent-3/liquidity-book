@@ -7,7 +7,6 @@ use lb_interfaces::{
     lb_factory::*,
     lb_pair::{LbPair, LbPairInformation},
 };
-use std::collections::HashSet;
 
 mod execute;
 mod helper;
@@ -38,17 +37,16 @@ pub fn instantiate(
             code_hash: env.contract.code_hash,
         },
         owner: msg.owner.unwrap_or_else(|| info.sender.clone()),
-        fee_recipient: msg.fee_recipient,
-        // lb_pair_implementation: Implementation::empty(),
-        // lb_token_implementation: Implementation::empty(),
         admin_auth: msg.admin_auth.into_valid(deps.api)?,
         query_auth: msg.query_auth.into_valid(deps.api)?,
     };
 
     STATE.save(deps.storage, &config)?;
-    // TODO: is this necessary?
-    PRESET_HASHSET.save(deps.storage, &HashSet::new())?;
     CONTRACT_STATUS.save(deps.storage, &ContractStatus::Active)?;
+
+    FEE_RECIPIENT.save(deps.storage, &msg.fee_recipient)?;
+    LB_PAIR_IMPLEMENTATION.save(deps.storage, &Implementation::empty())?;
+    LB_TOKEN_IMPLEMENTATION.save(deps.storage, &Implementation::empty())?;
 
     Ok(Response::default())
 }
@@ -207,12 +205,13 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
         (INSTANTIATE_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(x) => {
                 let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
-                let lb_pair_key = EPHEMERAL_STORAGE.load(deps.storage)?;
-
-                let token_x = lb_pair_key.token_x;
-                let token_y = lb_pair_key.token_y;
-                let bin_step = lb_pair_key.bin_step;
-                let code_hash = lb_pair_key.code_hash;
+                let EphemeralLbPair {
+                    token_x,
+                    token_y,
+                    bin_step,
+                    code_hash,
+                    created_by_owner,
+                } = EPHEMERAL_LB_PAIR.load(deps.storage)?;
 
                 let lb_pair = LbPair {
                     token_x: token_x.clone(),
@@ -227,9 +226,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
                     deps.storage,
                     &(token_a.unique_key(), token_b.unique_key(), bin_step),
                     &LbPairInformation {
-                        bin_step: lb_pair_key.bin_step,
+                        bin_step,
                         lb_pair: lb_pair.clone(),
-                        created_by_owner: lb_pair_key.is_open,
+                        created_by_owner,
                         ignored_for_routing: false,
                     },
                 )?;
@@ -248,7 +247,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
                     &available_bin_steps,
                 )?;
 
-                EPHEMERAL_STORAGE.remove(deps.storage);
+                // TODO: is this good to do? I think it's better to keep the memory to rewrite
+                EPHEMERAL_LB_PAIR.remove(deps.storage);
 
                 let event = Event::lb_pair_created(
                     token_x.unique_key(),

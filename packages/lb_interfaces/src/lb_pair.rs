@@ -203,6 +203,29 @@ pub struct LbPairInformation {
     pub ignored_for_routing: bool,
 }
 
+impl Default for LbPairInformation {
+    fn default() -> Self {
+        LbPairInformation {
+            bin_step: 0,
+            lb_pair: LbPair {
+                token_x: TokenType::NativeToken {
+                    denom: "none".to_string(),
+                },
+                token_y: TokenType::NativeToken {
+                    denom: "none".to_string(),
+                },
+                bin_step: 0,
+                contract: ContractInfo {
+                    address: Addr::unchecked("0"),
+                    code_hash: "".to_string(),
+                },
+            },
+            created_by_owner: false,
+            ignored_for_routing: true,
+        }
+    }
+}
+
 #[cw_serde]
 pub struct LiquidityParameters {
     pub token_x: TokenType,

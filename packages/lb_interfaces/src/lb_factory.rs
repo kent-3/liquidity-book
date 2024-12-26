@@ -327,10 +327,18 @@ impl ILbFactory {
 // }
 
 #[cw_serde]
-#[derive(Default)]
 pub struct Implementation {
     pub id: u64,
     pub code_hash: String,
+}
+
+impl Implementation {
+    pub fn empty() -> Self {
+        Implementation {
+            id: 0,
+            code_hash: "".to_string(),
+        }
+    }
 }
 
 #[cw_serde]
