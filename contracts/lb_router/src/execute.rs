@@ -60,6 +60,7 @@ pub fn add_liquidity(
     info: MessageInfo,
     liquidity_parameters: LiquidityParameters,
 ) -> Result<Response> {
+    // TODO: original has this check happening in _add_liquidity. should I move there also?
     ensure(&env, liquidity_parameters.deadline.u64())?;
 
     let token_x = liquidity_parameters
@@ -73,7 +74,7 @@ pub fn add_liquidity(
         .into_contract_info()
         .unwrap();
 
-    let pair = ILbPair(_get_lb_pair_information(
+    let lb_pair = ILbPair(_get_lb_pair_information(
         deps.as_ref(),
         token_x.clone(),
         token_y.clone(),
@@ -81,7 +82,7 @@ pub fn add_liquidity(
         Version::V2_2,
     )?);
 
-    if liquidity_parameters.token_x != pair.get_token_x(deps.querier)?.into() {
+    if liquidity_parameters.token_x != lb_pair.get_token_x(deps.querier)?.into() {
         return Err(Error::WrongTokenOrder);
     }
 
@@ -92,7 +93,7 @@ pub fn add_liquidity(
     // Transfer tokens from sender to the pair contract.
     let transfer_x_msg = secret_toolkit::snip20::transfer_from_msg(
         info.sender.to_string(),
-        pair.0.address.to_string(),
+        lb_pair.0.address.to_string(),
         liquidity_parameters.amount_x,
         None,
         None,
@@ -102,7 +103,7 @@ pub fn add_liquidity(
     )?;
     let transfer_y_msg = secret_toolkit::snip20::transfer_from_msg(
         info.sender.to_string(),
-        pair.0.address.to_string(),
+        lb_pair.0.address.to_string(),
         liquidity_parameters.amount_y,
         None,
         None,
@@ -113,7 +114,7 @@ pub fn add_liquidity(
 
     let response = Response::new().add_messages(vec![transfer_x_msg, transfer_y_msg]);
 
-    _add_liquidity(deps, response, liquidity_parameters, pair)
+    _add_liquidity(deps, response, liquidity_parameters, lb_pair)
 }
 
 pub fn _add_liquidity(
@@ -163,6 +164,8 @@ pub fn _add_liquidity(
         );
     }
 
+    // NOTE: See reply in contract.rs for continuation of this function.
+
     EPHEMERAL_ADD_LIQUIDITY.save(
         deps.storage,
         &EphemeralAddLiquidity {
@@ -172,19 +175,11 @@ pub fn _add_liquidity(
         },
     )?;
 
-    // TODO: add ExecuteMsg methods to ILbPair?
+    let lb_pair_mint_msg = pair.mint(liq.to, liquidity_configs, liq.refund_to)?;
+    let response =
+        Response::new().add_submessage(SubMsg::reply_on_success(lb_pair_mint_msg, MINT_REPLY_ID));
 
-    let lb_pair_mint_msg = SubMsg::reply_on_success(
-        lb_pair::ExecuteMsg::Mint {
-            to: liq.to,
-            liquidity_configs,
-            refund_to: liq.refund_to,
-        }
-        .to_cosmos_msg(&pair.0, vec![])?,
-        MINT_REPLY_ID,
-    );
-
-    Ok(response.add_submessage(lb_pair_mint_msg))
+    Ok(response)
 }
 
 pub fn add_liquidity_native() {
@@ -205,44 +200,23 @@ pub fn remove_liquidity(
     to: String,
     deadline: Uint64,
 ) -> Result<Response> {
-    // ILBPair _LBPair = ILBPair(_getLBPairInformation(tokenX, tokenY, binStep, Version.V2_2));
-    // bool isWrongOrder = tokenX != _LBPair.getTokenX();
-    //
-    // if (isWrongOrder) (amountXMin, amountYMin) = (amountYMin, amountXMin);
-    //
-    // (amountX, amountY) = _removeLiquidity(_LBPair, amountXMin, amountYMin, ids, amounts, to);
-    //
-    // if (isWrongOrder) (amountX, amountY) = (amountY, amountX);
-
-    // perform checks
-    // query for the pair contract
-    // do internal _remove_liquidity
-    // save some info in ephemeral storage
-    // check for errors in the reply
-
+    ensure(&env, deadline.u64())?;
     let to = deps.api.addr_validate(&to)?;
 
-    let pair = _get_lb_pair_information(
+    let lb_pair = ILbPair(_get_lb_pair_information(
         deps.as_ref(),
         token_x.clone().into(),
         token_y.clone().into(),
         bin_step.clone(),
         Version::V2_2,
-    )?;
-
-    let lb_pair::TokenXResponse {
-        token_x: lb_pair_token_x,
-    } = deps.querier.query_wasm_smart::<lb_pair::TokenXResponse>(
-        pair.code_hash.clone(),
-        pair.address.clone(),
-        &lb_pair::QueryMsg::GetTokenX {},
-    )?;
-
-    let is_wrong_order = TokenType::from(token_x) != lb_pair_token_x;
+    )?);
+    let is_wrong_order = TokenType::from(token_x) != lb_pair.get_token_x(deps.querier)?;
 
     if is_wrong_order {
         (amount_x_min, amount_y_min) = (amount_y_min, amount_x_min)
     }
+
+    // NOTE: See reply in contract.rs for continuation of this function.
 
     EPHEMERAL_REMOVE_LIQUIDITY.save(
         deps.storage,
@@ -253,44 +227,9 @@ pub fn remove_liquidity(
         },
     )?;
 
-    _remove_liquidity(
-        deps,
-        env,
-        info,
-        pair,
-        amount_x_min,
-        amount_y_min,
-        ids,
-        amounts,
-        to,
-    )
-}
-
-pub fn _remove_liquidity(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    pair: ContractInfo,
-    amount_x_min: Uint128,
-    amount_y_min: Uint128,
-    ids: Vec<u32>,
-    amounts: Vec<Uint256>,
-    to: Addr,
-) -> Result<Response> {
-    // call the `burn` message in lb-pair
-    // handle the `amounts_burned` in the submsg reply
-
-    // TODO: this is annoying... we already validated these Addr, but we need to change them
-    // back to Strings.
-    let msg = lb_pair::ExecuteMsg::Burn {
-        from: info.sender.to_string(),
-        to: to.to_string(),
-        ids,
-        amounts_to_burn: amounts,
-    }
-    .to_cosmos_msg(&pair, vec![])?;
-
-    let response = Response::new().add_submessage(SubMsg::reply_on_success(msg, BURN_REPLY_ID));
+    let lb_pair_burn_msg = lb_pair.burn(info.sender.to_string(), to.to_string(), ids, amounts)?;
+    let response =
+        Response::new().add_submessage(SubMsg::reply_on_success(lb_pair_burn_msg, BURN_REPLY_ID));
 
     Ok(response)
 }

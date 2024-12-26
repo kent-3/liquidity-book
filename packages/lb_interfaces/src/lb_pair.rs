@@ -2,7 +2,8 @@ use super::lb_factory::{Implementation, StaticFeeParameters};
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
-    Addr, Binary, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
+    to_binary, Addr, Binary, ContractInfo, CosmosMsg, Event, QuerierWrapper, StdResult, Uint128,
+    Uint256, Uint64, WasmMsg,
 };
 use lb_libraries::{hooks::Parameters, Bytes32, LiquidityConfigurations};
 use shade_protocol::{
@@ -10,6 +11,7 @@ use shade_protocol::{
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
 use std::fmt::{Debug, Display};
+use std::ops::Deref;
 
 // TODO: Decide which attributes to make private.
 // NOTE: All Bytes32 values are represented as Base64 strings. Should we use hex instead?
@@ -145,15 +147,65 @@ impl LbPairEventExt for Event {}
 
 pub struct ILbPair(pub ContractInfo);
 
+impl Deref for ILbPair {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl ILbPair {
-    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<ContractInfo> {
+    pub fn mint(
+        &self,
+        to: String,
+        liquidity_configs: Vec<LiquidityConfigurations>,
+        refund_to: String,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::Mint {
+            to,
+            liquidity_configs,
+            refund_to,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
+    pub fn burn(
+        &self,
+        from: String,
+        to: String,
+        ids: Vec<u32>,
+        amounts_to_burn: Vec<Uint256>,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::Burn {
+            from,
+            to,
+            ids,
+            amounts_to_burn,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
+    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
         querier
             .query_wasm_smart::<TokenXResponse>(
                 self.0.code_hash.clone(),
                 self.0.address.clone(),
                 &QueryMsg::GetTokenX {},
             )
-            .map(|response| response.token_x.into_contract_info().unwrap())
+            .map(|response| response.token_x)
     }
 
     pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<ContractInfo> {
@@ -163,6 +215,7 @@ impl ILbPair {
                 self.0.address.clone(),
                 &QueryMsg::GetTokenY {},
             )
+            // TODO: probably shouldn't do this
             .map(|response| response.token_y.into_contract_info().unwrap())
     }
 

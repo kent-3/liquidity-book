@@ -349,40 +349,38 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                 let lb_pair::BurnResponse {
                     amounts: amounts_burned,
                 } = from_binary(&data)?;
-                let liq = EPHEMERAL_REMOVE_LIQUIDITY.load(deps.storage)?;
 
-                // let mut amount_x_burned: Uint128 = Uint128::zero();
-                // let mut amount_y_burned: Uint128 = Uint128::zero();
-                //
-                // for amount_burned in amounts_burned {
-                //     amount_x_burned += Uint128::from(amount_burned.decode_x());
-                //     amount_y_burned += Uint128::from(amount_burned.decode_y());
-                // }
+                let EphemeralRemoveLiquidity {
+                    amount_x_min,
+                    amount_y_min,
+                    is_wrong_order,
+                } = EPHEMERAL_REMOVE_LIQUIDITY.load(deps.storage)?;
 
-                let mut amount_x_burned = 0u128;
-                let mut amount_y_burned = 0u128;
+                let mut amount_x = 0u128;
+                let mut amount_y = 0u128;
 
                 for amount_burned in amounts_burned {
-                    amount_x_burned += amount_burned.decode_x();
-                    amount_y_burned += amount_burned.decode_y();
+                    amount_x += amount_burned.decode_x();
+                    amount_y += amount_burned.decode_y();
                 }
 
-                let amount_x_burned = Uint128::from(amount_x_burned);
-                let amount_y_burned = Uint128::from(amount_y_burned);
+                if is_wrong_order {
+                    (amount_x, amount_y) = (amount_y, amount_x);
+                }
 
-                if amount_x_burned < liq.amount_x_min || amount_y_burned < liq.amount_y_min {
+                let amount_x = Uint128::from(amount_x);
+                let amount_y = Uint128::from(amount_y);
+
+                if amount_x < amount_x_min || amount_y < amount_y_min {
                     return Err(Error::AmountSlippageCaught {
-                        amount_x_min: liq.amount_x_min,
-                        amount_x: amount_x_burned,
-                        amount_y_min: liq.amount_y_min,
-                        amount_y: amount_y_burned,
+                        amount_x_min,
+                        amount_x,
+                        amount_y_min,
+                        amount_y,
                     });
                 }
 
-                let data = lb_router::RemoveLiquidityResponse {
-                    amount_x: amount_x_burned,
-                    amount_y: amount_y_burned,
-                };
+                let data = lb_router::RemoveLiquidityResponse { amount_x, amount_y };
 
                 let response = Response::new().set_data(to_binary(&data)?);
 
