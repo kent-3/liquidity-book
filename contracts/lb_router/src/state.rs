@@ -1,15 +1,15 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CanonicalAddr, ContractInfo, Uint128};
 use lb_interfaces::lb_factory::ILbFactory;
-use shade_protocol::{contract_interfaces::swap::core::TokenType, secret_storage_plus::Item};
+use secret_toolkit::storage::Item;
+use shade_protocol::contract_interfaces::swap::core::TokenType;
 
-// TODO: Should I use secret-toolkit-storage instead?
+pub const FACTORY: Item<ILbFactory> = Item::new(b"factory");
 
-pub const FACTORY: Item<ILbFactory> = Item::new("factory");
 pub const EPHEMERAL_ADD_LIQUIDITY: Item<EphemeralAddLiquidity> =
-    Item::new("ephemeral_add_liquidity");
+    Item::new(b"ephemeral_add_liquidity");
 pub const EPHEMERAL_REMOVE_LIQUIDITY: Item<EphemeralRemoveLiquidity> =
-    Item::new("ephemeral_remove_liquidity");
+    Item::new(b"ephemeral_remove_liquidity");
 // pub const EPHEMERAL_SWAP_INFO: Item<EphemeralSwapInfo> = Item::new("ephemeral_swap_info");
 
 #[cw_serde]
@@ -26,6 +26,7 @@ pub struct EphemeralRemoveLiquidity {
     pub is_wrong_order: bool,
 }
 
+// TODO: not sure if this is necessary...
 // #[cw_serde]
 // pub struct EphemeralSwapInfo {
 //     pub amount: TokenAmount,
