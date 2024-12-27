@@ -2,14 +2,14 @@
 
 // TODO: function doc comments
 
-use crate::{contract::*, helper::*, prelude::*, state::*};
+use crate::{contract::*, helper::*, prelude::*, query::query_swap_in, state::*};
 use cosmwasm_std::{
-    to_binary, Addr, ContractInfo, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint128,
-    Uint256, Uint64,
+    to_binary, Addr, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg,
+    Uint128, Uint256, Uint64,
 };
 use lb_interfaces::{
     lb_factory,
-    lb_pair::{self, ILbPair, LiquidityParameters},
+    lb_pair::{self, ILbPair, LiquidityParameters, SwapInResponse},
     lb_router::{Path, Version},
 };
 use lb_libraries::LiquidityConfigurations;
@@ -257,6 +257,7 @@ pub fn swap_exact_tokens_for_tokens(
     deadline: Uint64,
 ) -> Result<Response> {
     ensure(&env, deadline.u64())?;
+    verify_path_validity(&path)?;
 
     let to = deps.api.addr_validate(&to)?;
 
@@ -266,8 +267,6 @@ pub fn swap_exact_tokens_for_tokens(
         path.versions.clone(),
         path.token_path.clone(),
     )?;
-
-    // TODO: transfer received tokens to the lb_pair contract?
 
     // Transfer tokens from this router contract to the pair contract.
     let transfer_msg = secret_toolkit::snip20::transfer_msg(
@@ -442,6 +441,15 @@ pub fn swap_exact_native_for_tokens() {
     unimplemented!()
 }
 
+/**
+ * @notice Swaps tokens for exact tokens while performing safety checks
+ * @param amountOut The amount of token to receive
+ * @param amountInMax The max amount of token to send
+ * @param path The path of the swap
+ * @param to The address of the recipient
+ * @param deadline The deadline of the tx
+ * @return amountsIn Input amounts of the swap
+ */
 pub fn swap_tokens_for_exact_tokens(
     deps: DepsMut,
     env: Env,
@@ -452,12 +460,167 @@ pub fn swap_tokens_for_exact_tokens(
     to: String,
     deadline: Uint64,
 ) -> Result<Response> {
+    ensure(&env, deadline.u64())?;
+    verify_path_validity(&path)?;
+
+    let to = deps.api.addr_validate(&to)?;
+
+    let pairs = _get_pairs(
+        deps.as_ref(),
+        path.pair_bin_steps,
+        path.versions.clone(),
+        path.token_path.clone(),
+    )?;
+
+    let amounts_in = _get_amounts_in(
+        deps.as_ref(),
+        path.versions.clone(),
+        pairs.clone(),
+        path.token_path.clone(),
+        amount_out,
+    )?;
+
+    if amounts_in[0] > amount_in_max {
+        return Err(Error::MaxAmountInExceeded {
+            amount_in_max,
+            amount_in: amounts_in[0],
+        });
+    }
+
+    // Transfer tokens from this router contract to the pair contract.
+    let transfer_msg = secret_toolkit::snip20::transfer_msg(
+        pairs[0].address.to_string(),
+        amounts_in[0],
+        None,
+        None,
+        32,
+        path.token_path[0].code_hash().clone(),
+        path.token_path[0].address().to_string(),
+    )?;
+
+    let response = Response::new().add_message(transfer_msg);
+
+    //         uint256 _amountOutReal = _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, to);
+    //
+    //         if (_amountOutReal < amountOut) revert LBRouter__InsufficientAmountOut(amountOut, _amountOutReal);
+
+    let token_next = path.token_path[0].clone();
+
+    EPHEMERAL_SWAP.save(
+        deps.storage,
+        &EphemeralSwap {
+            // TODO: rename the fields to be more generic. used in both swap directions.
+            amount_in: amount_out,         // amount_out
+            amount_out_min: amount_in_max, // amount_in_max
+            pairs: pairs.clone(),
+            versions: path.versions.clone(),
+            token_path: path.token_path.clone(),
+            position: 0,
+            token_next: token_next.clone(),
+            swap_for_y: false,
+            to: to.clone(),
+        },
+    )?;
+
+    _swap_tokens_for_exact_tokens(
+        deps,
+        &env,
+        response,
+        pairs,
+        path.versions,
+        path.token_path,
+        amounts_in,
+        0,
+        token_next,
+        to,
+    )
+}
+
+//     uint256 _amountOutReal = _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, to);
+pub fn _swap_tokens_for_exact_tokens(
+    deps: DepsMut,
+    _env: &Env,
+    response: Response,
+    pairs: Vec<ILbPair>,
+    versions: Vec<Version>,
+    token_path: Vec<TokenType>,
+    amounts_in: Vec<Uint128>,
+    position: u32,
+    token_next: TokenType,
+    to: Addr,
+) -> Result<Response> {
+    let i = position as usize;
+
     todo!()
 }
 
 pub fn swap_tokens_for_exact_native() {
     unimplemented!()
 }
+
+/**
+ * @notice Helper function to return the amounts in
+ * @param versions The list of versions (V1, V2, V2_1 or V2_2)
+ * @param pairs The list of pairs
+ * @param tokenPath The swap path
+ * @param amountOut The amount out
+ * @return amountsIn The list of amounts in
+ */
+pub fn _get_amounts_in(
+    deps: Deps,
+    versions: Vec<Version>,
+    pairs: Vec<ILbPair>,
+    token_path: Vec<TokenType>,
+    amount_out: Uint128,
+) -> Result<Vec<Uint128>> {
+    let mut amounts_in: Vec<Uint128> = vec![Uint128::zero(); token_path.len()];
+    // Avoid doing -1, as `pairs.length == pairBinSteps.length-1`
+    amounts_in[pairs.len()] = amount_out;
+
+    for i in (1..=pairs.len()).rev() {
+        let token = token_path[i - 1].clone();
+        let version = versions[i - 1].clone();
+        let pair = pairs[i - 1].clone();
+
+        amounts_in[i - 1] = match version {
+            Version::V1 => unimplemented!(),
+            Version::V2 => unimplemented!(),
+            _ => {
+                query_swap_in(
+                    deps,
+                    pair.0.clone(),
+                    amounts_in[i],
+                    pair.get_token_x(deps.querier)? == token,
+                )?
+                .amount_in
+            }
+        }
+    }
+
+    Ok(amounts_in)
+}
+
+// function swapTokensForExactTokens(
+//     uint256 amountOut,
+//     uint256 amountInMax,
+//     Path memory path,
+//     address to,
+//     uint256 deadline
+// ) external override ensure(deadline) verifyPathValidity(path) returns (uint256[] memory amountsIn) {
+//     address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);
+//
+//     {
+//         amountsIn = _getAmountsIn(path.versions, pairs, path.tokenPath, amountOut);
+//
+//         if (amountsIn[0] > amountInMax) revert LBRouter__MaxAmountInExceeded(amountInMax, amountsIn[0]);
+//
+//         _safeTransferFrom(path.tokenPath[0], msg.sender, pairs[0], amountsIn[0]);
+//
+//         uint256 _amountOutReal = _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, to);
+//
+//         if (_amountOutReal < amountOut) revert LBRouter__InsufficientAmountOut(amountOut, _amountOutReal);
+//     }
+// }
 
 /**
  * @notice Unstuck tokens that are sent to this contract by mistake
