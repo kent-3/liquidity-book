@@ -186,11 +186,11 @@ impl ILbFactory {
     pub fn get_all_lb_pairs(
         &self,
         querier: QuerierWrapper,
-        token_x: &ContractInfo,
-        token_y: &ContractInfo,
+        token_x: TokenType,
+        token_y: TokenType,
     ) -> StdResult<Vec<LbPairInformation>> {
-        let token_x: TokenType = token_x.clone().into();
-        let token_y: TokenType = token_y.clone().into();
+        // let token_x: TokenType = token_x.clone().into();
+        // let token_y: TokenType = token_y.clone().into();
 
         // which style is better?
 
@@ -221,8 +221,8 @@ impl ILbFactory {
     pub fn get_lb_pair_information(
         &self,
         querier: QuerierWrapper,
-        token_x: ContractInfo,
-        token_y: ContractInfo,
+        token_x: TokenType,
+        token_y: TokenType,
         bin_step: u16,
     ) -> StdResult<LbPairInformation> {
         querier
@@ -230,8 +230,8 @@ impl ILbFactory {
                 self.0.code_hash.clone(),
                 self.0.address.clone(),
                 &QueryMsg::GetLbPairInformation {
-                    token_x: token_x.into(),
-                    token_y: token_y.into(),
+                    token_x,
+                    token_y,
                     bin_step,
                 },
             )

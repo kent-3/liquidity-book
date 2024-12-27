@@ -1,4 +1,4 @@
-#![allow(unused)] // For beginning only.
+// #![allow(unused)] // For beginning only.
 
 use crate::{execute::*, msg::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
@@ -10,9 +10,8 @@ use lb_interfaces::{
     lb_pair,
     lb_router::{self, CreateLbPairResponse, Path},
 };
-use lb_libraries::math::packed_u128_math::PackedUint128Math;
+use lb_libraries::{math::packed_u128_math::PackedUint128Math, Bytes32};
 use secret_toolkit::snip20;
-use shade_protocol::swap::core::TokenType;
 
 // TODO: How are we going to register this router contract to be able to receive every supported snip20 token?
 // I guess we can add a new ExecuteMsg type for that purpose, but if we ever deploy a new router, we'll need to
@@ -70,10 +69,8 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     FACTORY.save(deps.storage, &ILbFactory(msg.factory))?;
 
-    // TODO: Register all tokens with the router contract. If we ever deploy a new
+    // TODO: Register existing tokens with the router contract. If we ever deploy a new
     // router, we'll need a way to register all of the tokens used by the pairs.
-    // We should probably have a seperate `Register` message type to let anyone
-    // register a token?
 
     Ok(Response::default())
 }
@@ -214,7 +211,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
         } => sweep_lb_token(deps, env, info, token, to, ids, amounts),
 
         // not in joe-v2
-        ExecuteMsg::Register { address, code_hash } => unimplemented!(),
+        ExecuteMsg::Register { address, code_hash } => register(deps, env, address, code_hash),
         ExecuteMsg::Receive {
             sender,
             from,
@@ -225,7 +222,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
     }
 }
 
-pub fn register(deps: DepsMut, env: Env, address: Addr, code_hash: String) -> StdResult<Response> {
+pub fn register(deps: DepsMut, env: Env, address: String, code_hash: String) -> Result<Response> {
+    deps.api.addr_validate(&address)?;
+
     let msg = snip20::register_receive_msg(
         env.contract.code_hash,
         None,
@@ -240,10 +239,10 @@ pub fn register(deps: DepsMut, env: Env, address: Addr, code_hash: String) -> St
 pub fn receive(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    mut info: MessageInfo, // TODO: does this work?
     _sender: Addr,
     from: Addr,
-    amount: Uint128,
+    _amount: Uint128,
     _memo: Option<String>,
     msg: Binary,
 ) -> Result<Response> {
@@ -255,7 +254,8 @@ pub fn receive(
         ));
     }
 
-    /* use sender & amount */
+    info.sender = from;
+
     execute(deps, env, info, msg)
 }
 
@@ -332,15 +332,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                     liquidity_minted,
                 };
 
-                // TODO: Decide between response attributes vs response data.
-                Ok(
-                    Response::new().set_data(to_binary(&data)?), // .add_attribute("amount_x_added", amount_x_added)
-                                                                 // .add_attribute("amount_y_added", amount_y_added)
-                                                                 // .add_attribute("amount_x_left", amount_x_left)
-                                                                 // .add_attribute("amount_y_left", amount_y_left),
-                                                                 // .add_attribute("deposit_ids", deposit_ids)
-                                                                 // .add_attribute("liquidity_minted", liquidity_minted)
-                )
+                Ok(Response::new().set_data(to_binary(&data)?))
             }
             None => Err(Error::ReplyDataMissing),
         },
@@ -382,15 +374,75 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 let data = lb_router::RemoveLiquidityResponse { amount_x, amount_y };
 
-                let response = Response::new().set_data(to_binary(&data)?);
-
-                Ok(response)
+                Ok(Response::new().set_data(to_binary(&data)?))
             }
             None => Err(Error::ReplyDataMissing),
         },
         (SWAP_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(data) => {
-                todo!()
+                let EphemeralSwap {
+                    amount_in,
+                    amount_out_min,
+                    pairs,
+                    versions,
+                    token_path,
+                    mut position,
+                    mut token_next,
+                    swap_for_y,
+                    to,
+                } = EPHEMERAL_SWAP.load(deps.storage)?;
+
+                // let (amount_x_out, amount_y_out) = from_binary::<lb_pair::SwapResponse>(&data)?
+                //     .amounts_out
+                //     .decode();
+
+                // TODO: see if this works
+                let amounts_out: Bytes32 = data.to_vec().try_into().map_err(|v: Vec<u8>| {
+                    Error::Generic(format!("Invalid length for Bytes32: got {} bytes", v.len()))
+                })?;
+                let (amount_x_out, amount_y_out) = amounts_out.decode();
+
+                let amount_out = if swap_for_y {
+                    Uint128::new(amount_y_out)
+                } else {
+                    Uint128::new(amount_x_out)
+                };
+
+                if amount_out_min > amount_out {
+                    return Err(Error::InsufficientAmountOut {
+                        amount_out_min,
+                        amount_out,
+                    });
+                }
+
+                position += 1;
+
+                if position == token_path.len() as u32 {
+                    let data = lb_router::SwapResponse { amount_out };
+
+                    Ok(Response::new().set_data(to_binary(&data)?))
+                } else {
+                    token_next = token_path[position as usize].clone();
+
+                    EPHEMERAL_SWAP.update(deps.storage, |mut data| -> StdResult<_> {
+                        data.position = position;
+                        data.token_next = token_next.clone();
+                        Ok(data)
+                    })?;
+
+                    _swap_exact_tokens_for_tokens(
+                        deps,
+                        &env,
+                        Response::new(),
+                        amount_out,
+                        pairs,
+                        versions,
+                        token_path,
+                        position + 1,
+                        token_next,
+                        to,
+                    )
+                }
             }
             None => Err(Error::ReplyDataMissing),
         },

@@ -145,6 +145,9 @@ pub trait LbPairEventExt {
 
 impl LbPairEventExt for Event {}
 
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with an LB Pair contract.
+#[cw_serde]
 pub struct ILbPair(pub ContractInfo);
 
 impl Deref for ILbPair {
@@ -156,6 +159,17 @@ impl Deref for ILbPair {
 }
 
 impl ILbPair {
+    pub fn swap(&self, swap_for_y: bool, to: String) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::Swap { swap_for_y, to };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
     pub fn mint(
         &self,
         to: String,
@@ -208,7 +222,7 @@ impl ILbPair {
             .map(|response| response.token_x)
     }
 
-    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<ContractInfo> {
+    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
         querier
             .query_wasm_smart::<TokenYResponse>(
                 self.0.code_hash.clone(),
@@ -216,7 +230,7 @@ impl ILbPair {
                 &QueryMsg::GetTokenY {},
             )
             // TODO: probably shouldn't do this
-            .map(|response| response.token_y.into_contract_info().unwrap())
+            .map(|response| response.token_y)
     }
 
     pub fn get_active_id(&self, querier: QuerierWrapper) -> StdResult<u32> {
@@ -411,6 +425,12 @@ pub enum InvokeMsg {
 
 impl ExecuteCallback for InvokeMsg {
     const BLOCK_SIZE: usize = 256;
+}
+
+// TODO: this could instead return just the Bytes32, since it's mainly used by lb-router
+#[cw_serde]
+pub struct SwapResponse {
+    pub amounts_out: Bytes32,
 }
 
 #[cw_serde]

@@ -1,14 +1,11 @@
 // #![allow(unused)]
 
-use crate::{
-    contract::{ensure, BURN_REPLY_ID, CREATE_LB_PAIR_REPLY_ID, MINT_REPLY_ID, PUBLIC_VIEWING_KEY},
-    helper::*,
-    prelude::*,
-    state::*,
-};
+// TODO: function doc comments
+
+use crate::{contract::*, helper::*, prelude::*, state::*};
 use cosmwasm_std::{
-    to_binary, Addr, ContractInfo, DepsMut, Env, MessageInfo, Response, SubMsg, Uint128, Uint256,
-    Uint64,
+    to_binary, Addr, ContractInfo, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg, Uint128,
+    Uint256, Uint64,
 };
 use lb_interfaces::{
     lb_factory,
@@ -63,21 +60,21 @@ pub fn add_liquidity(
     // TODO: original has this check happening in _add_liquidity. should I move there also?
     ensure(&env, liquidity_parameters.deadline.u64())?;
 
-    let token_x = liquidity_parameters
-        .token_x
-        .clone()
-        .into_contract_info()
-        .unwrap();
-    let token_y = liquidity_parameters
-        .token_y
-        .clone()
-        .into_contract_info()
-        .unwrap();
+    // let token_x = liquidity_parameters
+    //     .token_x
+    //     .clone()
+    //     .into_contract_info()
+    //     .unwrap();
+    // let token_y = liquidity_parameters
+    //     .token_y
+    //     .clone()
+    //     .into_contract_info()
+    //     .unwrap();
 
     let lb_pair = ILbPair(_get_lb_pair_information(
         deps.as_ref(),
-        token_x.clone(),
-        token_y.clone(),
+        liquidity_parameters.token_x.clone(),
+        liquidity_parameters.token_y.clone(),
         liquidity_parameters.bin_step,
         Version::V2_2,
     )?);
@@ -90,6 +87,8 @@ pub fn add_liquidity(
     // Could increasing allowances be done via submessages? I don't think so, because the message
     // sender would be this contract, not the user.
 
+    // TODO: handle TokenType::Native
+
     // Transfer tokens from sender to the pair contract.
     let transfer_x_msg = secret_toolkit::snip20::transfer_from_msg(
         info.sender.to_string(),
@@ -98,8 +97,8 @@ pub fn add_liquidity(
         None,
         None,
         32,
-        token_x.code_hash.clone(),
-        token_x.address.to_string(),
+        liquidity_parameters.token_x.code_hash().clone(),
+        liquidity_parameters.token_x.address().to_string(),
     )?;
     let transfer_y_msg = secret_toolkit::snip20::transfer_from_msg(
         info.sender.to_string(),
@@ -108,8 +107,8 @@ pub fn add_liquidity(
         None,
         None,
         32,
-        token_y.code_hash.clone(),
-        token_y.address.to_string(),
+        liquidity_parameters.token_y.code_hash().clone(),
+        liquidity_parameters.token_y.address().to_string(),
     )?;
 
     let response = Response::new().add_messages(vec![transfer_x_msg, transfer_y_msg]);
@@ -177,7 +176,7 @@ pub fn _add_liquidity(
 
     let lb_pair_mint_msg = pair.mint(liq.to, liquidity_configs, liq.refund_to)?;
     let response =
-        Response::new().add_submessage(SubMsg::reply_on_success(lb_pair_mint_msg, MINT_REPLY_ID));
+        response.add_submessage(SubMsg::reply_on_success(lb_pair_mint_msg, MINT_REPLY_ID));
 
     Ok(response)
 }
@@ -238,17 +237,28 @@ pub fn remove_liquidity_native() {
     unimplemented!()
 }
 
+/**
+ * @notice Swaps exact tokens for tokens while performing safety checks
+ * @param amountIn The amount of token to send
+ * @param amountOutMin The min amount of token to receive
+ * @param path The path of the swap
+ * @param to The address of the recipient
+ * @param deadline The deadline of the tx
+ * @return amountOut Output amount of the swap
+ */
 pub fn swap_exact_tokens_for_tokens(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    amount_in: Uint256,
-    amount_out_min: Uint256,
+    amount_in: Uint128,
+    amount_out_min: Uint128,
     path: Path,
     to: String,
     deadline: Uint64,
 ) -> Result<Response> {
     ensure(&env, deadline.u64())?;
+
+    let to = deps.api.addr_validate(&to)?;
 
     let pairs = _get_pairs(
         deps.as_ref(),
@@ -257,37 +267,118 @@ pub fn swap_exact_tokens_for_tokens(
         path.token_path.clone(),
     )?;
 
-    // TODO: transfer received tokens to the lb_pair contract
+    // TODO: transfer received tokens to the lb_pair contract?
+
+    // Transfer tokens from this router contract to the pair contract.
+    let transfer_msg = secret_toolkit::snip20::transfer_msg(
+        pairs[0].address.to_string(),
+        amount_in,
+        None,
+        None,
+        32,
+        path.token_path[0].code_hash().clone(),
+        path.token_path[0].address().to_string(),
+    )?;
+
+    let response = Response::new().add_message(transfer_msg);
+
+    let token_next = path.token_path[0].clone();
+
+    EPHEMERAL_SWAP.save(
+        deps.storage,
+        &EphemeralSwap {
+            amount_in,
+            amount_out_min,
+            pairs: pairs.clone(),
+            versions: path.versions.clone(),
+            token_path: path.token_path.clone(),
+            position: 0,
+            token_next: token_next.clone(),
+            swap_for_y: false,
+            to: to.clone(),
+        },
+    )?;
 
     _swap_exact_tokens_for_tokens(
         deps,
         &env,
-        info,
+        response,
         amount_in,
         pairs,
         path.versions,
         path.token_path,
+        0,
+        token_next,
         to,
     )
-
-    // TODO: store amount_out_min in ephemeral storage
-
-    // TODO: add this check in the submsg reply
-    //     if (amountOutMin > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMin, amountOut);
 }
+
+// NOTE: `amount_out` and `token` aren't used in LB, but might be needed to support other swaps in
+// the future.
 
 pub fn _swap_exact_tokens_for_tokens(
     deps: DepsMut,
-    env: &Env,
-    info: MessageInfo,
-    amount_in: Uint256,
-    pairs: Vec<ContractInfo>,
+    _env: &Env,
+    response: Response,
+    _amount_out: Uint128,
+    pairs: Vec<ILbPair>,
     versions: Vec<Version>,
-    token_path: Vec<ContractInfo>,
-    to: String,
+    token_path: Vec<TokenType>,
+    position: u32,
+    token_next: TokenType,
+    to: Addr,
 ) -> Result<Response> {
-    todo!()
+    let i = position as usize;
+
+    let pair = pairs[i].clone();
+    let version = versions[i].clone();
+
+    let _token = token_next;
+    let token_next = token_path[i + 1].clone();
+
+    let recipient = if i + 1 == pairs.len() {
+        to
+    } else {
+        // we are sending the tokens obtained in the swap directly to the next lb_pair contract!
+        pairs[i + 1].address.clone()
+    };
+
+    if version == Version::V1 {
+        unimplemented!()
+    } else if version == Version::V2 {
+        unimplemented!()
+    } else {
+        let swap_for_y = token_next == pair.get_token_y(deps.querier)?;
+
+        // TODO: annoying
+        EPHEMERAL_SWAP.update(deps.storage, |mut data| -> StdResult<_> {
+            data.swap_for_y = swap_for_y;
+            Ok(data)
+        })?;
+
+        let lb_pair_swap_msg = pair.swap(swap_for_y, recipient.to_string())?;
+        let response =
+            response.add_submessage(SubMsg::reply_on_success(lb_pair_swap_msg, SWAP_REPLY_ID));
+
+        Ok(response)
+    }
 }
+
+// function swapExactTokensForTokens(
+//     uint256 amountIn,
+//     uint256 amountOutMin,
+//     Path memory path,
+//     address to,
+//     uint256 deadline
+// ) external override ensure(deadline) verifyPathValidity(path) returns (uint256 amountOut) {
+//     address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);
+//
+//     _safeTransferFrom(path.tokenPath[0], msg.sender, pairs[0], amountIn);
+//
+//     amountOut = _swapExactTokensForTokens(amountIn, pairs, path.versions, path.tokenPath, to);
+//
+//     if (amountOutMin > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMin, amountOut);
+// }
 
 // function _swapExactTokensForTokens(
 //     uint256 amountIn,
@@ -343,31 +434,6 @@ pub fn _swap_exact_tokens_for_tokens(
 //     }
 // }
 
-/**
- * @notice Swaps exact tokens for tokens while performing safety checks
- * @param amountIn The amount of token to send
- * @param amountOutMin The min amount of token to receive
- * @param path The path of the swap
- * @param to The address of the recipient
- * @param deadline The deadline of the tx
- * @return amountOut Output amount of the swap
- */
-// function swapExactTokensForTokens(
-//     uint256 amountIn,
-//     uint256 amountOutMin,
-//     Path memory path,
-//     address to,
-//     uint256 deadline
-// ) external override ensure(deadline) verifyPathValidity(path) returns (uint256 amountOut) {
-//     address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);
-//
-//     _safeTransferFrom(path.tokenPath[0], msg.sender, pairs[0], amountIn);
-//
-//     amountOut = _swapExactTokensForTokens(amountIn, pairs, path.versions, path.tokenPath, to);
-//
-//     if (amountOutMin > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMin, amountOut);
-// }
-
 pub fn swap_exact_tokens_for_native() {
     unimplemented!()
 }
@@ -380,8 +446,8 @@ pub fn swap_tokens_for_exact_tokens(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    amount_out: Uint256,
-    amount_in_max: Uint256,
+    amount_out: Uint128,
+    amount_in_max: Uint128,
     path: Path,
     to: String,
     deadline: Uint64,
@@ -393,6 +459,13 @@ pub fn swap_tokens_for_exact_native() {
     unimplemented!()
 }
 
+/**
+ * @notice Unstuck tokens that are sent to this contract by mistake
+ * @dev Only callable by the factory owner
+ * @param token The address of the token
+ * @param to The address of the user to send back the tokens
+ * @param amount The amount to send
+ */
 pub fn sweep(
     deps: DepsMut,
     env: Env,
@@ -404,6 +477,14 @@ pub fn sweep(
     todo!()
 }
 
+/**
+ * @notice Unstuck LBTokens that are sent to this contract by mistake
+ * @dev Only callable by the factory owner
+ * @param lbToken The address of the LBToken
+ * @param to The address of the user to send back the tokens
+ * @param ids The list of token ids
+ * @param amounts The list of amounts to send
+ */
 pub fn sweep_lb_token(
     deps: DepsMut,
     env: Env,
@@ -415,3 +496,94 @@ pub fn sweep_lb_token(
 ) -> Result<Response> {
     todo!()
 }
+
+// function sweep(IERC20 token, address to, uint256 amount) external override onlyFactoryOwner {
+//     if (address(token) == address(0)) {
+//         amount = amount == type(uint256).max ? address(this).balance : amount;
+//
+//         _safeTransferNative(to, amount);
+//     } else {
+//         amount = amount == type(uint256).max ? token.balanceOf(address(this)) : amount;
+//
+//         token.safeTransfer(to, amount);
+//     }
+// }
+//
+// function sweepLBToken(ILBToken lbToken, address to, uint256[] calldata ids, uint256[] calldata amounts)
+//     external
+//     override
+//     onlyFactoryOwner
+// {
+//     lbToken.batchTransferFrom(address(this), to, ids, amounts);
+// }
+//
+// /**
+//  * @notice Helper function to add liquidity
+//  * @param liq The liquidity parameter
+//  * @param pair LBPair where liquidity is deposited
+//  * @return amountXAdded Amount of token X added
+//  * @return amountYAdded Amount of token Y added
+//  * @return amountXLeft Amount of token X left
+//  * @return amountYLeft Amount of token Y left
+//  * @return depositIds The list of deposit ids
+//  * @return liquidityMinted The list of liquidity minted
+//  */
+// function _addLiquidity(LiquidityParameters calldata liq, ILBPair pair)
+//     private
+//     ensure(liq.deadline)
+//     returns (
+//         uint256 amountXAdded,
+//         uint256 amountYAdded,
+//         uint256 amountXLeft,
+//         uint256 amountYLeft,
+//         uint256[] memory depositIds,
+//         uint256[] memory liquidityMinted
+//     )
+// {
+//     unchecked {
+//         if (liq.deltaIds.length != liq.distributionX.length || liq.deltaIds.length != liq.distributionY.length) {
+//             revert LBRouter__LengthsMismatch();
+//         }
+//
+//         if (liq.activeIdDesired > type(uint24).max || liq.idSlippage > type(uint24).max) {
+//             revert LBRouter__IdDesiredOverflows(liq.activeIdDesired, liq.idSlippage);
+//         }
+//
+//         bytes32[] memory liquidityConfigs = new bytes32[](liq.deltaIds.length);
+//         depositIds = new uint256[](liq.deltaIds.length);
+//         {
+//             uint256 _activeId = pair.getActiveId();
+//             if (
+//                 liq.activeIdDesired + liq.idSlippage < _activeId || _activeId + liq.idSlippage < liq.activeIdDesired
+//             ) {
+//                 revert LBRouter__IdSlippageCaught(liq.activeIdDesired, liq.idSlippage, _activeId);
+//             }
+//
+//             for (uint256 i; i < liquidityConfigs.length; ++i) {
+//                 int256 _id = int256(_activeId) + liq.deltaIds[i];
+//
+//                 if (_id < 0 || uint256(_id) > type(uint24).max) revert LBRouter__IdOverflows(_id);
+//                 depositIds[i] = uint256(_id);
+//                 liquidityConfigs[i] = LiquidityConfigurations.encodeParams(
+//                     uint64(liq.distributionX[i]), uint64(liq.distributionY[i]), uint24(uint256(_id))
+//                 );
+//             }
+//         }
+//
+//         bytes32 amountsReceived;
+//         bytes32 amountsLeft;
+//         (amountsReceived, amountsLeft, liquidityMinted) = pair.mint(liq.to, liquidityConfigs, liq.refundTo);
+//
+//         bytes32 amountsAdded = amountsReceived.sub(amountsLeft);
+//
+//         amountXAdded = amountsAdded.decodeX();
+//         amountYAdded = amountsAdded.decodeY();
+//
+//         if (amountXAdded < liq.amountXMin || amountYAdded < liq.amountYMin) {
+//             revert LBRouter__AmountSlippageCaught(liq.amountXMin, amountXAdded, liq.amountYMin, amountYAdded);
+//         }
+//
+//         amountXLeft = amountsLeft.decodeX();
+//         amountYLeft = amountsLeft.decodeY();
+//     }
+// }

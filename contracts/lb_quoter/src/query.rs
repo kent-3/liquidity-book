@@ -10,10 +10,11 @@ use lb_interfaces::{
     lb_quoter::Quote,
     lb_router::{self, ILbRouter},
 };
+use shade_protocol::swap::core::TokenType;
 
 pub fn find_best_path_from_amount_in(
     deps: Deps,
-    route: Vec<ContractInfo>,
+    route: Vec<TokenType>,
     amount_in: Uint128,
 ) -> Result<Quote> {
     if route.len() < 2 {
@@ -38,8 +39,11 @@ pub fn find_best_path_from_amount_in(
     for i in 0..swap_length {
         if let Some(factory) = FACTORY_V2_2.load(deps.storage)? {
             // Fetch swaps for V2.2
-            let lb_pairs_available: Vec<LbPairInformation> =
-                ILbFactory(factory).get_all_lb_pairs(deps.querier, &route[i], &route[i + 1])?;
+            let lb_pairs_available: Vec<LbPairInformation> = ILbFactory(factory).get_all_lb_pairs(
+                deps.querier,
+                route[i].clone(),
+                route[i + 1].clone(),
+            )?;
 
             if lb_pairs_available.len() > 0 && quote.amounts[i] > Uint128::zero() {
                 for j in 0..lb_pairs_available.len() {
@@ -97,7 +101,7 @@ pub fn find_best_path_from_amount_in(
 
 pub fn find_best_path_from_amount_out(
     deps: Deps,
-    route: Vec<ContractInfo>,
+    route: Vec<TokenType>,
     amount_out: Uint128,
 ) -> Result<Quote> {
     todo!()

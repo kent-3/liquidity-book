@@ -1,6 +1,7 @@
 use crate::{prelude::*, state::FACTORY};
 use cosmwasm_std::{Addr, ContractInfo, Deps, Uint128};
-use lb_interfaces::lb_router::Version;
+use lb_interfaces::{lb_pair::ILbPair, lb_router::Version};
+use shade_protocol::swap::core::TokenType;
 
 // NOTE: We are following the joe-v2 versioning, starting from V2_2.
 
@@ -9,8 +10,8 @@ use lb_interfaces::lb_router::Version;
 /// Revert if the pair is not created yet
 pub fn _get_lb_pair_information(
     deps: Deps,
-    token_x: ContractInfo,
-    token_y: ContractInfo,
+    token_x: TokenType,
+    token_y: TokenType,
     bin_step: u16,
     version: Version,
 ) -> Result<ContractInfo> {
@@ -50,8 +51,8 @@ pub fn _get_lb_pair_information(
 
 pub fn _get_pair(
     deps: Deps,
-    token_x: ContractInfo,
-    token_y: ContractInfo,
+    token_x: TokenType,
+    token_y: TokenType,
     bin_step: u16,
     version: Version,
 ) -> Result<ContractInfo> {
@@ -66,28 +67,23 @@ pub fn _get_pairs(
     deps: Deps,
     pair_bin_steps: Vec<u16>,
     versions: Vec<Version>,
-    token_path: Vec<ContractInfo>, // contracts that implements the snip20 interface
-) -> Result<Vec<ContractInfo>> {
-    let mut pairs: Vec<ContractInfo> = Vec::with_capacity(pair_bin_steps.len());
-
-    #[allow(unused_assignments)]
-    let mut token = ContractInfo {
-        address: Addr::unchecked(""),
-        code_hash: "".to_string(),
-    };
+    token_path: Vec<TokenType>, // contracts that implements the snip20 interface
+) -> Result<Vec<ILbPair>> {
+    let mut pairs: Vec<ILbPair> = Vec::with_capacity(pair_bin_steps.len());
+    let mut token: TokenType;
     let mut token_next = token_path[0].clone();
 
     for i in 0..pairs.len() {
         token = token_next;
         token_next = token_path[i + 1].clone();
 
-        pairs[i] = _get_pair(
+        pairs[i] = ILbPair(_get_pair(
             deps,
             token.clone(),
             token_next.clone(),
             pair_bin_steps[i].clone(),
             versions[i].clone(),
-        )?;
+        )?);
     }
 
     Ok(pairs)

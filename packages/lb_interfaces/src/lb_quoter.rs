@@ -2,7 +2,10 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{ContractInfo, Uint128};
 // TODO: copy these instead of using shade_protocol as a dependency
 use crate::lb_router::Version;
-use shade_protocol::utils::{asset::RawContract, Query};
+use shade_protocol::{
+    swap::core::TokenType,
+    utils::{asset::RawContract, Query},
+};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -22,12 +25,12 @@ pub enum QueryMsg {
     GetRouterV2_2,
     #[returns(Quote)]
     FindBestPathFromAmountIn {
-        route: Vec<ContractInfo>,
+        route: Vec<TokenType>,
         amount_in: Uint128,
     },
     #[returns(Quote)]
     FindBestPathFromAmountOut {
-        route: Vec<ContractInfo>,
+        route: Vec<TokenType>,
         amount_out: Uint128,
     },
 }
@@ -49,7 +52,7 @@ pub struct RouterV2_2Response {
 #[cw_serde]
 #[derive(Default)]
 pub struct Quote {
-    pub route: Vec<ContractInfo>,
+    pub route: Vec<TokenType>,
     pub pairs: Vec<ContractInfo>,
     pub bin_steps: Vec<u16>,
     pub versions: Vec<Version>,

@@ -24,8 +24,9 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }
-secret-toolkit = { workspace = true }
 ethnum = { workspace = true }
+secret-toolkit = { workspace = true }
+shade-protocol = { workspace = true }
 
 cc = { workspace = true }
 

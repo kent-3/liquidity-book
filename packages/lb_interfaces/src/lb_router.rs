@@ -68,61 +68,61 @@ pub enum ExecuteMsg {
         deadline: Uint64,
     },
     SwapExactTokensForTokens {
-        amount_in: Uint256,
-        amount_out_min: Uint256,
+        amount_in: Uint128,
+        amount_out_min: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapExactTokensForNative {
-        amount_in: Uint256,
-        amount_out_min_native: Uint256,
+        amount_in: Uint128,
+        amount_out_min_native: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapExactNativeforTokens {
-        amount_out_min: Uint256,
+        amount_out_min: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapTokensForExactTokens {
-        amount_out: Uint256,
-        amount_in_max: Uint256,
+        amount_out: Uint128,
+        amount_in_max: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapTokensForExactNative {
-        amount_native_out: Uint256,
-        amount_in_max: Uint256,
+        amount_native_out: Uint128,
+        amount_in_max: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapNativeforExactTokens {
-        amount_out: Uint256,
+        amount_out: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapExactTokensForTokensSupportingFeeOnTransferTokens {
-        amount_in: Uint256,
-        amount_out_min: Uint256,
+        amount_in: Uint128,
+        amount_out_min: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapExactTokensForNativesupportingFeeOnTransferTokens {
-        amount_in: Uint256,
-        amount_out_min_native: Uint256,
+        amount_in: Uint128,
+        amount_out_min_native: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
     },
     SwapExactNativeforTokensSupportingFeeOnTransferTokens {
-        amount_out_min: Uint256,
+        amount_out_min: Uint128,
         path: Path,
         to: String,
         deadline: Uint64,
@@ -140,6 +140,7 @@ pub enum ExecuteMsg {
     },
 
     // not in joe-v2
+    // TODO: make this a vec of ContractInfo
     Register {
         address: String,
         code_hash: String,
@@ -174,6 +175,11 @@ pub struct RemoveLiquidityResponse {
     pub amount_y: Uint128,
 }
 
+#[cw_serde]
+pub struct SwapResponse {
+    pub amount_out: Uint128,
+}
+
 // TODO: decide about the Version stuff. It is very specific to Trader Joe, but we could use this
 // approach to support swaps from other DEXs. For example: V1 = shade_swap, V2 = liquidity_book.
 // Then a path could contain a mix of pair types.
@@ -200,7 +206,7 @@ pub struct Path {
     pub pair_bin_steps: Vec<u16>,
     pub versions: Vec<Version>,
     // TODO: Does this need to be Vec<RawContract> instead?
-    pub token_path: Vec<ContractInfo>, // contracts that implements the snip20 interface
+    pub token_path: Vec<TokenType>, // contracts that implements the snip20 interface
 }
 
 #[cw_serde]

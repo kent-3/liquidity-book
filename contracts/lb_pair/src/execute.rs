@@ -283,7 +283,14 @@ pub fn swap(
     }
     .expect("there must be a transfer message");
 
-    Ok(Response::new().add_message(msg).add_events(events))
+    let data = lb_pair::SwapResponse { amounts_out };
+
+    Ok(Response::new()
+        // .set_data(to_binary(&data)?)
+        // TODO: see if this works
+        .set_data(Binary::from(amounts_out))
+        .add_message(msg)
+        .add_events(events))
 }
 
 /// Flash loan tokens from the pool to a receiver contract and execute a callback function.
