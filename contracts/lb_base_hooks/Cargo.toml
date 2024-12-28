@@ -1,0 +1,31 @@
+[package]
+name = "lb-base-hooks"
+version = "0.1.0"
+edition = "2021"
+exclude = ["contract.wasm", "hash.txt"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+lb-interfaces = { workspace = true }
+lb-libraries = { workspace = true }
+# TODO - snip1155 package should be integrated into lb-interfaces?
+snip1155 = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-storage = { workspace = true }
+cosmwasm-schema = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde-json-wasm = { workspace = true }
+thiserror = { workspace = true }
+ethnum = { workspace = true }
+secret-toolkit = { workspace = true }
+shade-protocol = { workspace = true }
+
+cc = { workspace = true }

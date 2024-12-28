@@ -3,6 +3,7 @@ members = [
   "packages/lb_interfaces",
   "packages/lb_libraries",
   "packages/snip1155",
+  "contracts/lb_base_hooks",
   "contracts/lb_factory",
   "contracts/lb_pair",
   "contracts/lb_quoter",
@@ -11,6 +12,7 @@ members = [
   "contracts/tests",
 ]
 default-members = [
+  "contracts/lb_base_hooks",
   "contracts/lb_factory",
   "contracts/lb_pair",
   "contracts/lb_quoter",
