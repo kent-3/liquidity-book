@@ -277,15 +277,15 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                                 "hola".to_string(),
                                 None,
                                 1,
-                                token.address().to_string(),
                                 token.code_hash(),
+                                token.address().to_string(),
                             )?,
                             snip20::register_receive_msg(
                                 env.contract.code_hash.clone(),
                                 None,
                                 1,
-                                token.address().to_string(),
                                 token.code_hash(),
+                                token.address().to_string(),
                             )?,
                         ])
                     }

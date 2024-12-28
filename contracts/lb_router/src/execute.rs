@@ -500,6 +500,7 @@ pub fn swap_tokens_for_exact_tokens(
 
     let response = Response::new().add_message(transfer_msg);
 
+    // TODO: this is handled in the reply.
     //         uint256 _amountOutReal = _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, to);
     //
     //         if (_amountOutReal < amountOut) revert LBRouter__InsufficientAmountOut(amountOut, _amountOutReal);
@@ -510,6 +511,7 @@ pub fn swap_tokens_for_exact_tokens(
         deps.storage,
         &EphemeralSwap {
             // TODO: rename the fields to be more generic. used in both swap directions.
+            // or make separate ones for the different swap types. that's probably better
             amount_in: amount_out,         // amount_out
             amount_out_min: amount_in_max, // amount_in_max
             pairs: pairs.clone(),
@@ -536,7 +538,10 @@ pub fn swap_tokens_for_exact_tokens(
     )
 }
 
-//     uint256 _amountOutReal = _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, to);
+// NOTE: `amounts_in` and `token` aren't used in LB, but might be needed to support other swaps in
+// the future.
+
+// TODO: double check this closely... It might be the same as swap_exact_tokens_for_tokens
 pub fn _swap_tokens_for_exact_tokens(
     deps: DepsMut,
     _env: &Env,
@@ -551,7 +556,38 @@ pub fn _swap_tokens_for_exact_tokens(
 ) -> Result<Response> {
     let i = position as usize;
 
-    todo!()
+    let pair = pairs[i].clone();
+    let version = versions[i].clone();
+
+    let _token = token_next;
+    let token_next = token_path[i + 1].clone();
+
+    let recipient = if i + 1 == pairs.len() {
+        to
+    } else {
+        // we are sending the tokens obtained in the swap directly to the next lb_pair contract!
+        pairs[i + 1].address.clone()
+    };
+
+    match version {
+        Version::V1 => unimplemented!(),
+        Version::V2 => unimplemented!(),
+        _ => {
+            let swap_for_y = token_next == pair.get_token_y(deps.querier)?;
+
+            // TODO: annoying
+            EPHEMERAL_SWAP.update(deps.storage, |mut data| -> StdResult<_> {
+                data.swap_for_y = swap_for_y;
+                Ok(data)
+            })?;
+
+            let lb_pair_swap_msg = pair.swap(swap_for_y, recipient.to_string())?;
+            let response =
+                response.add_submessage(SubMsg::reply_on_success(lb_pair_swap_msg, SWAP_REPLY_ID));
+
+            Ok(response)
+        }
+    }
 }
 
 pub fn swap_tokens_for_exact_native() {

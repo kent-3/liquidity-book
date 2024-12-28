@@ -17,6 +17,7 @@ default-members = [
   "contracts/lb_router",
   "contracts/lb_token",
 ]
+exclude = ["contracts/tests"]
 resolver = "2"
 
 [profile.release]
@@ -75,7 +76,7 @@ features = ["snip20", "storage", "viewing-key", "permit"]
 [workspace.dependencies.shade-protocol]
 git = "https://github.com/securesecrets/shade"
 branch = "orderbook/library"
-features = ["interface", "liquidity-book", "snip20", "utils"]
+features = ["interface", "swap", "snip20", "utils", "liquidity-book"]
 
 [workspace.dependencies.shade-multi-test]
 git = "https://github.com/securesecrets/shade"

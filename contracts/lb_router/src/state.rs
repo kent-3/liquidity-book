@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
 use lb_interfaces::{lb_factory::ILbFactory, lb_pair::ILbPair, lb_router::Version};
-use secret_toolkit::storage::Item;
+use secret_toolkit::{serialization::Json, storage::Item};
 use shade_protocol::contract_interfaces::swap::core::TokenType;
 
 pub const FACTORY: Item<ILbFactory> = Item::new(b"factory");
@@ -10,7 +10,7 @@ pub const EPHEMERAL_ADD_LIQUIDITY: Item<EphemeralAddLiquidity> =
     Item::new(b"ephemeral_add_liquidity");
 pub const EPHEMERAL_REMOVE_LIQUIDITY: Item<EphemeralRemoveLiquidity> =
     Item::new(b"ephemeral_remove_liquidity");
-pub const EPHEMERAL_SWAP: Item<EphemeralSwap> = Item::new(b"ephemeral_swap");
+pub const EPHEMERAL_SWAP: Item<EphemeralSwap, Json> = Item::new(b"ephemeral_swap");
 
 #[cw_serde]
 pub struct EphemeralAddLiquidity {
