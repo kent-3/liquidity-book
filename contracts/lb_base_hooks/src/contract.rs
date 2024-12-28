@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::{execute::*, query::*};
+use crate::{execute::*, prelude::*, query::*};
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult, Uint256,
@@ -19,7 +19,7 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {
     match msg {
         ExecuteMsg::OnHooksSet {
             hooks_parameters,
@@ -92,10 +92,10 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
         QueryMsg::GetLbPair {} => to_binary(&get_lb_pair(deps)?),
         QueryMsg::IsLinked {} => to_binary(&is_linked(deps)?),
     }
-    // .map_err(Error::CwErr)
+    .map_err(Error::CwErr)
 }
