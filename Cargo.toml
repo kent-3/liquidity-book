@@ -1,8 +1,6 @@
 [workspace]
 members = [
   "packages/liquidity-book",
-  "packages/lb_interfaces",
-  "packages/lb_libraries",
   "packages/snip1155",
   "contracts/lb_base_hooks",
   "contracts/lb_factory",
@@ -10,6 +8,7 @@ members = [
   "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_token",
+  # TODO: update the tests to reflect recent changes
   "contracts/tests",
 ]
 default-members = [
@@ -36,8 +35,6 @@ overflow-checks = true
 
 [workspace.dependencies]
 liquidity-book = { path = "packages/liquidity-book" }
-lb-interfaces = { path = "packages/lb_interfaces" }
-lb-libraries = { path = "packages/lb_libraries" }
 snip1155 = { path = "packages/snip1155" }
 cosmwasm-schema = { version = "1.4" }
 schemars = { version = "0.8" }

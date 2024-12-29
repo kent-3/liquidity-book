@@ -11,7 +11,7 @@ default = []
 
 [dependencies]
 shade-protocol = { workspace = true }
-lb-libraries = { workspace = true }
+liquidity-book = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 serde-json-wasm = { workspace = true }
