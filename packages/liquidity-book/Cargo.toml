@@ -1,0 +1,26 @@
+[package]
+name = "liquidity-book"
+version = "0.1.0"
+authors = ["Kent", "Haseeb Saeed <itsHaseebSaeed@gmail.com>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+secret-toolkit = { workspace = true }
+ethnum = { workspace = true }
+primitive-types = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde-json-wasm = { workspace = true }
+thiserror = { workspace = true }
+
+# TODO: get rid of these
+snip1155 = { workspace = true }
+shade-protocol = { workspace = true }
+secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }

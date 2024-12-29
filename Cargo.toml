@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "packages/liquidity-book",
   "packages/lb_interfaces",
   "packages/lb_libraries",
   "packages/snip1155",
