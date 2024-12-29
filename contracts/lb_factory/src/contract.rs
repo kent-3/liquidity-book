@@ -17,6 +17,8 @@ use execute::*;
 use query::*;
 use state::*;
 
+// TODO: add this
+// bytes32 public constant LB_HOOKS_MANAGER_ROLE = keccak256("LB_HOOKS_MANAGER_ROLE");
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
 static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%

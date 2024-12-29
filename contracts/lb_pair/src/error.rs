@@ -15,6 +15,8 @@ use liquidity_book::libraries::{
 use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 
+// TODO: reorder these to match the original
+
 #[derive(thiserror::Error, Debug)]
 pub enum LbPairError {
     // Generic Errors
@@ -40,6 +42,8 @@ pub enum LbPairError {
     UnknownReplyId { id: u64 },
     #[error("Reply data is missing!")]
     ReplyDataMissing,
+    #[error("Invalid hooks")]
+    InvalidHooks,
 
     // Permission Errors
     #[error("Only the Factory can do that!")]

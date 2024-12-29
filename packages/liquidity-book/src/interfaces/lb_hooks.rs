@@ -1,6 +1,8 @@
 use crate::{interfaces::lb_pair::ILbPair, Bytes32};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{to_binary, Binary, ContractInfo, StdResult, Uint256, WasmMsg};
+use cosmwasm_std::{
+    to_binary, Addr, Binary, ContractInfo, QuerierWrapper, StdError, StdResult, Uint256, WasmMsg,
+};
 use std::ops::Deref;
 
 /// A thin wrapper around `ContractInfo` that provides additional
@@ -33,6 +35,21 @@ impl ILbHooks {
             msg: to_binary(&msg)?,
             funds: vec![],
         })
+    }
+
+    pub fn get_lb_pair(&self, querier: QuerierWrapper) -> StdResult<Addr> {
+        querier
+            .query_wasm_smart::<GetLbPairResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetLbPair {},
+            )
+            .and_then(|response| {
+                response
+                    .lb_pair
+                    .ok_or(StdError::generic_err("No linked LB pair"))
+            })
+            .map(|ilb_pair| ilb_pair.address.clone())
     }
 }
 

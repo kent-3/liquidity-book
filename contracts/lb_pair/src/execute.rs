@@ -7,6 +7,7 @@ use ethnum::U256;
 use liquidity_book::{
     interfaces::{
         lb_flash_loan_callback,
+        lb_hooks::ILbHooks,
         lb_pair::{self, *},
         lb_token::{self, LbTokenEventExt},
     },
@@ -328,8 +329,6 @@ pub fn flash_loan(
     // TODO: This should return a WasmMsg that can be added as a "fire-and-forget" submessage.
     // let hook_before =
     // hooks::before_flash_loan(hooks_parameters, info.sender, receiver.address, amounts);
-    // NOTE: In order to write code like this, lb-interfaces and lb-libraries need to be combined,
-    // otherwise there is cyclical dependency.
 
     // TODO: transfer the requested token amounts to the receiver
     //     amounts.transfer(_tokenX(), _tokenY(), address(receiver));
@@ -1044,17 +1043,46 @@ pub fn set_hooks_parameters(
 ) -> Result<Response> {
     let hooks_parameters = HOOKS_PARAMETERS.load(deps.storage)?;
 
-    todo!();
+    // TODO: have associated function on ILbHooks that can construct itself from HooksParameters
+    let hooks_canonical = hooks::get_hooks(hooks_parameters.hooks_parameters);
+    let hooks_address = deps.api.addr_humanize(&hooks_canonical)?;
+    let hooks = ILbHooks(ContractInfo {
+        address: hooks_address,
+        code_hash: hex::encode(hooks_parameters.code_hash),
+    });
 
-    //     ILBHooks hooks = ILBHooks(Hooks.getHooks(hooksParameters));
+    // NOTE: not including the code hash in the event. (should we?)
+    let event = Event::hooks_parameters_set(&info.sender, &hooks_parameters.hooks_parameters);
 
-    let event = Event::hooks_parameters_set(&info.sender, &hooks_parameters);
+    let zero_addr = vec![0u8; hooks_canonical.len()];
 
-    //     if (address(hooks) != address(0) && hooks.getLBPair() != this) revert LBPair__InvalidHooks();
+    if hooks_canonical.as_slice() != zero_addr.as_slice()
+        && hooks.get_lb_pair(deps.querier)? != env.contract.address
+    {
+        return Err(Error::InvalidHooks);
+    }
+
+    let hook = hooks::on_hooks_set(deps.as_ref(), hooks_parameters, on_hooks_set_data);
+
+    let mut response = Response::new().add_event(event);
+
+    if let Some(hook_msg) = hook {
+        response = response.add_message(hook_msg);
+    }
+
+    Ok(response)
+
+    // TODO: try to shorten the function. here is the original for reference:
     //
-    //     Hooks.onHooksSet(hooksParameters, onHooksSetData);
-
-    Ok(Response::new().add_event(event))
+    // _hooksParameters = hooksParameters;
+    //
+    // ILBHooks hooks = ILBHooks(Hooks.getHooks(hooksParameters));
+    //
+    // emit HooksParametersSet(msg.sender, hooksParameters);
+    //
+    // if (address(hooks) != address(0) && hooks.getLBPair() != this) revert LBPair__InvalidHooks();
+    //
+    // Hooks.onHooksSet(hooksParameters, onHooksSetData);
 }
 
 // TODO:
