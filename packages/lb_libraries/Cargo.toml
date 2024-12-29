@@ -16,6 +16,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 ethnum = { workspace = true }
 primitive-types = { workspace = true }
+hex = { workspace = true }
 
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
 

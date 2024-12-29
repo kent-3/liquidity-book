@@ -1,6 +1,42 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, ContractInfo, Uint256};
+use cosmwasm_std::{to_binary, Binary, ContractInfo, StdResult, Uint256, WasmMsg};
 use lb_libraries::Bytes32;
+use std::ops::Deref;
+
+use crate::lb_pair::ILbPair;
+
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with an LB Hooks contract.
+#[cw_serde]
+pub struct ILbHooks(pub ContractInfo);
+
+impl Deref for ILbHooks {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ILbHooks {
+    pub fn on_hooks_set(
+        &self,
+        hooks_parameters: Bytes32,
+        on_hooks_set_data: Binary,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::OnHooksSet {
+            hooks_parameters,
+            on_hooks_set_data,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -87,7 +123,9 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct GetLbPairResponse {
-    pub lb_pair: Option<ContractInfo>,
+    // pub lb_pair: Option<ContractInfo>,
+    // TODO: let's see what happens when ILbPair gets serialized
+    pub lb_pair: Option<ILbPair>,
 }
 
 #[cw_serde]

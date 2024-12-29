@@ -1,12 +1,28 @@
 #![allow(unused)]
 
-use crate::{execute::*, prelude::*, query::*};
+use crate::{execute::*, prelude::*, query::*, state::LB_PAIR};
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult, Uint256,
 };
 use lb_interfaces::lb_hooks::*;
 use lb_libraries::Bytes32;
+
+// TODO: hmmm
+pub fn only_trusted_caller(deps: Deps, env: Env, info: MessageInfo) -> Result<()> {
+    _check_trusted_caller(deps, env, info)
+}
+
+/// Checks that the caller is the trusted caller, otherwise reverts
+pub fn _check_trusted_caller(deps: Deps, env: Env, info: MessageInfo) -> Result<()> {
+    if let Some(lb_pair) = LB_PAIR.load(deps.storage)? {
+        if info.sender != lb_pair.address {
+            return Err(Error::InvalidCaller(info.sender));
+        }
+    }
+
+    Ok(())
+}
 
 #[entry_point]
 pub fn instantiate(
@@ -92,10 +108,10 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
         QueryMsg::GetLbPair {} => to_binary(&get_lb_pair(deps)?),
-        QueryMsg::IsLinked {} => to_binary(&is_linked(deps)?),
+        QueryMsg::IsLinked {} => to_binary(&is_linked(deps, env)?),
     }
     .map_err(Error::CwErr)
 }

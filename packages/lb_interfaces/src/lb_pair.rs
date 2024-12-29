@@ -242,6 +242,16 @@ impl ILbPair {
             )
             .map(|response| response.active_id)
     }
+
+    pub fn get_lb_hooks_parameters(&self, querier: QuerierWrapper) -> StdResult<Bytes32> {
+        querier
+            .query_wasm_smart::<LbHooksParametersResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetLbHooksParameters {},
+            )
+            .map(|response| response.hooks_parameters)
+    }
 }
 
 #[cw_serde]
@@ -572,7 +582,8 @@ pub struct StaticFeeParametersResponse {
 
 #[cw_serde]
 pub struct LbHooksParametersResponse {
-    pub hooks_parameters: Parameters,
+    pub hooks_parameters: Bytes32,
+    pub code_hash: Bytes32,
 }
 
 #[cw_serde]

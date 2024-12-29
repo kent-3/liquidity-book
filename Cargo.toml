@@ -52,6 +52,7 @@ anyhow = "1.0"
 primitive-types = { version = "0.12", default-features = false }
 rand = "0.8"
 snafu = "0.8"
+hex = "0.4.3"
 
 cc = { version = "=1.1.10" }
 
