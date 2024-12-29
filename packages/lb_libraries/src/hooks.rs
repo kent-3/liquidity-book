@@ -207,8 +207,6 @@ pub fn get_flags(hooks_parameters: Bytes32) -> [u8; 12] {
  * @param hooksParameters The encoded hooks parameters
  * @param onHooksSetData The data to pass to the onHooksSet function
  */
-// NOTE: maybe this isn't necessary after all.
-// since we won't be calling the function, just creating a msg
 pub fn on_hooks_set(
     deps: Deps,
     hooks_parameters: Bytes32,
@@ -216,16 +214,17 @@ pub fn on_hooks_set(
     on_hooks_set_data: Binary,
 ) -> Option<WasmMsg> {
     if hooks_parameters != [0u8; 32] {
-        // TODO: we get the address out of the hooks_parameters and create an
-        // ExecuteMsg::OnHooksSet message... but how are we going to get the code hash!
-
         let hooks = deps
             .api
             .addr_humanize(&get_hooks(hooks_parameters))
             .unwrap();
 
-        // I don't want to have lb-interfaces as a dependency, but maybe it's not a big deal?
-        // WasmMsg::Execute { contract_addr: hooks, code_hash: hex::encode(hooks_code_hash), msg: (), funds: vec![] }
+        // I can't have lb-interfaces as a dependency, because it has lb-libraries as a dependency.
+
+        // let Some(msg) = to_binary(&lb_interfaces::lb_hooks::ExecuteMsg::OnHooksSet{ hooks_parameters, on_hooks_set_data }).ok() else {
+        //   return None
+        // }
+        // WasmMsg::Execute { contract_addr: hooks, code_hash: hex::encode(hooks_code_hash), msg, funds: vec![] }
 
         //     abi.encodeWithSelector(
         //         ILBHooks.onHooksSet.selector,

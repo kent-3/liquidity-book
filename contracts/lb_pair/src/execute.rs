@@ -11,6 +11,7 @@ use lb_interfaces::{
 };
 use lb_libraries::{
     constants::PRECISION,
+    hooks,
     lb_token::state_structs::{TokenAmount, TokenIdBalance},
     math::{
         u24::U24,
@@ -322,22 +323,14 @@ pub fn flash_loan(
     // TODO: Hooks
     //     Hooks.beforeFlashLoan(hooksParameters, msg.sender, address(receiver), amounts);
 
+    // TODO: This should return a WasmMsg that can be added as a "fire-and-forget" submessage.
+    // let hook_before =
+    // hooks::before_flash_loan(hooks_parameters, info.sender, receiver.address, amounts);
+    // NOTE: In order to write code like this, lb-interfaces and lb-libraries need to be combined,
+    // otherwise there is cyclical dependency.
+
     // TODO: transfer the requested token amounts to the receiver
     //     amounts.transfer(_tokenX(), _tokenY(), address(receiver));
-
-    // TODO: Create a SubMsg to execute the LBFlashLoanCallback message on the receiver contract.
-    //     (bool success, bytes memory rData) = address(receiver).call(
-    //         abi.encodeWithSelector(
-    //             ILBFlashLoanCallback.LBFlashLoanCallback.selector,
-    //             msg.sender,
-    //             _tokenX(),
-    //             _tokenY(),
-    //             amounts,
-    //             totalFees,
-    //             data
-    //         )
-    //     );
-    //
 
     // TODO: how to handle the native token case?
     let token_x = TOKEN_X.load(deps.storage)?.into_contract_info().unwrap();

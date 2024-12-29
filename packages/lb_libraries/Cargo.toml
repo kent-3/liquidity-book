@@ -18,6 +18,8 @@ ethnum = { workspace = true }
 primitive-types = { workspace = true }
 hex = { workspace = true }
 
+# circular dependency
+# lb-interfaces = { path = "../lb_interfaces" }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }
 
 [dev-dependencies]
