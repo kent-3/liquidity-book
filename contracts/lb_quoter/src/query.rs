@@ -4,7 +4,7 @@ use crate::{
     state::{FACTORY_V2_2, ROUTER_V2_2},
 };
 use cosmwasm_std::{ContractInfo, Deps, Uint128};
-use lb_interfaces::{
+use liquidity_book::interfaces::{
     lb_factory::ILbFactory,
     lb_pair::{ILbPair, LbPairInformation},
     lb_quoter::Quote,

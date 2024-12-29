@@ -13,8 +13,7 @@ default = []
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-lb-interfaces = { workspace = true }
-lb-libraries = { workspace = true }
+liquidity-book = { workspace = true }
 snip1155 = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-storage = { workspace = true }

@@ -2,7 +2,7 @@ mod example_data;
 
 use cosmwasm_std::{Addr, ContractInfo};
 use example_data::{ExampleData, VariousAddr, ACTIVE_ID, BIN_STEP};
-use lb_interfaces::{
+use liquidity_book::interfaces::{
     lb_factory::*,
     lb_pair::{LbPair, LbPairInformation},
 };

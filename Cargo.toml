@@ -35,6 +35,7 @@ incremental = false
 overflow-checks = true
 
 [workspace.dependencies]
+liquidity-book = { path = "packages/liquidity-book" }
 lb-interfaces = { path = "packages/lb_interfaces" }
 lb-libraries = { path = "packages/lb_libraries" }
 snip1155 = { path = "packages/snip1155" }

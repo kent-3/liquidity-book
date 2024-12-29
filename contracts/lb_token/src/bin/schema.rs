@@ -1,5 +1,5 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use lb_interfaces::lb_token::{ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg};
+use liquidity_book::interfaces::lb_token::{ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg};
 use std::{env, fs::create_dir_all, path::PathBuf};
 
 fn main() {

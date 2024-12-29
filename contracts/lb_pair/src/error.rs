@@ -1,7 +1,7 @@
 //! ### Custom Errors for LB_Pair contract.
 
 use cosmwasm_std::{ConversionOverflowError, StdError, Uint128, Uint256};
-use lb_libraries::{
+use liquidity_book::libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
     math::{
@@ -104,7 +104,7 @@ pub enum LbPairError {
     #[error(transparent)]
     ConversionOverflowError(#[from] ConversionOverflowError),
     #[error(transparent)]
-    LbErr(#[from] lb_libraries::Error),
+    LbErr(#[from] liquidity_book::libraries::Error),
     #[error(transparent)]
     BinErr(#[from] BinError),
     #[error(transparent)]

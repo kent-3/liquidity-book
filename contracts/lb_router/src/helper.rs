@@ -1,6 +1,6 @@
 use crate::{prelude::*, state::FACTORY};
 use cosmwasm_std::{Addr, ContractInfo, Deps, Uint128};
-use lb_interfaces::{lb_pair::ILbPair, lb_router::Version};
+use liquidity_book::interfaces::{lb_pair::ILbPair, lb_router::Version};
 use shade_protocol::swap::core::TokenType;
 
 // NOTE: We are following the joe-v2 versioning, starting from V2_2.

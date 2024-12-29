@@ -2,7 +2,7 @@
 
 use crate::prelude::*;
 use cosmwasm_std::{Binary, DepsMut, Env, Response, StdResult, Uint256};
-use lb_libraries::Bytes32;
+use liquidity_book::libraries::Bytes32;
 
 pub fn on_hooks_set(
     deps: DepsMut,

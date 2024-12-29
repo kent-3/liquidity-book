@@ -5,8 +5,7 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult, Uint256,
 };
-use lb_interfaces::lb_hooks::*;
-use lb_libraries::Bytes32;
+use liquidity_book::{interfaces::lb_hooks::*, libraries::Bytes32};
 
 // TODO: hmmm
 pub fn only_trusted_caller(deps: Deps, env: Env, info: MessageInfo) -> Result<()> {

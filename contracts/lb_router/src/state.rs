@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
-use lb_interfaces::{lb_factory::ILbFactory, lb_pair::ILbPair, lb_router::Version};
+use liquidity_book::interfaces::{lb_factory::ILbFactory, lb_pair::ILbPair, lb_router::Version};
 use secret_toolkit::{serialization::Json, storage::Item};
 use shade_protocol::contract_interfaces::swap::core::TokenType;
 

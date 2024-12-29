@@ -1,14 +1,18 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, StdResult, Storage};
-use lb_interfaces::{lb_factory::ILbFactory, lb_pair::ContractStatus};
-use lb_libraries::{Bytes32, OracleSample, PairParameters};
-// TODO: sort out viewing key strategy
 use ethnum::U256;
-use lb_libraries::math::{bit_math::BitMath, u24::U24};
+use liquidity_book::{
+    interfaces::{lb_factory::ILbFactory, lb_pair::ContractStatus},
+    libraries::{
+        math::{bit_math::BitMath, u24::U24},
+        Bytes32, OracleSample, PairParameters,
+    },
+};
 use secret_toolkit::{
     serialization::{Bincode2, Json},
     storage::{Item, Keymap, KeymapBuilder, WithoutIter},
 };
+// TODO: sort out viewing key strategy
 use shade_protocol::{
     swap::core::{TokenType, ViewingKey},
     Contract,

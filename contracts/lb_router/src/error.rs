@@ -113,7 +113,9 @@ pub enum LBRouterError {
     CwErr(#[from] cosmwasm_std::StdError),
 
     #[error(transparent)]
-    LbError(#[from] lb_libraries::Error),
+    LbError(#[from] liquidity_book::libraries::Error),
     #[error(transparent)]
-    PackedUint128MathError(#[from] lb_libraries::math::packed_u128_math::PackedUint128MathError),
+    PackedUint128MathError(
+        #[from] liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError,
+    ),
 }

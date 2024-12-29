@@ -1,5 +1,5 @@
 use super::OFFSET_IS_PRESET_OPEN;
-use lb_libraries::{Bytes32, Encoded};
+use liquidity_book::libraries::{Bytes32, Encoded};
 use shade_protocol::swap::core::TokenType;
 
 /// Function to sort 2 tokens in ascending order.

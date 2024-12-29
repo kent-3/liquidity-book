@@ -3,7 +3,7 @@
 use std::string::FromUtf8Error;
 
 use cosmwasm_std::{Addr, StdError};
-use lb_libraries::{
+use liquidity_book::libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
     math::{

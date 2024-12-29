@@ -4,21 +4,23 @@ use cosmwasm_std::{
     Event, MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use ethnum::U256;
-use lb_interfaces::{
-    lb_flash_loan_callback,
-    lb_pair::{self, *},
-    lb_token::{self, LbTokenEventExt},
-};
-use lb_libraries::{
-    constants::PRECISION,
-    hooks,
-    lb_token::state_structs::{TokenAmount, TokenIdBalance},
-    math::{
-        u24::U24,
-        uint256_to_u256::{ConvertU256, ConvertUint256},
+use liquidity_book::{
+    interfaces::{
+        lb_flash_loan_callback,
+        lb_pair::{self, *},
+        lb_token::{self, LbTokenEventExt},
     },
-    BinHelper, Bytes32, LiquidityConfigurations, OracleMap, PackedUint128Math, PairParameters,
-    PriceHelper, U256x256Math,
+    libraries::{
+        constants::PRECISION,
+        hooks,
+        lb_token::state_structs::{TokenAmount, TokenIdBalance},
+        math::{
+            u24::U24,
+            uint256_to_u256::{ConvertU256, ConvertUint256},
+        },
+        BinHelper, Bytes32, LiquidityConfigurations, OracleMap, PackedUint128Math, PairParameters,
+        PriceHelper, U256x256Math,
+    },
 };
 use std::ops::Add;
 use std::ops::Div;

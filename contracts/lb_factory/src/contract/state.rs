@@ -1,10 +1,12 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Uint128};
-use lb_interfaces::{
-    lb_factory::Implementation,
-    lb_pair::{LbPair, LbPairInformation},
+use liquidity_book::{
+    interfaces::{
+        lb_factory::Implementation,
+        lb_pair::{LbPair, LbPairInformation},
+    },
+    libraries::pair_parameter_helper::PairParameters,
 };
-use lb_libraries::pair_parameter_helper::PairParameters;
 use secret_toolkit::{
     serialization::Json,
     storage::{AppendStore, Item, Keymap, Keyset},

@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
-use lb_interfaces::{
+use liquidity_book::interfaces::{
     lb_factory::{Implementation, StaticFeeParameters},
     lb_pair::{LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity},
 };

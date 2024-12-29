@@ -1,10 +1,12 @@
 use crate::{prelude::*, state::*};
 use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult};
 use ethnum::U256;
-use lb_interfaces::{lb_pair::*, lb_token};
-use lb_libraries::{
-    math::{packed_u128_math::PackedUint128Math, u24::U24, uint256_to_u256::ConvertUint256},
-    Bytes32,
+use liquidity_book::{
+    interfaces::{lb_pair::*, lb_token},
+    libraries::{
+        math::{packed_u128_math::PackedUint128Math, u24::U24, uint256_to_u256::ConvertUint256},
+        Bytes32,
+    },
 };
 // TODO: sort out viewing key strategy
 use secret_toolkit::snip20::{register_receive_msg, set_viewing_key_msg};

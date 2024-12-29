@@ -9,10 +9,10 @@ use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
     Storage, Uint256,
 };
-use lb_interfaces::lb_token::{
+use liquidity_book::interfaces::lb_token::{
     ExecuteAnswer, ResponseStatus::Success, SendAction, Snip1155ReceiveMsg, TransferAction,
 };
-use lb_libraries::lb_token::{
+use liquidity_book::libraries::lb_token::{
     expiration::Expiration,
     metadata::Metadata,
     permissions::Permission,

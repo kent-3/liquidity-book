@@ -7,7 +7,7 @@ use cosmwasm_storage::{
     bucket, bucket_read, singleton, singleton_read, Bucket, PrefixedStorage, ReadonlyBucket,
     ReadonlyPrefixedStorage, ReadonlySingleton, Singleton,
 };
-use lb_libraries::lb_token::{
+use liquidity_book::libraries::lb_token::{
     permissions::Permission,
     state_structs::{ContractConfig, StoredTokenInfo},
 };

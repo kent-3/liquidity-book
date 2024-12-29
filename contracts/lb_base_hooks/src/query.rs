@@ -1,7 +1,6 @@
 use crate::state::LB_PAIR;
 use cosmwasm_std::{Deps, Env, StdResult};
-use lb_interfaces::lb_hooks::*;
-use lb_libraries::hooks;
+use liquidity_book::{interfaces::lb_hooks::*, libraries::hooks};
 
 pub fn get_lb_pair(deps: Deps) -> StdResult<GetLbPairResponse> {
     // let lb_pair = LB_PAIR.load(deps.storage)?.map(|lb_pair| lb_pair.0);

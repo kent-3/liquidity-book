@@ -5,12 +5,14 @@ use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Reply, Response, StdResult, SubMsgResult, Uint128,
 };
-use lb_interfaces::{
-    lb_factory::ILbFactory,
-    lb_pair,
-    lb_router::{self, CreateLbPairResponse, Path},
+use liquidity_book::{
+    interfaces::{
+        lb_factory::ILbFactory,
+        lb_pair,
+        lb_router::{self, CreateLbPairResponse, Path},
+    },
+    libraries::{math::packed_u128_math::PackedUint128Math, Bytes32},
 };
-use lb_libraries::{math::packed_u128_math::PackedUint128Math, Bytes32};
 use secret_toolkit::snip20;
 
 // TODO: How are we going to register this router contract to be able to receive every supported snip20 token?

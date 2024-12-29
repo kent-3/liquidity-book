@@ -4,7 +4,9 @@ use crate::{
     state::{FACTORY_V2_2, ROUTER_V2_2},
 };
 use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response};
-use lb_interfaces::lb_quoter::{FactoryV2_2Response, InstantiateMsg, QueryMsg, RouterV2_2Response};
+use liquidity_book::interfaces::lb_quoter::{
+    FactoryV2_2Response, InstantiateMsg, QueryMsg, RouterV2_2Response,
+};
 
 #[entry_point]
 pub fn instantiate(

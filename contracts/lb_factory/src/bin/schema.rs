@@ -1,5 +1,5 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use lb_interfaces::lb_factory::{
+use liquidity_book::interfaces::lb_factory::{
     AllBinStepsResponse, AllLbPairsResponse, ExecuteMsg, FeeRecipientResponse, InstantiateMsg,
     IsQuoteAssetResponse, LbPairAtIndexResponse, LbPairImplementationResponse,
     LbPairInformationResponse, LbTokenImplementationResponse, MinBinStepResponse,

@@ -7,12 +7,14 @@ use cosmwasm_std::{
     to_binary, Addr, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response, StdResult, SubMsg,
     Uint128, Uint256, Uint64,
 };
-use lb_interfaces::{
-    lb_factory,
-    lb_pair::{self, ILbPair, LiquidityParameters, SwapInResponse},
-    lb_router::{Path, Version},
+use liquidity_book::{
+    interfaces::{
+        lb_factory,
+        lb_pair::{self, ILbPair, LiquidityParameters, SwapInResponse},
+        lb_router::{Path, Version},
+    },
+    libraries::LiquidityConfigurations,
 };
-use lb_libraries::LiquidityConfigurations;
 use shade_protocol::{swap::core::TokenType, utils::ExecuteCallback};
 
 pub fn create_lb_pair(

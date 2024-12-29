@@ -7,12 +7,14 @@ use crate::prelude::*;
 use cosmwasm_std::{
     to_binary, Addr, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response, SubMsg, WasmMsg,
 };
-use lb_interfaces::{
-    lb_factory::*,
-    lb_pair::{ExecuteMsg as LbPairExecuteMsg, InstantiateMsg as LbPairInstantiateMsg, LbPair},
-};
-use lb_libraries::{
-    math::encoded::Encoded, pair_parameter_helper::PairParameters, price_helper::PriceHelper,
+use liquidity_book::{
+    interfaces::{
+        lb_factory::*,
+        lb_pair::{ExecuteMsg as LbPairExecuteMsg, InstantiateMsg as LbPairInstantiateMsg, LbPair},
+    },
+    libraries::{
+        math::encoded::Encoded, pair_parameter_helper::PairParameters, price_helper::PriceHelper,
+    },
 };
 use shade_protocol::{
     admin::helpers::{validate_admin, AdminPermissions},

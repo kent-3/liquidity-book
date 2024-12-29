@@ -7,8 +7,8 @@ use cosmwasm_std::{
     StdError, StdResult, Storage, Uint256, WasmMsg,
 };
 use cosmwasm_storage::ReadonlyPrefixedStorage;
-use lb_interfaces::lb_token::*;
-use lb_libraries::lb_token::{
+use liquidity_book::interfaces::lb_token::*;
+use liquidity_book::libraries::lb_token::{
     metadata::{Extension, Metadata},
     state_structs::*,
 };

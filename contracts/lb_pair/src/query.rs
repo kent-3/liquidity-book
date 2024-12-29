@@ -1,15 +1,17 @@
 use crate::{helper::*, prelude::*, state::*};
 use cosmwasm_std::{Addr, Deps, Env, Uint128, Uint256};
 use ethnum::U256;
-use lb_interfaces::lb_pair::*;
-use lb_libraries::{
-    constants::SCALE_OFFSET,
-    math::{
-        u24::U24,
-        uint256_to_u256::{ConvertU256, ConvertUint256},
+use liquidity_book::{
+    interfaces::lb_pair::*,
+    libraries::{
+        constants::SCALE_OFFSET,
+        math::{
+            u24::U24,
+            uint256_to_u256::{ConvertU256, ConvertUint256},
+        },
+        oracle_helper, BinHelper, Bytes32, FeeHelper, OracleMap, PackedUint128Math, PriceHelper,
+        U256x256Math,
     },
-    oracle_helper, BinHelper, Bytes32, FeeHelper, OracleMap, PackedUint128Math, PriceHelper,
-    U256x256Math,
 };
 // TODO: get rid of these dependencies
 use shade_protocol::{

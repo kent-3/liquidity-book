@@ -3,7 +3,7 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, Event, MessageInfo, Reply,
     Response, SubMsgResult, Uint128,
 };
-use lb_interfaces::{
+use liquidity_book::interfaces::{
     lb_factory::*,
     lb_pair::{LbPair, LbPairInformation},
 };

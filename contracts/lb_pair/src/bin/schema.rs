@@ -1,5 +1,5 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use lb_interfaces::lb_pair::{
+use liquidity_book::interfaces::lb_pair::{
     ActiveIdResponse, AllBinsResponse, BinResponse, BinStepResponse, BinsResponse, ExecuteMsg,
     FactoryResponse, IdFromPriceResponse, InstantiateMsg, InvokeMsg, LbTokenResponse,
     LbTokenSupplyResponse, MintResponse, NextNonEmptyBinResponse, OracleParametersResponse,
