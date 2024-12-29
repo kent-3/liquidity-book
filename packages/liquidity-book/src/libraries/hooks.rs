@@ -1,8 +1,9 @@
+use crate::{interfaces::lb_hooks::ExecuteMsg, Bytes32};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, CanonicalAddr, Deps, Response, StdResult, WasmMsg};
-use cosmwasm_std::{ContractInfo, StdError};
-
-use crate::Bytes32;
+use cosmwasm_std::{
+    to_binary, Addr, Binary, CanonicalAddr, ContractInfo, Deps, Response, StdError, StdResult,
+    WasmMsg,
+};
 use ethnum::uint;
 use ethnum::U256;
 
@@ -17,20 +18,45 @@ pub const AFTER_BURN_FLAG: U256 = uint!("187072209578355573530071658587684226515
 pub const BEFORE_TRANSFER_FLAG: U256 = uint!("374144419156711147060143317175368453031918731001856"); // 1 << 168
 pub const AFTER_TRANSFER_FLAG: U256 = uint!("748288838313422294120286634350736906063837462003712"); // 1 << 169
 
+// Flag positions
+pub const BEFORE_SWAP: u16 = 1 << 0; // 0b00000001
+pub const AFTER_SWAP: u16 = 1 << 1; // 0b00000010
+pub const BEFORE_FLASH_LOAN: u16 = 1 << 2;
+pub const AFTER_FLASH_LOAN: u16 = 1 << 3;
+pub const BEFORE_MINT: u16 = 1 << 4;
+pub const AFTER_MINT: u16 = 1 << 5;
+pub const BEFORE_BURN: u16 = 1 << 6;
+pub const AFTER_BURN: u16 = 1 << 7;
+pub const BEFORE_TRANSFER: u16 = 1 << 8;
+pub const AFTER_TRANSFER: u16 = 1 << 9;
+
 // we are forced to store an extra Bytes32 for the code hash, to call the Hooks contract
+// #[cw_serde]
+// pub struct HooksParameters {
+//     pub hooks_parameters: Bytes32,
+//     pub code_hash: Bytes32,
+// }
+//
+// impl HooksParameters {
+//     pub fn new(hooks_parameters: Bytes32, code_hash: &str) -> Self {
+//         let code_hash = code_hash_to_bytes32(code_hash).expect("invalid code hash length");
+//         HooksParameters {
+//             hooks_parameters,
+//             code_hash,
+//         }
+//     }
+// }
+
 #[cw_serde]
 pub struct HooksParameters {
-    pub hooks_parameters: Bytes32,
-    pub code_hash: Bytes32,
+    pub address: Addr,     // Contract address (human-readable)
+    pub code_hash: String, // SHA-256 hex of contract bytecode
+    pub flags: u16,        // Bit-packed flags (up to 16 flags)
 }
 
 impl HooksParameters {
-    pub fn new(hooks_parameters: Bytes32, code_hash: &str) -> Self {
-        let code_hash = code_hash_to_bytes32(code_hash).expect("invalid code hash length");
-        HooksParameters {
-            hooks_parameters,
-            code_hash,
-        }
+    pub fn set_flag(&mut self, flag: u16) {
+        self.flags |= flag;
     }
 }
 
@@ -207,32 +233,36 @@ pub fn get_flags(hooks_parameters: Bytes32) -> [u8; 12] {
  * @param hooksParameters The encoded hooks parameters
  * @param onHooksSetData The data to pass to the onHooksSet function
  */
+// TODO: I'd like to not have to pass Deps here. Can we humanize the address without it?
 pub fn on_hooks_set(
     deps: Deps,
-    hooks_parameters: Bytes32,
-    hooks_code_hash: Bytes32,
+    hooks_parameters: HooksParameters,
     on_hooks_set_data: Binary,
 ) -> Option<WasmMsg> {
+    let hooks_code_hash = hooks_parameters.code_hash;
+    let hooks_parameters = hooks_parameters.hooks_parameters;
+
     if hooks_parameters != [0u8; 32] {
         let hooks = deps
             .api
             .addr_humanize(&get_hooks(hooks_parameters))
             .unwrap();
 
-        // I can't have lb-interfaces as a dependency, because it has lb-libraries as a dependency.
+        let on_hooks_set_msg = ExecuteMsg::OnHooksSet {
+            hooks_parameters,
+            on_hooks_set_data,
+        };
 
-        // let Some(msg) = to_binary(&lb_interfaces::lb_hooks::ExecuteMsg::OnHooksSet{ hooks_parameters, on_hooks_set_data }).ok() else {
-        //   return None
-        // }
-        // WasmMsg::Execute { contract_addr: hooks, code_hash: hex::encode(hooks_code_hash), msg, funds: vec![] }
+        let Some(msg) = to_binary(&on_hooks_set_msg).ok() else {
+            return None;
+        };
 
-        //     abi.encodeWithSelector(
-        //         ILBHooks.onHooksSet.selector,
-        //         hooksParameters,
-        //         onHooksSetData,
-        //     ),
-
-        todo!()
+        Some(WasmMsg::Execute {
+            contract_addr: hooks.to_string(),
+            code_hash: hex::encode(hooks_code_hash),
+            msg,
+            funds: vec![],
+        })
     } else {
         None
     }
