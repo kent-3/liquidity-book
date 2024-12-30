@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "packages/liquidity-book",
-  "packages/snip1155",
   "contracts/lb_base_hooks",
   "contracts/lb_factory",
   "contracts/lb_pair",
@@ -39,7 +38,6 @@ secretrs = { git = "https://github.com/kent-3/secret-rust", branch = "sdk-upgrad
 
 [workspace.dependencies]
 liquidity-book = { path = "packages/liquidity-book" }
-snip1155 = { path = "packages/snip1155" }
 cosmwasm-schema = { version = "1.4" }
 schemars = { version = "0.8" }
 serde = { version = "1.0" }

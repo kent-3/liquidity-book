@@ -14,7 +14,6 @@ backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 liquidity-book = { workspace = true }
-snip1155 = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-storage = { workspace = true }
 cosmwasm-schema = { workspace = true }

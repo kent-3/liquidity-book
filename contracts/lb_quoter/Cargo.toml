@@ -13,8 +13,6 @@ backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 liquidity-book = { workspace = true }
-# TODO - snip1155 package should be integrated into lb-interfaces?
-snip1155 = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-storage = { workspace = true }
 cosmwasm-schema = { workspace = true }
