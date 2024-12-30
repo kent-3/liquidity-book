@@ -7,9 +7,9 @@ members = [
   "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_token",
-  # TODO: update the tests to reflect recent changes
-  "contracts/tests",
   "deploy/lb_deployer",
+  # TODO: update the tests to reflect recent changes
+  "tests",
 ]
 default-members = [
   "contracts/lb_base_hooks",
