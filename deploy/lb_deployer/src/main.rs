@@ -18,9 +18,7 @@ use cosmwasm_std::{to_binary, Addr, Binary, ContractInfo, Uint128, Uint64};
 use ethnum::U256;
 use liquidity_book::{
     interfaces::{
-        lb_factory,
-        lb_pair::{self, LbPair},
-        lb_quoter,
+        lb_factory, lb_pair, lb_quoter,
         lb_router::{self, AddLiquidityResponse, CreateLbPairResponse},
     },
     libraries::{
@@ -40,7 +38,7 @@ use std::{
     time::Duration,
 };
 use tonic::transport::Channel;
-use tracing::{debug, info, info_span};
+use tracing::{debug, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 #[derive(Debug)]
@@ -358,7 +356,7 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let mut liquidity_parameters = lb_pair::LiquidityParameters {
+    let liquidity_parameters = lb_pair::LiquidityParameters {
         token_x: created_lb_pair.token_x.clone(),
         token_y: created_lb_pair.token_y.clone(),
         bin_step: 100,
@@ -420,14 +418,13 @@ async fn main() -> Result<()> {
         if let Ok(add_liquidity_response) = serde_json::from_slice::<AddLiquidityResponse>(response)
         {
             info!("{:#?}", add_liquidity_response);
-            let converted_liquidity = PriceHelper::convert128x128_price_to_decimal(
-                add_liquidity_response.liquidity_minted[0].uint256_to_u256(),
-            );
+
             let converted_liquidity: Vec<U256> = add_liquidity_response
                 .liquidity_minted
-                .iter()
+                .into_iter()
                 .map(|el| PriceHelper::convert128x128_price_to_decimal(el.uint256_to_u256()))
                 .collect::<Result<_, U256x256MathError>>()?;
+
             info!("{:#?}", converted_liquidity);
         }
     }
@@ -495,18 +492,15 @@ async fn main() -> Result<()> {
 
     let out_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let serialized = serde_json::to_string(&deployment).expect("Failed to serialize deployment");
-    // TODO: replace if with match
-    let map_file_path = if CHAIN_ID == "secretdev-1" {
-        out_dir.join("lb_contracts_dev.json")
-    } else if CHAIN_ID == "pulsar-3" {
-        out_dir.join("lb_contracts_pulsar.json")
-    } else {
-        out_dir.join("lb_contracts.json")
+
+    let map_file_path = match CHAIN_ID {
+        "secretdev-1" => out_dir.join("lb_contracts_dev.json"),
+        "pulsar-3" => out_dir.join("lb_contracts_pulsar.json"),
+        _ => out_dir.join("lb_contracts.json"),
     };
     fs::write(&map_file_path, serialized).expect("Failed to write lb_contracts json file!");
 
     info!("Deployment details saved to {}", map_file_path.display());
-
     info!("Total gas used: {}", check_gas());
 
     Ok(())

@@ -17,10 +17,7 @@ use secretrs::{
         cosmos::{
             auth::v1beta1::{BaseAccount, QueryAccountRequest},
             base::abci::v1beta1::{TxMsgData, TxResponse},
-            tx::v1beta1::{
-                AuthInfo, BroadcastMode, BroadcastTxRequest, BroadcastTxResponse, GetTxRequest,
-                GetTxResponse, Tx, TxBody, TxRaw,
-            },
+            tx::v1beta1::{AuthInfo, BroadcastTxRequest, GetTxRequest, Tx, TxBody, TxRaw},
         },
         secret::compute::v1beta1::{
             MsgExecuteContractResponse, MsgInstantiateContractResponse, MsgStoreCodeResponse,
@@ -39,7 +36,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::time::sleep;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info};
 
 pub static GAS_METER: LazyLock<Arc<Mutex<u64>>> = LazyLock::new(|| Arc::new(Mutex::new(0)));
 
@@ -57,6 +54,19 @@ pub fn sha256(input: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(input);
     hasher.finalize().into()
+}
+
+fn block_height(metadata: tonic::metadata::MetadataMap) -> u32 {
+    let http_headers = metadata.into_headers();
+    let block_height_header = http_headers
+        .get("x-cosmos-block-height")
+        .expect("x-cosmos-block-height missing");
+
+    let block_height_str = block_height_header
+        .to_str()
+        .expect("Failed to convert header value to string");
+
+    u32::from_str(block_height_str).expect("Failed to parse block height into u32")
 }
 
 // TODO: Addr validate function
@@ -92,19 +102,6 @@ pub fn sha256(input: &[u8]) -> [u8; 32] {
 //         return write_to_memory(instance, b"Address is not normalized").map(|n| n as i32);
 //     }
 // }
-
-fn block_height(metadata: tonic::metadata::MetadataMap) -> u32 {
-    let http_headers = metadata.into_headers();
-    let block_height_header = http_headers
-        .get("x-cosmos-block-height")
-        .expect("x-cosmos-block-height missing");
-
-    let block_height_str = block_height_header
-        .to_str()
-        .expect("Failed to convert header value to string");
-
-    u32::from_str(block_height_str).expect("Failed to parse block height into u32")
-}
 
 pub async fn query_account(address: impl Into<String>) -> Result<(BaseAccount, u32)> {
     let address = address.into();
@@ -635,7 +632,7 @@ fn process_tx(tx: &TxResponse, nonce: Option<[u8; 32]>) -> Result<()> {
     debug!("{:?}", tx);
 
     if tx.code != 0 {
-        process_tx_error(tx, nonce);
+        process_tx_error(tx, nonce)?;
     }
 
     process_gas(tx);
