@@ -79,16 +79,16 @@ async fn main() -> Result<()> {
     let wallet_address = secretrs.wallet.addr();
 
     // Store Code
-    let admin = Path::new("./code/admin.wasm.gz");
-    let query_auth = Path::new("./code/query_auth.wasm.gz");
-    let query_router = Path::new("./code/query_router.wasm");
-    let snip20 = Path::new("./code/snip20.wasm.gz");
-    let snip25 = Path::new("./code/snip25-amber.wasm.gz");
-    let lb_factory = Path::new("../liquidity-book/code/lb_factory.wasm.gz");
-    let lb_pair = Path::new("../liquidity-book/code/lb_pair.wasm.gz");
-    let lb_token = Path::new("../liquidity-book/code/lb_token.wasm.gz");
-    let lb_router = Path::new("../liquidity-book/code/lb_router.wasm.gz");
-    let lb_quoter = Path::new("../liquidity-book/code/lb_quoter.wasm.gz");
+    let admin = Path::new("./deploy/lb_deployer/code/admin.wasm.gz");
+    let query_auth = Path::new("./deploy/lb_deployer/code/query_auth.wasm.gz");
+    let query_router = Path::new("./deploy/lb_deployer/code/query_router.wasm");
+    let snip20 = Path::new("./deploy/lb_deployer/code/snip20.wasm.gz");
+    let snip25 = Path::new("./deploy/lb_deployer/code/snip25-amber.wasm.gz");
+    let lb_factory = Path::new("./code/lb_factory.wasm.gz");
+    let lb_pair = Path::new("./code/lb_pair.wasm.gz");
+    let lb_token = Path::new("./code/lb_token.wasm.gz");
+    let lb_router = Path::new("./code/lb_router.wasm.gz");
+    let lb_quoter = Path::new("./code/lb_quoter.wasm.gz");
 
     let admin_code_id = store_code(admin, 1_000_000).await?;
     let query_auth_code_id = store_code(query_auth, 1_400_000).await?;

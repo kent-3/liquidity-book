@@ -1,3 +1,6 @@
+[alias]
+deploy = "run -p lb-deployer"
+
 [build]
 # target = "wasm32-unknown-unknown"
 # rustflags = "-C link-arg=-s"
