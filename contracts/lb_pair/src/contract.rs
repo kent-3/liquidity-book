@@ -5,11 +5,8 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use liquidity_book::{
-    interfaces::{lb_pair::*, lb_token},
-    libraries::{
-        constants, lb_token::state_structs::LbPair, BinHelper, Bytes32, PackedUint128Math,
-        PairParameters,
-    },
+    interfaces::{lb_pair::*, lb_token, lb_token::state_structs::LbPair},
+    libraries::{constants, BinHelper, Bytes32, PackedUint128Math, PairParameters},
 };
 // TODO: get rid of admin stuff and shade_protocol dependency
 use shade_protocol::{

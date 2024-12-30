@@ -4,9 +4,9 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
 };
 use liquidity_book::interfaces::lb_token::{
-    ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg, QueryWithPermit, SendAction,
+    state_structs::ContractConfig, ExecuteMsg, InstantiateMsg, QueryAnswer, QueryMsg,
+    QueryWithPermit, SendAction,
 };
-use liquidity_book::libraries::lb_token::state_structs::ContractConfig;
 use secret_toolkit::{
     crypto::sha_256,
     permit::{validate, Permit, TokenPermissions},

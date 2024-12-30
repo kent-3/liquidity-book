@@ -2,8 +2,9 @@ use super::super::state::*;
 use super::testhelpers::*;
 use crate::contract::{execute, instantiate, query};
 use cosmwasm_std::{from_binary, testing::*, to_binary, Addr, Response, StdResult, Uint256};
-use liquidity_book::interfaces::lb_token::{ReceiverHandleMsg, Snip1155ReceiveMsg, *};
-use liquidity_book::libraries::lb_token::{expiration::*, permissions::*, state_structs::*};
+use liquidity_book::interfaces::lb_token::{
+    expiration::*, permissions::*, state_structs::*, ReceiverHandleMsg, Snip1155ReceiveMsg, *,
+};
 use secret_toolkit::{crypto::sha_256, permit::RevokedPermits};
 
 /////////////////////////////////////////////////////////////////////////////////

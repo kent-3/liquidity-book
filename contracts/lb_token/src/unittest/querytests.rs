@@ -2,9 +2,8 @@ use super::testhelpers::*;
 use crate::contract::{execute, query};
 use core::panic;
 use cosmwasm_std::{from_binary, testing::*, Addr, Response, StdResult, Uint256};
-use liquidity_book::interfaces::lb_token::*;
-use liquidity_book::libraries::lb_token::{
-    expiration::*, permissions::*, state_structs::*, txhistory::*,
+use liquidity_book::interfaces::lb_token::{
+    expiration::*, permissions::*, state_structs::*, txhistory::*, *,
 };
 use std::ops::Add;
 

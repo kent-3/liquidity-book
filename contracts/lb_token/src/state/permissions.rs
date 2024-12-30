@@ -1,6 +1,6 @@
 use super::*;
 use cosmwasm_std::{to_binary, Addr, StdError, StdResult, Storage};
-use liquidity_book::libraries::lb_token::permissions::PermissionKey;
+use liquidity_book::interfaces::lb_token::permissions::PermissionKey;
 use secret_toolkit::storage::AppendStore;
 
 pub static PERMISSION_ID_STORE: AppendStore<PermissionKey> = AppendStore::new(PREFIX_PERMISSION_ID);

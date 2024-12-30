@@ -10,9 +10,6 @@ pub mod oracle_helper;
 pub mod pair_parameter_helper;
 pub mod price_helper;
 
-// TODO: this module should really not be part of this crate...
-pub mod lb_token;
-
 pub use self::{
     bin_helper::BinHelper,
     error::Error,

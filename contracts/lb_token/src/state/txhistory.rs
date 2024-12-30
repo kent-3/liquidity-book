@@ -1,7 +1,7 @@
 use super::*;
 use cosmwasm_std::{Addr, Api, BlockInfo, CanonicalAddr, StdResult, Storage, Uint256};
 use cosmwasm_storage::{PrefixedStorage, ReadonlyPrefixedStorage};
-use liquidity_book::libraries::lb_token::txhistory::{StoredTx, StoredTxAction, Tx};
+use liquidity_book::interfaces::lb_token::txhistory::{StoredTx, StoredTxAction, Tx};
 use secret_toolkit::storage::AppendStore;
 
 use crate::state::save_load_functions::{json_load, json_save};

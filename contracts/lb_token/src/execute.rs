@@ -10,15 +10,15 @@ use cosmwasm_std::{
     Storage, Uint256,
 };
 use liquidity_book::interfaces::lb_token::{
-    ExecuteAnswer, ResponseStatus::Success, SendAction, Snip1155ReceiveMsg, TransferAction,
-};
-use liquidity_book::libraries::lb_token::{
     expiration::Expiration,
     metadata::Metadata,
     permissions::Permission,
     state_structs::{
         ContractConfig, CurateTokenId, StoredTokenInfo, TknConfig, TokenAmount, TokenInfoMsg,
     },
+    ExecuteAnswer,
+    ResponseStatus::Success,
+    SendAction, Snip1155ReceiveMsg, TransferAction,
 };
 use secret_toolkit::{
     permit::RevokedPermits,

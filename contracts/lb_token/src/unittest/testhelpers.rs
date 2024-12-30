@@ -7,10 +7,10 @@ use cosmwasm_std::{
     StdError, StdResult, Storage, Uint256, WasmMsg,
 };
 use cosmwasm_storage::ReadonlyPrefixedStorage;
-use liquidity_book::interfaces::lb_token::*;
-use liquidity_book::libraries::lb_token::{
+use liquidity_book::interfaces::lb_token::{
     metadata::{Extension, Metadata},
     state_structs::*,
+    *,
 };
 use secret_toolkit::viewing_key::{ViewingKey, ViewingKeyStore};
 use serde::de::DeserializeOwned;

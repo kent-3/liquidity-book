@@ -7,10 +7,10 @@ use crate::state::{
 use cosmwasm_std::{
     to_binary, Addr, Binary, BlockInfo, Deps, StdError, StdResult, Timestamp, Uint256,
 };
-use liquidity_book::interfaces::lb_token::QueryAnswer;
-use liquidity_book::libraries::lb_token::{
+use liquidity_book::interfaces::lb_token::{
     permissions::{Permission, PermissionKey},
     state_structs::OwnerBalance,
+    QueryAnswer,
 };
 use std::collections::BTreeSet;
 

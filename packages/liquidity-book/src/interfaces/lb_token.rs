@@ -7,14 +7,19 @@ use secret_toolkit::permit::Permit;
 use serde::{Deserialize, Serialize};
 use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 
-// TODO: find a different place for these
-use crate::libraries::lb_token::{
+use self::{
     expiration::Expiration,
     metadata::Metadata,
     permissions::{Permission, PermissionKey},
     state_structs::{CurateTokenId, LbPair, OwnerBalance, StoredTokenInfo, TokenAmount},
     txhistory::Tx,
 };
+
+pub mod expiration;
+pub mod metadata;
+pub mod permissions;
+pub mod state_structs;
+pub mod txhistory;
 
 pub trait LbTokenEventExt {
     fn transfer_batch(

@@ -10,12 +10,15 @@ use liquidity_book::{
         lb_flash_loan_callback,
         lb_hooks::ILbHooks,
         lb_pair::{self, *},
-        lb_token::{self, LbTokenEventExt},
+        lb_token::{
+            self,
+            state_structs::{TokenAmount, TokenIdBalance},
+            LbTokenEventExt,
+        },
     },
     libraries::{
         constants::PRECISION,
         hooks,
-        lb_token::state_structs::{TokenAmount, TokenIdBalance},
         math::{
             u24::U24,
             uint256_to_u256::{ConvertU256, ConvertUint256},
