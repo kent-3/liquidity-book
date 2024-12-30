@@ -250,6 +250,83 @@ pub fn on_hooks_set(
     })
 }
 
+/**
+ * @dev Helper function to call the beforeSwap function on the hooks contract, only if the
+ * BEFORE_SWAP_FLAG is set in the hooksParameters
+ * @param hooksParameters The encoded hooks parameters
+ * @param sender The sender
+ * @param to The recipient
+ * @param swapForY Whether the swap is for Y
+ * @param amountsIn The amounts in
+ */
+pub fn before_swap(
+    hooks_parameters: HooksParameters,
+    sender: &Addr,
+    to: &Addr,
+    swap_for_y: bool,
+    amounts_in: Bytes32,
+) -> StdResult<Option<WasmMsg>> {
+    if hooks_parameters.flags & BEFORE_SWAP != 0 {
+        let before_swap_msg = ExecuteMsg::BeforeSwap {
+            sender: sender.to_string(),
+            to: to.to_string(),
+            swap_for_y,
+            amounts_in,
+        };
+
+        Ok(Some(WasmMsg::Execute {
+            contract_addr: hooks_parameters.address,
+            code_hash: hooks_parameters.code_hash,
+            msg: to_binary(&before_swap_msg)?,
+            funds: vec![],
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
+/**
+ * @dev Helper function to call the afterSwap function on the hooks contract, only if the
+ * AFTER_SWAP_FLAG is set in the hooksParameters
+ * @param hooksParameters The encoded hooks parameters
+ * @param sender The sender
+ * @param to The recipient
+ * @param swapForY Whether the swap is for Y
+ * @param amountsOut The amounts out
+ */
+pub fn after_swap(
+    hooks_parameters: HooksParameters,
+    sender: &Addr,
+    to: &Addr,
+    swap_for_y: bool,
+    amounts_out: Bytes32,
+) -> StdResult<Option<WasmMsg>> {
+    if hooks_parameters.flags & AFTER_SWAP != 0 {
+        let after_swap_msg = ExecuteMsg::AfterSwap {
+            sender: sender.to_string(),
+            to: to.to_string(),
+            swap_for_y,
+            amounts_out,
+        };
+
+        // TODO:
+        // Alternate to avoide needing Result here.
+        // If we do this, there's no way to know if the problem was related to to_binary, but
+        // that basically never fails, right?
+        // let Ok(after_swap_msg) = to_binary(&after_swap_msg) else {
+        //     return None;
+        // };
+
+        Ok(Some(WasmMsg::Execute {
+            contract_addr: hooks_parameters.address,
+            code_hash: hooks_parameters.code_hash,
+            msg: to_binary(&after_swap_msg)?,
+            funds: vec![],
+        }))
+    } else {
+        Ok(None)
+    }
+}
 // TODO: all the rest of this module
 
 #[cfg(test)]

@@ -65,9 +65,7 @@ pub fn swap(
 ) -> Result<Response> {
     let to = deps.api.addr_validate(&to)?;
 
-    // let tree = BIN_TREE.load(deps.storage)?;
-
-    // bytes32 hooksParameters = _hooksParameters;
+    let hooks_parameters = HOOKS_PARAMETERS.load(deps.storage)?;
 
     let mut reserves = RESERVES.load(deps.storage)?;
     let mut protocol_fees = PROTOCOL_FEES.load(deps.storage)?;
@@ -189,11 +187,18 @@ pub fn swap(
     } else {
         reserves.received_y(token_y_balance.u128())
     };
+
     if amounts_left == [0; 32] {
         return Err(Error::InsufficientAmountIn);
     };
 
-    // Hooks.beforeSwap(hooksParameters, msg.sender, to, swapForY_, amountsLeft);
+    let before_swap_hook = hooks::before_swap(
+        hooks_parameters.clone(),
+        &info.sender,
+        &to,
+        swap_for_y,
+        amounts_left,
+    )?;
 
     reserves = reserves.add(amounts_left)?;
 
@@ -268,8 +273,6 @@ pub fn swap(
     RESERVES.save(deps.storage, &reserves.sub(amounts_out)?)?;
     PROTOCOL_FEES.save(deps.storage, &protocol_fees)?;
 
-    // volume_tracker = volume_tracker.add(amounts_out);
-
     // TODO: this part is untested
     let mut parameters = ORACLE.update_oracle(
         deps.storage,
@@ -282,20 +285,32 @@ pub fn swap(
     // SAFETY: We checked earlier that amounts_out > 0, so
     // these bin transfer functions will always return Some.
     let msg = if swap_for_y {
-        bin_transfer_y(amounts_out, token_y.clone(), to)
+        bin_transfer_y(amounts_out, token_y.clone(), to.clone())
     } else {
-        bin_transfer_x(amounts_out, token_x.clone(), to)
+        bin_transfer_x(amounts_out, token_x.clone(), to.clone())
     }
     .expect("there must be a transfer message");
 
+    let after_swap_hook =
+        hooks::after_swap(hooks_parameters, &info.sender, &to, swap_for_y, amounts_out)?;
+
     let data = lb_pair::SwapResponse { amounts_out };
 
-    Ok(Response::new()
+    let mut response = Response::new()
         // .set_data(to_binary(&data)?)
         // TODO: see if this works
         .set_data(Binary::from(amounts_out))
         .add_message(msg)
-        .add_events(events))
+        .add_events(events);
+
+    if let Some(msg) = before_swap_hook {
+        response = response.add_message(msg);
+    }
+    if let Some(msg) = after_swap_hook {
+        response = response.add_message(msg);
+    }
+
+    Ok(response)
 }
 
 /// Flash loan tokens from the pool to a receiver contract and execute a callback function.
