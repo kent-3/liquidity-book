@@ -515,6 +515,8 @@ async fn main() -> Result<()> {
 pub async fn setup_client(
     channel: tonic::transport::Channel,
 ) -> Result<&'static Secret<tonic::transport::Channel>> {
+    info!("Chain ID {}", CHAIN_ID);
+
     let mut secret_registration = RegistrationQueryClient::new(channel.clone());
     let enclave_key_bytes = secret_registration.tx_key(()).await?.into_inner().key;
     let enclave_key = hex::encode(&enclave_key_bytes);

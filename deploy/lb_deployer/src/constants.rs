@@ -1,3 +1,30 @@
+// NOTE: This works, but might not be best. It allows to run `cargo deploy testnet` which is nice,
+// but doesn't allow customizing the configuration.
+
+pub struct Config {
+    pub grpc_url: &'static str,
+    pub chain_id: &'static str,
+    pub mnemonic: &'static str,
+}
+
+pub fn get_config() -> Config {
+    let args: Vec<String> = std::env::args().collect();
+    let target = args.get(1).map(|s| s.as_str()).unwrap_or("testnet");
+
+    match target {
+        "testnet" => Config {
+            grpc_url: "http://grpcbin.pulsar.scrttestnet.com:9099",
+            chain_id: "pulsar-3",
+            mnemonic: "",
+        },
+        _ => Config {
+            grpc_url: "http://localhost:9090",
+            chain_id: "secretdev-1",
+            mnemonic: "word twist toast cloth movie predict advance crumble escape whale sail such angry muffin balcony keen move employ cook valve hurt glimpse breeze brick",
+        },
+    }
+}
+
 // Testnet
 pub static GRPC_URL: &str = "http://grpcbin.pulsar.scrttestnet.com:9099";
 pub static CHAIN_ID: &str = "pulsar-3";
@@ -11,7 +38,7 @@ pub static MNEMONIC: &str = "";
 pub static GAS_PRICE: u128 = 100_000;
 
 // NOTE: This works, but feels like overkill. Could be used in CI maybe.
-
+//
 // use std::{
 //     env,
 //     sync::{Arc, LazyLock},
