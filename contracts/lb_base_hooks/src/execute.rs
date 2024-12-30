@@ -2,12 +2,12 @@
 
 use crate::prelude::*;
 use cosmwasm_std::{Binary, DepsMut, Env, Response, StdResult, Uint256};
-use liquidity_book::libraries::Bytes32;
+use liquidity_book::libraries::{hooks::HooksParameters, Bytes32};
 
 pub fn on_hooks_set(
     deps: DepsMut,
     env: Env,
-    hooks_parameters: Bytes32,
+    hooks_parameters: HooksParameters,
     on_hooks_set_data: Binary,
 ) -> Result<Response> {
     // Implementation for OnHooksSet

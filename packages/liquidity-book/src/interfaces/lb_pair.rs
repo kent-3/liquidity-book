@@ -1,5 +1,8 @@
 use super::lb_factory::{Implementation, StaticFeeParameters};
-use crate::libraries::{hooks::Parameters, Bytes32, LiquidityConfigurations};
+use crate::libraries::{
+    hooks::{HooksParameters, Parameters},
+    Bytes32, LiquidityConfigurations,
+};
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
@@ -15,6 +18,7 @@ use std::ops::Deref;
 
 // TODO: Decide which attributes to make private.
 // NOTE: All Bytes32 values are represented as Base64 strings. Should we use hex instead?
+// TODO: We are doing a lot of unwrapping here. Is that ok?
 pub trait LbPairEventExt {
     fn deposited_to_bins(sender: &Addr, to: &Addr, ids: &[u32], amounts: &[Bytes32]) -> Event {
         let amounts: Vec<String> = amounts
@@ -106,10 +110,13 @@ pub trait LbPairEventExt {
             )
     }
 
-    fn hooks_parameters_set(sender: &Addr, hooks_parameters: &Bytes32) -> Event {
+    fn hooks_parameters_set(sender: &Addr, hooks_parameters: &HooksParameters) -> Event {
         Event::new("hooks_parameters_set")
             .add_attribute_plaintext("sender", sender)
-            .add_attribute_plaintext("hooks_parameters", BASE64_STANDARD.encode(hooks_parameters))
+            .add_attribute_plaintext(
+                "hooks_parameters",
+                serde_json_wasm::to_string(&hooks_parameters).unwrap(),
+            )
     }
 
     fn flash_loan(

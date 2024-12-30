@@ -49,7 +49,7 @@ pub const AFTER_TRANSFER: u16 = 1 << 9;
 
 #[cw_serde]
 pub struct HooksParameters {
-    pub address: Addr,     // Contract address (human-readable)
+    pub address: String,   // Contract address (human-readable)
     pub code_hash: String, // SHA-256 hex of contract bytecode
     pub flags: u16,        // Bit-packed flags (up to 16 flags)
 }
@@ -233,39 +233,21 @@ pub fn get_flags(hooks_parameters: Bytes32) -> [u8; 12] {
  * @param hooksParameters The encoded hooks parameters
  * @param onHooksSetData The data to pass to the onHooksSet function
  */
-// TODO: I'd like to not have to pass Deps here. Can we humanize the address without it?
 pub fn on_hooks_set(
-    deps: Deps,
     hooks_parameters: HooksParameters,
     on_hooks_set_data: Binary,
-) -> Option<WasmMsg> {
-    let hooks_code_hash = hooks_parameters.code_hash;
-    let hooks_parameters = hooks_parameters.hooks_parameters;
+) -> StdResult<WasmMsg> {
+    let on_hooks_set_msg = ExecuteMsg::OnHooksSet {
+        hooks_parameters: hooks_parameters.clone(),
+        on_hooks_set_data,
+    };
 
-    if hooks_parameters != [0u8; 32] {
-        let hooks = deps
-            .api
-            .addr_humanize(&get_hooks(hooks_parameters))
-            .unwrap();
-
-        let on_hooks_set_msg = ExecuteMsg::OnHooksSet {
-            hooks_parameters,
-            on_hooks_set_data,
-        };
-
-        let Some(msg) = to_binary(&on_hooks_set_msg).ok() else {
-            return None;
-        };
-
-        Some(WasmMsg::Execute {
-            contract_addr: hooks.to_string(),
-            code_hash: hex::encode(hooks_code_hash),
-            msg,
-            funds: vec![],
-        })
-    } else {
-        None
-    }
+    Ok(WasmMsg::Execute {
+        contract_addr: hooks_parameters.address,
+        code_hash: hooks_parameters.code_hash,
+        msg: to_binary(&on_hooks_set_msg)?,
+        funds: vec![],
+    })
 }
 
 // TODO: all the rest of this module

@@ -4,6 +4,7 @@ use cosmwasm_std::{
     Event, MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use ethnum::U256;
+use liquidity_book::libraries::hooks::HooksParameters;
 use liquidity_book::{
     interfaces::{
         lb_flash_loan_callback,
@@ -1026,63 +1027,39 @@ pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Respon
     Ok(Response::new().add_event(event))
 }
 
-// TODO:
 /**
  * @notice Sets the hooks parameter of the pool
  * @dev Can only be called by the factory
  * @param hooksParameters The hooks parameter
  * @param onHooksSetData The data to be passed to the onHooksSet function of the hooks contract
  */
-#[allow(unused)]
 pub fn set_hooks_parameters(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    hooks_parameters: Bytes32,
+    hooks_parameters: HooksParameters,
     on_hooks_set_data: Binary,
 ) -> Result<Response> {
-    let hooks_parameters = HOOKS_PARAMETERS.load(deps.storage)?;
+    let factory = FACTORY.load(deps.storage)?;
+    only_factory(&info.sender, &factory.address)?;
 
-    // TODO: have associated function on ILbHooks that can construct itself from HooksParameters
-    let hooks_canonical = hooks::get_hooks(hooks_parameters.hooks_parameters);
-    let hooks_address = deps.api.addr_humanize(&hooks_canonical)?;
-    let hooks = ILbHooks(ContractInfo {
-        address: hooks_address,
-        code_hash: hex::encode(hooks_parameters.code_hash),
-    });
+    HOOKS_PARAMETERS.save(deps.storage, &hooks_parameters)?;
 
-    // NOTE: not including the code hash in the event. (should we?)
-    let event = Event::hooks_parameters_set(&info.sender, &hooks_parameters.hooks_parameters);
+    let hooks = ContractInfo {
+        address: deps.api.addr_validate(&hooks_parameters.address)?,
+        code_hash: hooks_parameters.code_hash.clone(),
+    };
 
-    let zero_addr = vec![0u8; hooks_canonical.len()];
+    let event = Event::hooks_parameters_set(&info.sender, &hooks_parameters);
 
-    if hooks_canonical.as_slice() != zero_addr.as_slice()
-        && hooks.get_lb_pair(deps.querier)? != env.contract.address
-    {
+    // This LB Pair contract must already be set in the hooks contract.
+    if ILbHooks(hooks).get_lb_pair(deps.querier)? != env.contract.address {
         return Err(Error::InvalidHooks);
     }
 
-    let hook = hooks::on_hooks_set(deps.as_ref(), hooks_parameters, on_hooks_set_data);
+    let hook_msg = hooks::on_hooks_set(hooks_parameters, on_hooks_set_data)?;
 
-    let mut response = Response::new().add_event(event);
-
-    if let Some(hook_msg) = hook {
-        response = response.add_message(hook_msg);
-    }
-
-    Ok(response)
-
-    // TODO: try to shorten the function. here is the original for reference:
-    //
-    // _hooksParameters = hooksParameters;
-    //
-    // ILBHooks hooks = ILBHooks(Hooks.getHooks(hooksParameters));
-    //
-    // emit HooksParametersSet(msg.sender, hooksParameters);
-    //
-    // if (address(hooks) != address(0) && hooks.getLBPair() != this) revert LBPair__InvalidHooks();
-    //
-    // Hooks.onHooksSet(hooksParameters, onHooksSetData);
+    Ok(Response::new().add_event(event).add_message(hook_msg))
 }
 
 // TODO:

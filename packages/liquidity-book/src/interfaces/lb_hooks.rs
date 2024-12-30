@@ -1,4 +1,4 @@
-use crate::{interfaces::lb_pair::ILbPair, Bytes32};
+use crate::{interfaces::lb_pair::ILbPair, libraries::hooks::HooksParameters, Bytes32};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Addr, Binary, ContractInfo, QuerierWrapper, StdError, StdResult, Uint256, WasmMsg,
@@ -21,7 +21,7 @@ impl Deref for ILbHooks {
 impl ILbHooks {
     pub fn on_hooks_set(
         &self,
-        hooks_parameters: Bytes32,
+        hooks_parameters: HooksParameters,
         on_hooks_set_data: Binary,
     ) -> StdResult<WasmMsg> {
         let msg = ExecuteMsg::OnHooksSet {
@@ -59,7 +59,7 @@ pub struct InstantiateMsg {}
 #[cw_serde]
 pub enum ExecuteMsg {
     OnHooksSet {
-        hooks_parameters: Bytes32,
+        hooks_parameters: HooksParameters,
         on_hooks_set_data: Binary,
     },
     BeforeSwap {
