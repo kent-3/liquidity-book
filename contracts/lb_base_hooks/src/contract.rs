@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::{execute::*, prelude::*, query::*, state::LB_PAIR};
+use crate::{execute::*, query::*, state::LB_PAIR, Error, Result};
 use cosmwasm_std::{
     entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult, Uint256,

@@ -1,7 +1,7 @@
 use crate::{
-    prelude::{Error, Result},
     query::{find_best_path_from_amount_in, find_best_path_from_amount_out},
     state::{FACTORY_V2_2, ROUTER_V2_2},
+    Error, Result,
 };
 use cosmwasm_std::{entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use liquidity_book::interfaces::lb_quoter::{

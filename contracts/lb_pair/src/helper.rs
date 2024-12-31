@@ -1,4 +1,4 @@
-use crate::{prelude::*, state::*};
+use crate::{state::*, Error, Result};
 use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult};
 use ethnum::U256;
 use liquidity_book::{

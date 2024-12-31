@@ -2,8 +2,8 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Uint128};
 use liquidity_book::{
     interfaces::{
-        lb_factory::Implementation,
-        lb_pair::{LbPair, LbPairInformation},
+        lb_factory::{Implementation, LbPairInformation},
+        lb_pair::LbPair,
     },
     libraries::pair_parameter_helper::PairParameters,
 };

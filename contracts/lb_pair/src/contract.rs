@@ -1,4 +1,4 @@
-use crate::{execute::*, helper::*, prelude::*, query::*, state::*};
+use crate::{execute::*, helper::*, query::*, state::*, Error, Result};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
     Event, MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128,
@@ -208,7 +208,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
         ExecuteMsg::SetHooksParameters {
             hooks_parameters,
             on_hooks_set_data,
-        } => todo!(),
+        } => set_hooks_parameters(deps, env, info, hooks_parameters, on_hooks_set_data),
         ExecuteMsg::ForceDecay {} => {
             // TODO: this is kinda neat, but I think it's better to keep it inside the function
             only_factory(&info.sender, &FACTORY.load(deps.storage)?.address)?;
@@ -241,17 +241,15 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
     }
 }
 
-// TODO: I don't think we need this! The swap function will always be called by the lb-router, who
-// has the ability to transfer tokens to the lb-pair before-hand. A user sends tokens to the
-// router, so I think we have some refactoring to do over there to handle messages through the
-// receiver_callback.
+// TODO: I think we should remove this! The swap function should always be called by the lb-router.
+// Users send tokens to the router, then it transfer tokens to the lb-pair.
 
 pub fn receiver_callback(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    from: Addr,
-    amount: Uint128,
+    _from: Addr,
+    _amount: Uint128,
     msg: Option<Binary>,
 ) -> Result<Response> {
     let msg = msg.ok_or(Error::ReceiverMsgEmpty)?;
@@ -318,7 +316,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
             page_size,
         } => to_binary(&query_all_bins(deps, env, page, page_size, id)?),
     }
-    .map_err(Error::CwErr)
+    .map_err(Error::StdError)
 }
 
 #[entry_point]

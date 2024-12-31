@@ -1,8 +1,0 @@
-// Use this crate's custom Error type
-pub use liquidity_book::interfaces::lb_router::LBRouterError as Error;
-
-// Force all Result types to use our Error type
-pub type Result<T> = core::result::Result<T, Error>;
-
-// Generic Wrapper tuple struct for newtype pattern.
-// pub struct W<T>(pub T);

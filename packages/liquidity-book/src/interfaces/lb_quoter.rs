@@ -7,6 +7,23 @@ use shade_protocol::{
     utils::{asset::RawContract, Query},
 };
 
+use crate::libraries::math::{u128x128_math::U128x128MathError, u256x256_math::U256x256MathError};
+use cosmwasm_std::StdError;
+
+#[derive(thiserror::Error, Debug)]
+pub enum LbQuoterError {
+    #[error("InvalidLength")]
+    InvalidLength,
+
+    // Error Wrappings from Dependencies
+    #[error(transparent)]
+    CwErr(#[from] StdError),
+    #[error(transparent)]
+    U128Err(#[from] U128x128MathError),
+    #[error(transparent)]
+    U256Err(#[from] U256x256MathError),
+}
+
 #[cw_serde]
 pub struct InstantiateMsg {
     pub factory_v2_2: Option<RawContract>,

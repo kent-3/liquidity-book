@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::prelude::*;
+use crate::{Error, Result};
 use cosmwasm_std::{Binary, DepsMut, Env, Response, StdResult, Uint256};
 use liquidity_book::libraries::{hooks::HooksParameters, Bytes32};
 

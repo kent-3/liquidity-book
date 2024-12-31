@@ -8,7 +8,7 @@ use shade_protocol::contract_interfaces::swap::core::TokenType;
 use shade_protocol::utils::asset::RawContract;
 
 #[derive(thiserror::Error, Debug)]
-pub enum LBRouterError {
+pub enum LbRouterError {
     #[error("The sender is not WNATIVE")]
     SenderIsNotWNATIVE,
 

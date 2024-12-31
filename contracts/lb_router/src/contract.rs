@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 
-use crate::{execute::*, prelude::*, query::*, state::*};
+use crate::{execute::*, query::*, state::*, Error, Result};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Reply, Response, StdResult, SubMsgResult, Uint128,

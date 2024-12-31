@@ -5,6 +5,16 @@ use cosmwasm_std::{
 };
 use std::ops::Deref;
 
+#[derive(thiserror::Error, Debug)]
+pub enum LbHooksError {
+    #[error("Invalid caller: {0}")]
+    InvalidCaller(Addr),
+    #[error("not linked")]
+    NotLinked,
+    #[error(transparent)]
+    CwErr(#[from] StdError),
+}
+
 /// A thin wrapper around `ContractInfo` that provides additional
 /// methods to interact with an LB Hooks contract.
 #[cw_serde]

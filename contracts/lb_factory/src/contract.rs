@@ -1,12 +1,9 @@
-use crate::{contract::helper::_sort_tokens, prelude::*};
+use crate::{Error, Result};
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, Event, MessageInfo, Reply,
-    Response, SubMsgResult, Uint128,
+    entry_point, to_binary, Binary, ContractInfo, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    SubMsgResult, Uint128,
 };
-use liquidity_book::interfaces::{
-    lb_factory::*,
-    lb_pair::{LbPair, LbPairInformation},
-};
+use liquidity_book::interfaces::lb_factory::*;
 
 mod execute;
 mod helper;
@@ -22,7 +19,7 @@ use state::*;
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
 static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%
-static PUBLIC_VIEWING_KEY: &str = "lb_rocks"; // TODO: decide if this should be public and/or public
+static PUBLIC_VIEWING_KEY: &str = "lb_rocks"; // TODO: decide if this should be public and static
 
 const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
 
@@ -199,72 +196,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
             to_binary(&query_all_lb_pairs(deps, token_x, token_y)?)
         }
     }
-    .map_err(Error::CwErr)
+    .map_err(Error::StdError)
 }
 
 #[entry_point]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response> {
     match (msg.id, msg.result) {
         (CREATE_LB_PAIR_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
-            Some(x) => {
-                let address = deps.api.addr_validate(&String::from_utf8(x.to_vec())?)?;
-                let EphemeralLbPair {
-                    token_x,
-                    token_y,
-                    bin_step,
-                    code_hash,
-                    created_by_owner,
-                } = EPHEMERAL_LB_PAIR.load(deps.storage)?;
-
-                let lb_pair = LbPair {
-                    token_x: token_x.clone(),
-                    token_y: token_y.clone(),
-                    bin_step,
-                    contract: ContractInfo { address, code_hash },
-                };
-
-                let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
-
-                LB_PAIRS_INFO.insert(
-                    deps.storage,
-                    &(token_a.unique_key(), token_b.unique_key(), bin_step),
-                    &LbPairInformation {
-                        bin_step,
-                        lb_pair: lb_pair.clone(),
-                        created_by_owner,
-                        ignored_for_routing: false,
-                    },
-                )?;
-
-                ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
-
-                // TODO: annoying that I have to get and insert rather than update in place
-
-                let available_bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
-                    .get(deps.storage, &(token_a.unique_key(), token_b.unique_key()))
-                    .unwrap_or_default();
-
-                AVAILABLE_LB_PAIR_BIN_STEPS.insert(
-                    deps.storage,
-                    &(token_a.unique_key(), token_b.unique_key()),
-                    &available_bin_steps,
-                )?;
-
-                // TODO: is this good to do? I think it's better to keep the memory to rewrite
-                EPHEMERAL_LB_PAIR.remove(deps.storage);
-
-                let event = Event::lb_pair_created(
-                    token_x.unique_key(),
-                    token_y.unique_key(),
-                    bin_step,
-                    lb_pair.contract.address.to_string(),
-                    ALL_LB_PAIRS.get_len(deps.storage)? - 1,
-                );
-
-                Ok(Response::default()
-                    .set_data(to_binary(&lb_pair)?)
-                    .add_event(event))
-            }
+            Some(x) => create_lb_pair_part2(deps, _env, x),
             None => Err(Error::ReplyDataMissing),
         },
         _ => Err(Error::UnknownReplyId { id: msg.id }),

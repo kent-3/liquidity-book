@@ -1,4 +1,4 @@
-use crate::{prelude::*, state::FACTORY_V2_2};
+use crate::{state::FACTORY_V2_2, Result};
 use cosmwasm_std::{ContractInfo, Deps, Uint128, Uint256};
 use liquidity_book::interfaces::lb_pair::{
     self, FactoryResponse, IdFromPriceResponse, PriceFromIdResponse, SwapInResponse,

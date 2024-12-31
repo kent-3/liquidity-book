@@ -1,4 +1,4 @@
-use crate::{contract::*, prelude::*, query::query_swap_in, state::*};
+use crate::{contract::*, query::query_swap_in, state::*, Error, Result};
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Response, StdResult, SubMsg, Uint128, Uint256, Uint64,

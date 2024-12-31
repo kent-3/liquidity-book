@@ -3,12 +3,9 @@ use super::{
     state::*,
     MAX_FLASH_LOAN_FEE, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
-use crate::prelude::*;
+use crate::{Error, Result};
 use cosmwasm_std::{Deps, StdResult};
-use liquidity_book::{
-    interfaces::{lb_factory::*, lb_pair::LbPairInformation},
-    libraries::math::encoded::Encoded,
-};
+use liquidity_book::{interfaces::lb_factory::*, libraries::math::encoded::Encoded};
 use shade_protocol::swap::core::TokenType;
 
 /// Returns the minimum bin step a pair can have.

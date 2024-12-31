@@ -1,12 +1,12 @@
 use crate::{
     helper::_get_v2_quote,
-    prelude::{Error, Result},
     state::{FACTORY_V2_2, ROUTER_V2_2},
+    Error, Result,
 };
 use cosmwasm_std::{Deps, Uint128};
 use liquidity_book::interfaces::{
-    lb_factory::ILbFactory,
-    lb_pair::{ILbPair, LbPairInformation},
+    lb_factory::{ILbFactory, LbPairInformation},
+    lb_pair::ILbPair,
     lb_quoter::Quote,
     lb_router::{self, ILbRouter},
 };

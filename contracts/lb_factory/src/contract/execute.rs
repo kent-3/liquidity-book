@@ -3,9 +3,10 @@ use super::{
     state::*,
     CREATE_LB_PAIR_REPLY_ID, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
-use crate::prelude::*;
+use crate::{Error, Result};
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response, SubMsg, WasmMsg,
+    to_binary, Addr, Binary, ContractInfo, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response,
+    SubMsg, WasmMsg,
 };
 use liquidity_book::{
     interfaces::{
@@ -44,7 +45,7 @@ pub fn set_lb_pair_implementation(
     let old_lb_pair_implementation = LB_PAIR_IMPLEMENTATION.load(deps.storage)?;
     if old_lb_pair_implementation == new_lb_pair_implementation {
         return Err(Error::SameImplementation {
-            implementation: old_lb_pair_implementation.id,
+            code_id: old_lb_pair_implementation.id,
         });
     }
 
@@ -80,7 +81,7 @@ pub fn set_lb_token_implementation(
     let old_lb_token_implementation = LB_TOKEN_IMPLEMENTATION.load(deps.storage)?;
     if old_lb_token_implementation == new_lb_token_implementation {
         return Err(Error::SameImplementation {
-            implementation: old_lb_token_implementation.id,
+            code_id: old_lb_token_implementation.id,
         });
     }
 
@@ -95,17 +96,6 @@ pub fn set_lb_token_implementation(
 }
 
 /// Creates a liquidity bin LbPair for token_x and token_y.
-///
-/// # Arguments
-///
-/// * `token_x` - The address of the first token.
-/// * `token_y` - The address of the second token.
-/// * `active_id` - The active id of the pair.
-/// * `bin_step` - The bin step in basis point, used to calculate log(1 + binStep / 10_000).
-///
-/// # Returns
-///
-/// * `pair` - The address of the newly created LbPair.
 pub fn create_lb_pair(
     deps: DepsMut,
     env: Env,
@@ -184,9 +174,7 @@ pub fn create_lb_pair(
         return Err(Error::ImplementationNotSet);
     }
 
-    let mut messages = vec![];
-
-    messages.push(SubMsg::reply_on_success(
+    let msg = SubMsg::reply_on_success(
         WasmMsg::Instantiate {
             code_id: lb_pair_implementation.id,
             label: format!(
@@ -220,10 +208,10 @@ pub fn create_lb_pair(
             })?,
             code_hash: lb_pair_implementation.code_hash.clone(),
             funds: vec![],
-            admin: None,
+            admin: None, // TODO: should this be set to something else?
         },
         CREATE_LB_PAIR_REPLY_ID,
-    ));
+    );
 
     EPHEMERAL_LB_PAIR.save(
         deps.storage,
@@ -236,7 +224,69 @@ pub fn create_lb_pair(
         },
     )?;
 
-    Ok(Response::new().add_submessages(messages))
+    Ok(Response::new().add_submessage(msg))
+}
+
+/// Handles the reply from instantiating the new LbPair.
+pub fn create_lb_pair_part2(deps: DepsMut, _env: Env, reply_data: Binary) -> Result<Response> {
+    let address = deps
+        .api
+        .addr_validate(&String::from_utf8(reply_data.to_vec())?)?;
+    let EphemeralLbPair {
+        token_x,
+        token_y,
+        bin_step,
+        code_hash,
+        created_by_owner,
+    } = EPHEMERAL_LB_PAIR.load(deps.storage)?;
+
+    let lb_pair = LbPair {
+        token_x: token_x.clone(),
+        token_y: token_y.clone(),
+        bin_step,
+        contract: ContractInfo { address, code_hash },
+    };
+
+    let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
+
+    LB_PAIRS_INFO.insert(
+        deps.storage,
+        &(token_a.unique_key(), token_b.unique_key(), bin_step),
+        &LbPairInformation {
+            bin_step,
+            lb_pair: lb_pair.clone(),
+            created_by_owner,
+            ignored_for_routing: false,
+        },
+    )?;
+
+    ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
+
+    let available_bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
+        .get(deps.storage, &(token_a.unique_key(), token_b.unique_key()))
+        .unwrap_or_default();
+
+    AVAILABLE_LB_PAIR_BIN_STEPS.insert(
+        deps.storage,
+        &(token_a.unique_key(), token_b.unique_key()),
+        &available_bin_steps,
+    )?;
+
+    // TODO: is this good to do? I think it's better to keep the memory to rewrite, unless removing
+    // it eliminates the write costs altogether...
+    EPHEMERAL_LB_PAIR.remove(deps.storage);
+
+    let event = Event::lb_pair_created(
+        token_x.unique_key(),
+        token_y.unique_key(),
+        bin_step,
+        lb_pair.contract.address.to_string(),
+        ALL_LB_PAIRS.get_len(deps.storage)? - 1,
+    );
+
+    Ok(Response::default()
+        .set_data(to_binary(&lb_pair)?)
+        .add_event(event))
 }
 
 pub fn set_lb_pair_ignored(

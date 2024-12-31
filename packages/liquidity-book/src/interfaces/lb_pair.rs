@@ -4,7 +4,7 @@ use base64::prelude::{Engine as _, BASE64_STANDARD};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Addr, Binary, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256,
-    Uint64, WasmMsg,
+    WasmMsg,
 };
 use shade_protocol::{
     swap::core::TokenType,
@@ -12,6 +12,211 @@ use shade_protocol::{
 };
 use std::fmt::{Debug, Display};
 use std::ops::Deref;
+
+use crate::libraries::{
+    bin_helper::BinError,
+    fee_helper::FeeError,
+    math::{
+        liquidity_configurations::LiquidityConfigurationsError,
+        packed_u128_math::PackedUint128MathError, u128x128_math::U128x128MathError,
+        u256x256_math::U256x256MathError,
+    },
+    oracle_helper::OracleError,
+    pair_parameter_helper::PairParametersError,
+};
+use cosmwasm_std::{ConversionOverflowError, StdError};
+use std::str::Utf8Error;
+use std::string::FromUtf8Error;
+
+// TODO: reorder these to match the original
+
+#[derive(thiserror::Error, Debug)]
+pub enum LbPairError {
+    // Generic Errors
+    #[error("Generic {0}")]
+    Generic(String),
+    #[error("Zero borrow amount!")]
+    ZeroBorrowAmount,
+    #[error("Address is zero!")]
+    AddressZero,
+    #[error("Serilization Failed is zero!")]
+    SerializationError,
+    #[error("Invalid input!")]
+    InvalidInput,
+    #[error("value greater than u24!")]
+    U24Overflow,
+    #[error("Token not supported!")]
+    TokenNotSupported(),
+    #[error("Transaction is blocked by contract status")]
+    TransactionBlock(),
+    #[error("Not enough funds")]
+    NotEnoughFunds,
+    #[error("Unknown reply id: {id}")]
+    UnknownReplyId { id: u64 },
+    #[error("Reply data is missing!")]
+    ReplyDataMissing,
+    #[error("Invalid hooks")]
+    InvalidHooks,
+
+    // Permission Errors
+    #[error("Only the Factory can do that!")]
+    OnlyFactory,
+    #[error("Only the Protocol Fee Recipient can do that!")]
+    OnlyProtocolFeeRecipient,
+
+    // Market Configuration Errors
+    #[error("Empty Market Configuration")]
+    EmptyMarketConfigs,
+    #[error("Invalid static fee parameters!")]
+    InvalidStaticFeeParameters,
+
+    // Liquidity and Flash Loan Errors
+    #[error("Not enough liquidity!")]
+    OutOfLiquidity,
+    #[error("Flash loan callback failed!")]
+    FlashLoanCallbackFailed,
+    #[error("Flash loan insufficient amount!")]
+    FlashLoanInsufficientAmount,
+    #[error("Insufficient amount in!")]
+    InsufficientAmountIn,
+    #[error("Insufficient amount out!")]
+    InsufficientAmountOut,
+
+    // Oracle Errors
+    #[error("Oracle not active!")]
+    OracleNotActive,
+
+    // Interface and Callback Errors
+    #[error("Use the receive interface")]
+    UseReceiveInterface,
+    #[error("Receiver callback \"msg\" parameter cannot be empty.")]
+    ReceiverMsgEmpty,
+
+    // Time and Deadline Errors
+    #[error("Deadline exceeded. Deadline: {deadline}, Current timestamp: {current_timestamp}")]
+    DeadlineExceeded {
+        deadline: u64,
+        current_timestamp: u64,
+    },
+
+    // Specific Errors with Parameters
+    #[error("Zero amount for bin id: {id}")]
+    ZeroAmount { id: u32 },
+    #[error("Zero Shares for bin id: {id}")]
+    ZeroShares { id: u32 },
+    #[error("Distribution exceeded the max value")]
+    DistributionError,
+    #[error("Max total fee exceeded!")]
+    MaxTotalFeeExceeded,
+    #[error("Wrong Pair")]
+    WrongPair,
+
+    // Error Wrappings from Dependencies
+    #[error(transparent)]
+    FromUtf8Error(#[from] FromUtf8Error),
+    #[error(transparent)]
+    Utf8Error(#[from] Utf8Error),
+    #[error(transparent)]
+    StdError(#[from] StdError),
+    #[error(transparent)]
+    ConversionOverflowError(#[from] ConversionOverflowError),
+    #[error(transparent)]
+    LbErr(#[from] crate::libraries::Error),
+    #[error(transparent)]
+    BinErr(#[from] BinError),
+    #[error(transparent)]
+    FeeErr(#[from] FeeError),
+    #[error(transparent)]
+    OracleErr(#[from] OracleError),
+    #[error(transparent)]
+    ParamsErr(#[from] PairParametersError),
+    #[error(transparent)]
+    LiquidityConfigErr(#[from] LiquidityConfigurationsError),
+    #[error(transparent)]
+    U128Err(#[from] U128x128MathError),
+    #[error(transparent)]
+    U256Err(#[from] U256x256MathError),
+    #[error(transparent)]
+    PackedUint128MathError(#[from] PackedUint128MathError),
+
+    // Complex Scenarios and Calculations Errors
+    #[error(
+        "Zero amounts out for bin id: {id} amount to burn: {amount_to_burn} total supply: {total_supply}"
+    )]
+    ZeroAmountsOut {
+        id: u32,
+        amount_to_burn: Uint256,
+        total_supply: Uint256,
+    },
+    // Id and Calculation Related Errors
+    #[error("Id desired overflows. Id desired: {id_desired}, Id slippage: {id_slippage}")]
+    IdDesiredOverflows { id_desired: u32, id_slippage: u32 },
+    #[error("Delta id overflows. Delta Id: {delta_id}")]
+    DeltaIdOverflows { delta_id: i64 },
+    #[error("Id underflow. Id: {id} Delta Id: {delta_id}")]
+    IdUnderflows { id: u32, delta_id: u32 },
+    #[error("Id overflows. Id: {id}")]
+    IdOverflows { id: u32 },
+    #[error("could not get bin reserves for active id: {active_id}")]
+    ZeroBinReserve { active_id: u32 },
+    #[error("Lengths mismatch")]
+    LengthsMismatch,
+    #[error("time_of_last_update was later than look_up_timestamp")]
+    LastUpdateTimestampGreaterThanLookupTimestamp,
+
+    // Slippage and Trading Errors
+    #[error(
+        "Amount left unswapped. : Amount Left In: {amount_left_in}, Total Amount: {total_amount}, swapped_amount: {swapped_amount}"
+    )]
+    AmountInLeft {
+        amount_left_in: Uint128,
+        total_amount: Uint128,
+        swapped_amount: Uint128,
+    },
+    #[error(
+        "Id slippage caught. Active id desired: {active_id_desired}, Id slippage: {id_slippage}, Active id: {active_id}"
+    )]
+    IdSlippageCaught {
+        active_id_desired: u32,
+        id_slippage: u32,
+        active_id: u32,
+    },
+    #[error(
+        "Amount slippage caught. AmountXMin: {amount_x_min}, AmountX: {amount_x}, AmountYMin: {amount_y_min}, AmountY: {amount_y}"
+    )]
+    AmountSlippageCaught {
+        amount_x_min: Uint128,
+        amount_x: Uint128,
+        amount_y_min: Uint128,
+        amount_y: Uint128,
+    },
+    #[error("Pair not created: {token_x} and {token_y}, binStep: {bin_step}")]
+    PairNotCreated {
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+    },
+    #[error("No matching token in pair")]
+    NoMatchingTokenInPair,
+}
+
+#[cw_serde]
+pub struct LbPair {
+    pub token_x: TokenType,
+    pub token_y: TokenType,
+    pub bin_step: u16,
+    pub contract: ContractInfo,
+}
+
+#[cw_serde]
+pub struct Snip20ReceiveMsg {
+    pub sender: String,
+    pub from: String,
+    pub amount: Uint128,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+    pub msg: Option<Binary>,
+}
 
 // TODO: Decide which attributes to make private.
 // NOTE: All Bytes32 values are represented as Base64 strings. Should we use hex instead?
@@ -149,163 +354,6 @@ pub trait LbPairEventExt {
 
 impl LbPairEventExt for Event {}
 
-/// A thin wrapper around `ContractInfo` that provides additional
-/// methods to interact with an LB Pair contract.
-#[cw_serde]
-pub struct ILbPair(pub ContractInfo);
-
-impl Deref for ILbPair {
-    type Target = ContractInfo;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl ILbPair {
-    pub fn swap(&self, swap_for_y: bool, to: String) -> StdResult<WasmMsg> {
-        let msg = ExecuteMsg::Swap { swap_for_y, to };
-
-        Ok(WasmMsg::Execute {
-            contract_addr: self.address.to_string(),
-            code_hash: self.code_hash.clone(),
-            msg: to_binary(&msg)?,
-            funds: vec![],
-        })
-    }
-
-    pub fn mint(
-        &self,
-        to: String,
-        liquidity_configs: Vec<LiquidityConfigurations>,
-        refund_to: String,
-    ) -> StdResult<WasmMsg> {
-        let msg = ExecuteMsg::Mint {
-            to,
-            liquidity_configs,
-            refund_to,
-        };
-
-        Ok(WasmMsg::Execute {
-            contract_addr: self.address.to_string(),
-            code_hash: self.code_hash.clone(),
-            msg: to_binary(&msg)?,
-            funds: vec![],
-        })
-    }
-
-    pub fn burn(
-        &self,
-        from: String,
-        to: String,
-        ids: Vec<u32>,
-        amounts_to_burn: Vec<Uint256>,
-    ) -> StdResult<WasmMsg> {
-        let msg = ExecuteMsg::Burn {
-            from,
-            to,
-            ids,
-            amounts_to_burn,
-        };
-
-        Ok(WasmMsg::Execute {
-            contract_addr: self.address.to_string(),
-            code_hash: self.code_hash.clone(),
-            msg: to_binary(&msg)?,
-            funds: vec![],
-        })
-    }
-
-    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
-        querier
-            .query_wasm_smart::<TokenXResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetTokenX {},
-            )
-            .map(|response| response.token_x)
-    }
-
-    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
-        querier
-            .query_wasm_smart::<TokenYResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetTokenY {},
-            )
-            .map(|response| response.token_y)
-    }
-
-    pub fn get_active_id(&self, querier: QuerierWrapper) -> StdResult<u32> {
-        querier
-            .query_wasm_smart::<ActiveIdResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetActiveId {},
-            )
-            .map(|response| response.active_id)
-    }
-
-    pub fn get_lb_hooks_parameters(&self, querier: QuerierWrapper) -> StdResult<Bytes32> {
-        querier
-            .query_wasm_smart::<LbHooksParametersResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetLbHooksParameters {},
-            )
-            .map(|response| response.hooks_parameters)
-    }
-}
-
-#[cw_serde]
-pub struct Snip20ReceiveMsg {
-    pub sender: String,
-    pub from: String,
-    pub amount: Uint128,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
-    pub msg: Option<Binary>,
-}
-
-#[cw_serde]
-pub struct LbPair {
-    pub token_x: TokenType,
-    pub token_y: TokenType,
-    pub bin_step: u16,
-    pub contract: ContractInfo,
-}
-
-#[cw_serde]
-pub struct LbPairInformation {
-    pub bin_step: u16,
-    pub lb_pair: LbPair,
-    pub created_by_owner: bool,
-    pub ignored_for_routing: bool,
-}
-
-impl Default for LbPairInformation {
-    fn default() -> Self {
-        LbPairInformation {
-            bin_step: 0,
-            lb_pair: LbPair {
-                token_x: TokenType::NativeToken {
-                    denom: "none".to_string(),
-                },
-                token_y: TokenType::NativeToken {
-                    denom: "none".to_string(),
-                },
-                bin_step: 0,
-                contract: ContractInfo {
-                    address: Addr::unchecked("0"),
-                    code_hash: "".to_string(),
-                },
-            },
-            created_by_owner: false,
-            ignored_for_routing: true,
-        }
-    }
-}
-
 #[cw_serde]
 pub struct InstantiateMsg {
     pub factory: ContractInfo,
@@ -364,7 +412,7 @@ pub enum ExecuteMsg {
         max_volatility_accumulator: u32,
     },
     SetHooksParameters {
-        hooks_parameters: Bytes32,
+        hooks_parameters: HooksParameters,
         on_hooks_set_data: Binary,
     },
     ForceDecay {},
@@ -382,6 +430,7 @@ pub enum ExecuteMsg {
     Receive(Snip20ReceiveMsg),
 }
 
+// TODO: should this be here at all?
 #[cw_serde]
 pub enum ContractStatus {
     Active,         // allows all operations
@@ -491,6 +540,8 @@ pub enum QueryMsg {
 impl Query for QueryMsg {
     const BLOCK_SIZE: usize = 256;
 }
+
+// TODO: should all the query response types start with "Get"?
 
 #[cw_serde]
 pub struct FactoryResponse {
@@ -640,4 +691,112 @@ pub struct AllBinsResponse {
     pub reserves: Vec<BinResponse>,
     pub last_id: u32,
     pub current_block_height: u64,
+}
+
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with an LB Pair contract.
+#[cw_serde]
+pub struct ILbPair(pub ContractInfo);
+
+impl Deref for ILbPair {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ILbPair {
+    pub fn swap(&self, swap_for_y: bool, to: String) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::Swap { swap_for_y, to };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
+    pub fn mint(
+        &self,
+        to: String,
+        liquidity_configs: Vec<LiquidityConfigurations>,
+        refund_to: String,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::Mint {
+            to,
+            liquidity_configs,
+            refund_to,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
+    pub fn burn(
+        &self,
+        from: String,
+        to: String,
+        ids: Vec<u32>,
+        amounts_to_burn: Vec<Uint256>,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::Burn {
+            from,
+            to,
+            ids,
+            amounts_to_burn,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
+    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
+        querier
+            .query_wasm_smart::<TokenXResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenX {},
+            )
+            .map(|response| response.token_x)
+    }
+
+    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
+        querier
+            .query_wasm_smart::<TokenYResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenY {},
+            )
+            .map(|response| response.token_y)
+    }
+
+    pub fn get_active_id(&self, querier: QuerierWrapper) -> StdResult<u32> {
+        querier
+            .query_wasm_smart::<ActiveIdResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetActiveId {},
+            )
+            .map(|response| response.active_id)
+    }
+
+    pub fn get_lb_hooks_parameters(&self, querier: QuerierWrapper) -> StdResult<Bytes32> {
+        querier
+            .query_wasm_smart::<LbHooksParametersResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetLbHooksParameters {},
+            )
+            .map(|response| response.hooks_parameters)
+    }
 }

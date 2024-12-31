@@ -10,6 +10,12 @@ pub mod oracle_helper;
 pub mod pair_parameter_helper;
 pub mod price_helper;
 
+// TODO: Properly unify the library error types by using this Result type?
+// I'm still not sure the correct way to do this...
+
+// Force all Result types to use our Error type
+// pub type Result<T, E = Error> = core::result::Result<T, E>;
+
 pub use self::{
     bin_helper::BinHelper,
     error::Error,

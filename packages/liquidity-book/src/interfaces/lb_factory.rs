@@ -1,4 +1,14 @@
-use super::lb_pair::{LbPair, LbPairInformation};
+use super::lb_pair::LbPair;
+use crate::libraries::{
+    bin_helper::BinError,
+    fee_helper::FeeError,
+    math::{
+        liquidity_configurations::LiquidityConfigurationsError, u128x128_math::U128x128MathError,
+        u256x256_math::U256x256MathError,
+    },
+    oracle_helper::OracleError,
+    pair_parameter_helper::PairParametersError,
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Addr, ContractInfo, CosmosMsg, Event, QuerierWrapper, StdResult, Uint128, WasmMsg,
@@ -8,7 +18,172 @@ use shade_protocol::{
     swap::core::TokenType,
     utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
-use std::ops::Deref;
+
+#[derive(thiserror::Error, Debug)]
+pub enum LbFactoryError {
+    #[error("Tokens are identical! Both addresses are {token}!")]
+    IdenticalAddresses { token: String },
+
+    #[error("Quote Asset {quote_asset} is not whitelisted!")]
+    QuoteAssetNotWhitelisted { quote_asset: String },
+
+    #[error("Quote Asset {quote_asset} is already whitelisted!")]
+    QuoteAssetAlreadyWhitelisted { quote_asset: String },
+
+    // Not sure if applicable
+    #[error("Address zero!")]
+    AddressZero,
+
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) already exists!")]
+    LbPairAlreadyExists {
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+    },
+
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) does not exist!")]
+    LbPairDoesNotExist {
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+    },
+
+    #[error("LbPair ({token_x}, {token_y}, bin_step: {bin_step}) not created!")]
+    LbPairNotCreated {
+        token_x: String,
+        token_y: String,
+        bin_step: u16,
+    },
+
+    #[error("Flash Loan Fee above max: {fee} > {max_fee}!")]
+    FlashLoanFeeAboveMax { fee: u8, max_fee: u8 },
+
+    #[error("Bin step {bin_step} is too low!")]
+    BinStepTooLow { bin_step: u16 },
+
+    #[error("Preset {bin_step} is locked for users! {user} is not the owner!")]
+    PresetIsLockedForUsers { user: Addr, bin_step: u16 },
+
+    #[error("LbPair.ignored is already in the same state!")]
+    LbPairIgnoredIsAlreadyInTheSameState,
+
+    #[error("Bin step {bin_step} has no preset!")]
+    BinStepHasNoPreset { bin_step: u16 },
+
+    #[error("Preset open state is already in the same state!")]
+    PresetOpenStateIsAlreadyInTheSameState,
+
+    #[error("Fee recipient is already {fee_recipient}!")]
+    SameFeeRecipient { fee_recipient: Addr },
+
+    #[error("Flash loan fee is already {fee}!")]
+    SameFlashLoanFee { fee: u8 },
+
+    // TODO: I don't this applies, since the lb_pair factory address is assigned on instantiation.
+    #[error(
+        "LbPair safety check failed. {lb_pair_implementation} factory address does not match this one!"
+    )]
+    LbPairSafetyCheckFailed { lb_pair_implementation: Addr },
+
+    #[error("Lb implementation is already set to code ID {code_id}!")]
+    SameImplementation { code_id: u64 },
+
+    #[error("The LbPair implementation has not been set yet!")]
+    ImplementationNotSet,
+
+    // not in joe-v2
+    #[error("{0}!")]
+    Generic(String),
+    #[error("Only the Owner can do that!")]
+    OnlyOwner,
+    #[error("Transaction is blocked by contract status")]
+    TransactionBlock(),
+    #[error("Unknown reply id: {id}")]
+    UnknownReplyId { id: u64 },
+    #[error("Reply data is missing!")]
+    ReplyDataMissing,
+
+    // from cosmwasm
+    #[error(transparent)]
+    StdError(#[from] cosmwasm_std::StdError),
+
+    // from liquidity-book
+    #[error(transparent)]
+    BinError(#[from] BinError),
+    #[error(transparent)]
+    FeeError(#[from] FeeError),
+    #[error(transparent)]
+    OracleError(#[from] OracleError),
+    #[error(transparent)]
+    PairParameters(#[from] PairParametersError),
+    #[error(transparent)]
+    LiquidityConfigError(#[from] LiquidityConfigurationsError),
+    #[error(transparent)]
+    U128MathError(#[from] U128x128MathError),
+    #[error(transparent)]
+    U256MathError(#[from] U256x256MathError),
+
+    // misc
+    #[error(transparent)]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
+}
+
+#[cw_serde]
+pub struct LbPairInformation {
+    pub bin_step: u16,
+    pub lb_pair: LbPair,
+    pub created_by_owner: bool,
+    pub ignored_for_routing: bool,
+}
+
+impl Default for LbPairInformation {
+    fn default() -> Self {
+        LbPairInformation {
+            bin_step: 0,
+            lb_pair: LbPair {
+                token_x: TokenType::NativeToken {
+                    denom: "none".to_string(),
+                },
+                token_y: TokenType::NativeToken {
+                    denom: "none".to_string(),
+                },
+                bin_step: 0,
+                contract: ContractInfo {
+                    address: Addr::unchecked("0"),
+                    code_hash: "".to_string(),
+                },
+            },
+            created_by_owner: false,
+            ignored_for_routing: true,
+        }
+    }
+}
+
+#[cw_serde]
+pub struct Implementation {
+    pub id: u64,
+    pub code_hash: String,
+}
+
+impl Implementation {
+    pub fn empty() -> Self {
+        Implementation {
+            id: 0,
+            code_hash: "".to_string(),
+        }
+    }
+}
+
+#[cw_serde]
+pub struct StaticFeeParameters {
+    pub base_factor: u16,
+    pub filter_period: u16,
+    pub decay_period: u16,
+    pub reduction_factor: u16,
+    pub variable_fee_control: u32,
+    pub protocol_share: u16,
+    pub max_volatility_accumulator: u32,
+}
 
 pub trait LbFactoryEventExt {
     fn lb_pair_created(
@@ -124,7 +299,7 @@ impl LbFactoryEventExt for Event {}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ILbFactory(pub ContractInfo);
 
-impl Deref for ILbFactory {
+impl std::ops::Deref for ILbFactory {
     type Target = ContractInfo;
 
     fn deref(&self) -> &Self::Target {
@@ -323,32 +498,6 @@ impl ILbFactory {
 //             .map(|response| response.lb_pair_information)
 //     }
 // }
-
-#[cw_serde]
-pub struct Implementation {
-    pub id: u64,
-    pub code_hash: String,
-}
-
-impl Implementation {
-    pub fn empty() -> Self {
-        Implementation {
-            id: 0,
-            code_hash: "".to_string(),
-        }
-    }
-}
-
-#[cw_serde]
-pub struct StaticFeeParameters {
-    pub base_factor: u16,
-    pub filter_period: u16,
-    pub decay_period: u16,
-    pub reduction_factor: u16,
-    pub variable_fee_control: u32,
-    pub protocol_share: u16,
-    pub max_volatility_accumulator: u32,
-}
 
 #[cw_serde]
 pub struct InstantiateMsg {

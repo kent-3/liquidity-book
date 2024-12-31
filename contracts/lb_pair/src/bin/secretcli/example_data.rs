@@ -2,8 +2,8 @@
 
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
 use liquidity_book::interfaces::{
-    lb_factory::{Implementation, StaticFeeParameters},
-    lb_pair::{LbPair, LbPairInformation},
+    lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
+    lb_pair::LbPair,
 };
 use shade_protocol::{
     snip20::Snip20ReceiveMsg,
