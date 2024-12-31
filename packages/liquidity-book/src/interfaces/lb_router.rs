@@ -128,7 +128,7 @@ pub enum ExecuteMsg {
         deadline: Uint64,
     },
     Sweep {
-        token: ContractInfo, // must be a snip20 token
+        token: TokenType,
         to: String,
         amount: Uint128,
     },

@@ -1,7 +1,3 @@
-// #![allow(unused)]
-
-// TODO: function doc comments
-
 use crate::{contract::*, prelude::*, query::query_swap_in, state::*};
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
@@ -28,7 +24,7 @@ pub fn create_lb_pair(
 ) -> Result<Response> {
     let entropy = env.block.random.unwrap_or(to_binary(b"meh")?); // TODO:
 
-    let factory = FACTORY.load(deps.storage)?;
+    let factory = FACTORY_V2_2.load(deps.storage)?;
 
     let msg = factory.create_lb_pair(
         token_x,
@@ -156,24 +152,25 @@ pub fn remove_liquidity(
     )
 }
 
+#[allow(unused)]
 /// Remove NATIVE liquidity while performing safety checks.
 ///
 /// This function is **NOT** compliant with fee on transfer tokens.
 /// This is wanted as it would make users pays the fee on transfer twice,
 /// use the `removeLiquidity` function to remove liquidity with fee on transfer tokens.
 pub fn remove_liquidity_native(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _token: TokenType,
-    _bin_step: u16,
-    mut _amount_token_min: Uint128,
-    mut _amount_native_min: Uint128,
-    _ids: Vec<u32>,
-    _amounts: Vec<Uint256>,
-    _to: String,
-    _deadline: Uint64,
-) {
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token: TokenType,
+    bin_step: u16,
+    mut amount_token_min: Uint128,
+    mut amount_native_min: Uint128,
+    ids: Vec<u32>,
+    amounts: Vec<Uint256>,
+    to: String,
+    deadline: Uint64,
+) -> Result<Response> {
     unimplemented!()
 
     // TODO: I think the original version treats each NATIVE token as a wrapped ERC20 and just handles
@@ -224,7 +221,6 @@ pub fn swap_exact_tokens_for_tokens(
             versions: path.versions.clone(),
             token_path: path.token_path.clone(),
             position: 0,
-            token_next: token_next.clone(),
             swap_for_y: false,
             to: to.clone(),
         },
@@ -244,13 +240,32 @@ pub fn swap_exact_tokens_for_tokens(
     )
 }
 
+#[allow(unused)]
 /// Swaps exact tokens for NATIVE while performing safety checks.
-pub fn swap_exact_tokens_for_native() {
+pub fn swap_exact_tokens_for_native(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount_in: Uint128,
+    amount_out_min_native: Uint128,
+    path: Path,
+    to: String,
+    deadline: Uint64,
+) -> Result<Response> {
     unimplemented!()
 }
 
+#[allow(unused)]
 /// Swaps exact NATIVE for tokens while performing safety checks.
-pub fn swap_exact_native_for_tokens() {
+pub fn swap_exact_native_for_tokens(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount_out_min: Uint128,
+    path: Path,
+    to: String,
+    deadline: Uint64,
+) -> Result<Response> {
     unimplemented!()
 }
 
@@ -310,7 +325,6 @@ pub fn swap_tokens_for_exact_tokens(
             token_path: path.token_path.clone(),
             amounts_in: amounts_in.clone(),
             position: 0,
-            token_next: token_next.clone(),
             swap_for_y: false,
             to: to.clone(),
         },
@@ -330,29 +344,91 @@ pub fn swap_tokens_for_exact_tokens(
     )
 }
 
-pub fn swap_tokens_for_exact_native() {
+#[allow(unused)]
+/// Swaps tokens for exact NATIVE while performing safety checks.
+pub fn swap_tokens_for_exact_native(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount_native_out: Uint128,
+    amount_in_max: Uint128,
+    path: Path,
+    to: String,
+    deadline: Uint64,
+) -> Result<Response> {
+    unimplemented!()
+}
+
+#[allow(unused)]
+/// Swaps NATIVE for exact tokens while performing safety checks.
+pub fn swap_native_for_exact_tokens(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount_out: Uint128,
+    path: Path,
+    to: String,
+    deadline: Uint64,
+) -> Result<Response> {
     unimplemented!()
 }
 
 /// Unstuck tokens that are sent to this contract by mistake.
 ///
 /// Only callable by the factory owner.
-#[allow(unused)]
 pub fn sweep(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
-    token: ContractInfo, // must be a snip20 token
+    _info: MessageInfo,
+    token: TokenType,
     to: String,
-    amount: Uint128,
+    mut amount: Uint128,
 ) -> Result<Response> {
-    todo!()
+    let to = deps.api.addr_validate(&to)?;
+
+    match &token {
+        TokenType::NativeToken { denom } => {
+            amount = if amount == Uint128::MAX {
+                deps.querier
+                    .query_balance(env.contract.address, denom)?
+                    .amount
+            } else {
+                amount
+            };
+
+            let transfer_msg = _safe_transfer_native(&to, amount).expect("zero amount transfer");
+
+            Ok(Response::new().add_message(transfer_msg))
+        }
+        TokenType::CustomToken {
+            contract_addr,
+            token_code_hash,
+        } => {
+            amount = if amount == Uint128::MAX {
+                snip20::balance_query(
+                    deps.querier,
+                    env.contract.address.to_string(),
+                    PUBLIC_VIEWING_KEY.to_string(),
+                    32,
+                    token_code_hash.to_string(),
+                    contract_addr.to_string(),
+                )?
+                .amount
+            } else {
+                amount
+            };
+
+            let transfer_msg = _safe_transfer(&token, &to, amount)?.expect("zero amount transfer");
+
+            Ok(Response::new().add_message(transfer_msg))
+        }
+    }
 }
 
+#[allow(unused)]
 /// Unstuck LBTokens that are sent to this contract by mistake.
 ///
 /// Only callable by the factory owner.
-#[allow(unused)]
 pub fn sweep_lb_token(
     deps: DepsMut,
     env: Env,
@@ -362,21 +438,17 @@ pub fn sweep_lb_token(
     ids: Vec<u32>,
     amounts: Vec<Uint128>,
 ) -> Result<Response> {
+    // TODO: define ILbToken
+    // Ok(Response::new().add_message(ILbToken.batch_transfer_from(
+    //     &env.contract.address,
+    //     &to,
+    //     &ids,
+    //     &amounts,
+    // )?))
+
     todo!()
 }
 
-// function sweep(IERC20 token, address to, uint256 amount) external override onlyFactoryOwner {
-//     if (address(token) == address(0)) {
-//         amount = amount == type(uint256).max ? address(this).balance : amount;
-//
-//         _safeTransferNative(to, amount);
-//     } else {
-//         amount = amount == type(uint256).max ? token.balanceOf(address(this)) : amount;
-//
-//         token.safeTransfer(to, amount);
-//     }
-// }
-//
 // function sweepLBToken(ILBToken lbToken, address to, uint256[] calldata ids, uint256[] calldata amounts)
 //     external
 //     override
@@ -386,7 +458,7 @@ pub fn sweep_lb_token(
 // }
 
 /// Helper function to add liquidity.
-pub fn _add_liquidity(
+fn _add_liquidity(
     deps: DepsMut,
     env: Env,
     response: Response,
@@ -454,7 +526,7 @@ pub fn _add_liquidity(
 }
 
 /// Helper function to return the amounts in.
-pub fn _get_amounts_in(
+fn _get_amounts_in(
     deps: Deps,
     versions: Vec<Version>,
     pairs: Vec<ILbPair>,
@@ -489,7 +561,7 @@ pub fn _get_amounts_in(
 }
 
 /// Helper function to remove liquidity.
-pub fn _remove_liquidity(
+fn _remove_liquidity(
     _deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -511,7 +583,7 @@ pub fn _remove_liquidity(
 // types in the future.
 
 /// Helper function to swap exact tokens for tokens.
-pub fn _swap_exact_tokens_for_tokens(
+pub(crate) fn _swap_exact_tokens_for_tokens(
     deps: DepsMut,
     _env: &Env,
     response: Response,
@@ -563,7 +635,7 @@ pub fn _swap_exact_tokens_for_tokens(
 // the future.
 
 /// Helper function to swap tokens for exact tokens
-pub fn _swap_tokens_for_exact_tokens(
+pub(crate) fn _swap_tokens_for_exact_tokens(
     deps: DepsMut,
     _env: &Env,
     response: Response,
@@ -616,7 +688,7 @@ pub fn _swap_tokens_for_exact_tokens(
 /// Helper function to return the address of the LBPair.
 ///
 /// Revert if the pair is not created yet.
-pub fn _get_lb_pair_information(
+fn _get_lb_pair_information(
     deps: Deps,
     token_x: TokenType,
     token_y: TokenType,
@@ -630,7 +702,7 @@ pub fn _get_lb_pair_information(
     } else if version == Version::V2_1 {
         unimplemented!()
     } else {
-        let factory = FACTORY.load(deps.storage)?;
+        let factory = FACTORY_V2_2.load(deps.storage)?;
 
         let lb_pair_information =
             factory.get_lb_pair_information(deps.querier, token_x, token_y, bin_step)?;
@@ -647,7 +719,7 @@ pub fn _get_lb_pair_information(
 /// Helper function to return the address of the pair (v1 or v2, according to `binStep`).
 ///
 /// Revert if the pair is not created yet.
-pub fn _get_pair(
+fn _get_pair(
     deps: Deps,
     token_x: TokenType,
     token_y: TokenType,
@@ -662,7 +734,7 @@ pub fn _get_pair(
 }
 
 /// Helper function to return a list of pairs.
-pub fn _get_pairs(
+fn _get_pairs(
     deps: Deps,
     pair_bin_steps: Vec<u16>,
     versions: Vec<Version>,
@@ -691,11 +763,7 @@ pub fn _get_pairs(
 // TODO: check out what "safeTransfer" does in ERC20. I think SNIP20 has the same safety already.
 
 /// Helper function to transfer tokens to `to`.
-pub fn _safe_transfer(
-    token: &TokenType,
-    to: &Addr,
-    amount: Uint128,
-) -> StdResult<Option<CosmosMsg>> {
+fn _safe_transfer(token: &TokenType, to: &Addr, amount: Uint128) -> StdResult<Option<CosmosMsg>> {
     if amount == Uint128::zero() {
         return Ok(None);
     }
@@ -714,7 +782,7 @@ pub fn _safe_transfer(
 }
 
 /// Helper function to transfer tokens from `from` to `to`.
-pub fn _safe_transfer_from(
+fn _safe_transfer_from(
     token: &TokenType,
     from: &Addr,
     to: &Addr,
@@ -742,7 +810,7 @@ pub fn _safe_transfer_from(
 // We are highly unlikely to use them on Secret!
 
 /// Helper function to transfer NATIVE to `to`.
-pub fn _safe_transfer_native(to: &Addr, amount: Uint128) -> Option<BankMsg> {
+fn _safe_transfer_native(to: &Addr, amount: Uint128) -> Option<BankMsg> {
     if amount == Uint128::zero() {
         return None;
     }
@@ -761,10 +829,7 @@ pub fn _safe_transfer_native(to: &Addr, amount: Uint128) -> Option<BankMsg> {
 #[allow(unused)]
 
 /// Helper function to deposit and transfer WNative to `to`.
-pub fn _w_native_deposit_and_transfer(
-    to: &Addr,
-    amount: Uint128,
-) -> StdResult<Option<Vec<CosmosMsg>>> {
+fn _w_native_deposit_and_transfer(to: &Addr, amount: Uint128) -> StdResult<Option<Vec<CosmosMsg>>> {
     if amount == Uint128::zero() {
         return Ok(None);
     }
@@ -787,7 +852,7 @@ pub fn _w_native_deposit_and_transfer(
 #[allow(unused)]
 
 /// Helper function to withdraw and transfer WNative to `to`.
-pub fn _w_native_withdraw_and_transfer(
+fn _w_native_withdraw_and_transfer(
     to: &Addr,
     amount: Uint128,
 ) -> StdResult<Option<Vec<CosmosMsg>>> {

@@ -4,7 +4,7 @@ use liquidity_book::interfaces::{lb_factory::ILbFactory, lb_pair::ILbPair, lb_ro
 use secret_toolkit::{serialization::Json, storage::Item};
 use shade_protocol::contract_interfaces::swap::core::TokenType;
 
-pub const FACTORY: Item<ILbFactory> = Item::new(b"factory");
+pub const FACTORY_V2_2: Item<ILbFactory> = Item::new(b"factory_v2_2");
 
 pub const EPHEMERAL_ADD_LIQUIDITY: Item<EphemeralAddLiquidity> =
     Item::new(b"ephemeral_add_liquidity");
@@ -35,10 +35,9 @@ pub struct EphemeralSwap {
     pub pairs: Vec<ILbPair>,
     pub versions: Vec<Version>,
     pub token_path: Vec<TokenType>,
-    pub position: u32,         // updates each loop
-    pub token_next: TokenType, // updates each loop
-    pub swap_for_y: bool,      // updates each loop
-    pub to: Addr,              // the final swap output recipient
+    pub position: u32,    // updates each loop
+    pub swap_for_y: bool, // updates each loop
+    pub to: Addr,         // the final swap output recipient
 }
 
 #[cw_serde]
@@ -48,8 +47,7 @@ pub struct EphemeralSwapForExact {
     pub pairs: Vec<ILbPair>,
     pub versions: Vec<Version>,
     pub token_path: Vec<TokenType>,
-    pub position: u32,         // updates each loop
-    pub token_next: TokenType, // updates each loop
-    pub swap_for_y: bool,      // updates each loop
-    pub to: Addr,              // the final swap output recipient
+    pub position: u32,    // updates each loop
+    pub swap_for_y: bool, // updates each loop
+    pub to: Addr,         // the final swap output recipient
 }

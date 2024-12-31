@@ -1,4 +1,4 @@
-use crate::{prelude::*, state::FACTORY};
+use crate::{prelude::*, state::FACTORY_V2_2};
 use cosmwasm_std::{ContractInfo, Deps, Uint128, Uint256};
 use liquidity_book::interfaces::lb_pair::{
     self, FactoryResponse, IdFromPriceResponse, PriceFromIdResponse, SwapInResponse,
@@ -6,7 +6,7 @@ use liquidity_book::interfaces::lb_pair::{
 };
 
 pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
-    let factory = FACTORY.load(deps.storage)?;
+    let factory = FACTORY_V2_2.load(deps.storage)?;
 
     Ok(FactoryResponse {
         factory: factory.address.clone(),

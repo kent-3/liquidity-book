@@ -1,8 +1,5 @@
 use super::lb_factory::{Implementation, StaticFeeParameters};
-use crate::libraries::{
-    hooks::{HooksParameters, Parameters},
-    Bytes32, LiquidityConfigurations,
-};
+use crate::libraries::{hooks::HooksParameters, Bytes32, LiquidityConfigurations};
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{

@@ -1,6 +1,7 @@
 // #![allow(unused)] // For beginning only.
+#![allow(missing_docs)]
 
-use crate::{execute::*, msg::*, prelude::*, query::*, state::*};
+use crate::{execute::*, prelude::*, query::*, state::*};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Reply, Response, StdResult, SubMsgResult, Uint128,
@@ -9,7 +10,7 @@ use liquidity_book::{
     interfaces::{
         lb_factory::ILbFactory,
         lb_pair,
-        lb_router::{self, CreateLbPairResponse, Path},
+        lb_router::{self, *},
     },
     libraries::{math::packed_u128_math::PackedUint128Math, Bytes32},
 };
@@ -19,11 +20,6 @@ use secret_toolkit::snip20;
 // I guess we can add a new ExecuteMsg type for that purpose, but if we ever deploy a new router, we'll need to
 // re-register allllll the tokens.
 
-// TODO: Modify create_lb_pair to register_receiver for the two tokens.
-
-// TODO: Implement the receive interface to support swaps.
-
-pub const BLOCK_SIZE: usize = 256;
 // TODO: should the router contract have a viewing key that's used for every create_lb_pair? or
 // should that belong to the factory?
 pub const PUBLIC_VIEWING_KEY: &str = "lb_rocks";
@@ -35,11 +31,21 @@ pub const SWAP_REPLY_ID: u64 = 10u64;
 pub const SWAP_FOR_EXACT_REPLY_ID: u64 = 11u64;
 
 // TODO: Need to be able to query the factory contract to check who the owner/admin is.
-// Is there a way to find out the owner of a contract at the chain-level?
-// if (msg.sender != Ownable(address(_factory2_2)).owner()) revert LBRouter__NotFactoryOwner();
+// This could either be at the chain level ("admin") or stored internally in the factory contract.
 pub fn only_factory_owner(deps: Deps, env: Env, info: MessageInfo) -> Result<()> {
+    // original:
+    // if (msg.sender != Ownable(address(_factory2_2)).owner()) revert LBRouter__NotFactoryOwner();
+
+    let factory = FACTORY_V2_2.load(deps.storage)?;
+
     // let factory_owner = deps.querier.query_wasm_smart(code_hash, contract_addr, lb_factory::QueryMsg::???)
-    todo!()
+    let factory_owner: Addr = todo!();
+
+    if info.sender != factory_owner {
+        return Err(Error::NotFactoryOwner);
+    }
+
+    Ok(())
 }
 
 pub fn ensure(env: &Env, deadline: u64) -> Result<()> {
@@ -70,7 +76,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    FACTORY.save(deps.storage, &ILbFactory(msg.factory))?;
+    FACTORY_V2_2.save(deps.storage, &ILbFactory(msg.factory))?;
 
     // TODO: Register existing tokens with the router contract. If we ever deploy a new
     // router, we'll need a way to register all of the tokens used by the pairs.
@@ -126,7 +132,19 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             amounts,
             to,
             deadline,
-        } => unimplemented!(),
+        } => remove_liquidity_native(
+            deps,
+            env,
+            info,
+            token,
+            bin_step,
+            amount_token_min,
+            amount_native_min,
+            ids,
+            amounts,
+            to,
+            deadline,
+        ),
         ExecuteMsg::SwapExactTokensForTokens {
             amount_in,
             amount_out_min,
@@ -149,13 +167,22 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             path,
             to,
             deadline,
-        } => unimplemented!(),
+        } => swap_exact_tokens_for_native(
+            deps,
+            env,
+            info,
+            amount_in,
+            amount_out_min_native,
+            path,
+            to,
+            deadline,
+        ),
         ExecuteMsg::SwapExactNativeforTokens {
             amount_out_min,
             path,
             to,
             deadline,
-        } => unimplemented!(),
+        } => swap_exact_native_for_tokens(deps, env, info, amount_out_min, path, to, deadline),
         ExecuteMsg::SwapTokensForExactTokens {
             amount_out,
             amount_in_max,
@@ -178,13 +205,24 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             path,
             to,
             deadline,
-        } => unimplemented!(),
+        } => swap_tokens_for_exact_native(
+            deps,
+            env,
+            info,
+            amount_native_out,
+            amount_in_max,
+            path,
+            to,
+            deadline,
+        ),
         ExecuteMsg::SwapNativeforExactTokens {
             amount_out,
             path,
             to,
             deadline,
-        } => unimplemented!(),
+        } => swap_native_for_exact_tokens(deps, env, info, amount_out, path, to, deadline),
+
+        #[allow(unused)]
         ExecuteMsg::SwapExactTokensForTokensSupportingFeeOnTransferTokens {
             amount_in,
             amount_out_min,
@@ -192,6 +230,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             to,
             deadline,
         } => unimplemented!(),
+
+        #[allow(unused)]
         ExecuteMsg::SwapExactTokensForNativesupportingFeeOnTransferTokens {
             amount_in,
             amount_out_min_native,
@@ -199,12 +239,15 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             to,
             deadline,
         } => unimplemented!(),
+
+        #[allow(unused)]
         ExecuteMsg::SwapExactNativeforTokensSupportingFeeOnTransferTokens {
             amount_out_min,
             path,
             to,
             deadline,
         } => unimplemented!(),
+
         ExecuteMsg::Sweep { token, to, amount } => sweep(deps, env, info, token, to, amount),
         ExecuteMsg::SweepLbToken {
             token,
@@ -384,13 +427,12 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
         (SWAP_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(data) => {
                 let EphemeralSwap {
-                    amount_in,
+                    amount_in: _, // only used in V1 swaps
                     amount_out_min,
                     pairs,
                     versions,
                     token_path,
                     mut position,
-                    mut token_next,
                     swap_for_y,
                     to,
                 } = EPHEMERAL_SWAP.load(deps.storage)?;
@@ -425,11 +467,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                     Ok(Response::new().set_data(to_binary(&data)?))
                 } else {
-                    token_next = token_path[position as usize].clone();
+                    let token_next = token_path[position as usize].clone();
 
                     EPHEMERAL_SWAP.update(deps.storage, |mut data| -> StdResult<_> {
                         data.position = position;
-                        data.token_next = token_next.clone();
                         Ok(data)
                     })?;
 
@@ -456,9 +497,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                     pairs,
                     versions,
                     token_path,
-                    amounts_in,
+                    amounts_in, // only used in V1 swaps
                     mut position,
-                    mut token_next,
                     swap_for_y,
                     to,
                 } = EPHEMERAL_SWAP_FOR_EXACT.load(deps.storage)?;
@@ -493,11 +533,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                     Ok(Response::new().set_data(to_binary(&data)?))
                 } else {
-                    token_next = token_path[position as usize].clone();
+                    let token_next = token_path[position as usize].clone();
 
                     EPHEMERAL_SWAP_FOR_EXACT.update(deps.storage, |mut data| -> StdResult<_> {
                         data.position = position;
-                        data.token_next = token_next.clone();
                         Ok(data)
                     })?;
 
@@ -522,7 +561,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
         QueryMsg::GetFactory {} => to_binary(&query_factory(deps)?),
         QueryMsg::GetIdFromPrice { lb_pair, price } => {
