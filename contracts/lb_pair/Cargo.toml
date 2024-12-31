@@ -28,8 +28,3 @@ hex = { workspace = true }
 shade-protocol = { workspace = true }
 
 cc = { workspace = true }
-
-[dev-dependencies]
-anyhow = { workspace = true }
-lb-tests = { path = "../tests" }
-shade-multi-test = { workspace = true }

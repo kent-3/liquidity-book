@@ -26,9 +26,3 @@ secret-toolkit = { workspace = true }
 shade-protocol = { workspace = true }
 
 cc = { workspace = true }
-
-# TODO: are any of these used?
-[dev-dependencies]
-anyhow = { workspace = true }
-lb-tests = { path = "../tests" }
-shade-multi-test = { workspace = true }
