@@ -92,9 +92,9 @@ pub fn _get_pairs(
 // TODO: The point of this function is to transfer tokens from the user to the lb-pair contract.
 // HOWEVER, we should make the swap functions be invoked by the snip20 receive message.
 pub fn _safe_transfer_from(
-    token: ContractInfo,
-    from: Addr,
-    to: Addr,
+    _token: ContractInfo,
+    _from: Addr,
+    _to: Addr,
     amount: Uint128,
 ) -> Result<()> {
     if amount == Uint128::zero() {

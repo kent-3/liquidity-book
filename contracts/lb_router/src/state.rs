@@ -11,6 +11,8 @@ pub const EPHEMERAL_ADD_LIQUIDITY: Item<EphemeralAddLiquidity> =
 pub const EPHEMERAL_REMOVE_LIQUIDITY: Item<EphemeralRemoveLiquidity> =
     Item::new(b"ephemeral_remove_liquidity");
 pub const EPHEMERAL_SWAP: Item<EphemeralSwap, Json> = Item::new(b"ephemeral_swap");
+pub const EPHEMERAL_SWAP_FOR_EXACT: Item<EphemeralSwapForExact, Json> =
+    Item::new(b"ephemeral_swap_for_exact");
 
 #[cw_serde]
 pub struct EphemeralAddLiquidity {
@@ -28,13 +30,26 @@ pub struct EphemeralRemoveLiquidity {
 
 #[cw_serde]
 pub struct EphemeralSwap {
-    pub amount_in: Uint128,
+    pub amount_in: Uint128, // updates each loop
     pub amount_out_min: Uint128,
     pub pairs: Vec<ILbPair>,
     pub versions: Vec<Version>,
     pub token_path: Vec<TokenType>,
-    pub position: u32,
-    pub token_next: TokenType,
-    pub swap_for_y: bool,
-    pub to: Addr, // the final swap output recipient
+    pub position: u32,         // updates each loop
+    pub token_next: TokenType, // updates each loop
+    pub swap_for_y: bool,      // updates each loop
+    pub to: Addr,              // the final swap output recipient
+}
+
+#[cw_serde]
+pub struct EphemeralSwapForExact {
+    pub amounts_in: Vec<Uint128>, // calculated at the start
+    pub amount_out: Uint128,
+    pub pairs: Vec<ILbPair>,
+    pub versions: Vec<Version>,
+    pub token_path: Vec<TokenType>,
+    pub position: u32,         // updates each loop
+    pub token_next: TokenType, // updates each loop
+    pub swap_for_y: bool,      // updates each loop
+    pub to: Addr,              // the final swap output recipient
 }

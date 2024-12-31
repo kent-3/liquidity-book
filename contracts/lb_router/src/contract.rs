@@ -32,6 +32,7 @@ pub const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
 pub const MINT_REPLY_ID: u64 = 2u64;
 pub const BURN_REPLY_ID: u64 = 3u64;
 pub const SWAP_REPLY_ID: u64 = 10u64;
+pub const SWAP_FOR_EXACT_REPLY_ID: u64 = 11u64;
 
 // TODO: Need to be able to query the factory contract to check who the owner/admin is.
 // Is there a way to find out the owner of a contract at the chain-level?
@@ -91,7 +92,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
         } => add_liquidity(deps, env, info, liquidity_parameters),
         ExecuteMsg::AddLiquidityNative {
             liquidity_parameters,
-        } => unimplemented!(),
+        } => add_liquidity_native(deps, env, info, liquidity_parameters),
         ExecuteMsg::RemoveLiquidity {
             token_x,
             token_y,
@@ -440,6 +441,74 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                         pairs,
                         versions,
                         token_path,
+                        position + 1,
+                        token_next,
+                        to,
+                    )
+                }
+            }
+            None => Err(Error::ReplyDataMissing),
+        },
+        (SWAP_FOR_EXACT_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
+            Some(data) => {
+                let EphemeralSwapForExact {
+                    amount_out,
+                    pairs,
+                    versions,
+                    token_path,
+                    amounts_in,
+                    mut position,
+                    mut token_next,
+                    swap_for_y,
+                    to,
+                } = EPHEMERAL_SWAP_FOR_EXACT.load(deps.storage)?;
+
+                // let (amount_x_out, amount_y_out) = from_binary::<lb_pair::SwapResponse>(&data)?
+                //     .amounts_out
+                //     .decode();
+
+                // TODO: see if this works
+                let amounts_out: Bytes32 = data.to_vec().try_into().map_err(|v: Vec<u8>| {
+                    Error::Generic(format!("Invalid length for Bytes32: got {} bytes", v.len()))
+                })?;
+                let (amount_x_out, amount_y_out) = amounts_out.decode();
+
+                let amount_out_real = if swap_for_y {
+                    Uint128::new(amount_y_out)
+                } else {
+                    Uint128::new(amount_x_out)
+                };
+
+                if amount_out_real < amount_out {
+                    return Err(Error::InsufficientAmountOut {
+                        amount_out_min: amount_out,
+                        amount_out: amount_out_real,
+                    });
+                }
+
+                position += 1;
+
+                if position == token_path.len() as u32 {
+                    let data = lb_router::SwapResponse { amount_out };
+
+                    Ok(Response::new().set_data(to_binary(&data)?))
+                } else {
+                    token_next = token_path[position as usize].clone();
+
+                    EPHEMERAL_SWAP_FOR_EXACT.update(deps.storage, |mut data| -> StdResult<_> {
+                        data.position = position;
+                        data.token_next = token_next.clone();
+                        Ok(data)
+                    })?;
+
+                    _swap_tokens_for_exact_tokens(
+                        deps,
+                        &env,
+                        Response::new(),
+                        pairs,
+                        versions,
+                        token_path,
+                        amounts_in,
                         position + 1,
                         token_next,
                         to,
