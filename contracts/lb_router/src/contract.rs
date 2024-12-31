@@ -14,6 +14,7 @@ use liquidity_book::{
     libraries::{math::packed_u128_math::PackedUint128Math, Bytes32},
 };
 use secret_toolkit::snip20;
+use shade_protocol::utils::asset::RawContract;
 
 // TODO: How are we going to register this router contract to be able to receive every supported snip20 token?
 // I guess we can add a new ExecuteMsg type for that purpose, but if we ever deploy a new router, we'll need to
@@ -229,7 +230,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             to,
             deadline,
         } => unimplemented!(),
-
         #[allow(unused)]
         ExecuteMsg::SwapExactTokensForNativesupportingFeeOnTransferTokens {
             amount_in,
@@ -238,7 +238,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             to,
             deadline,
         } => unimplemented!(),
-
         #[allow(unused)]
         ExecuteMsg::SwapExactNativeforTokensSupportingFeeOnTransferTokens {
             amount_out_min,
@@ -257,6 +256,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 
         // not in joe-v2
         ExecuteMsg::Register { address, code_hash } => register(deps, env, address, code_hash),
+        ExecuteMsg::RegisterBatch { tokens } => register_batch(deps, env, tokens),
         ExecuteMsg::Receive {
             sender,
             from,
@@ -279,6 +279,26 @@ pub fn register(deps: DepsMut, env: Env, address: String, code_hash: String) -> 
     )?;
 
     Ok(Response::new().add_message(msg))
+}
+
+pub fn register_batch(deps: DepsMut, env: Env, tokens: Vec<RawContract>) -> Result<Response> {
+    let mut response = Response::new();
+
+    for token in tokens {
+        deps.api.addr_validate(&token.address)?;
+
+        let msg = snip20::register_receive_msg(
+            env.contract.code_hash.clone(),
+            None,
+            1,
+            token.address.to_string(),
+            token.code_hash,
+        )?;
+
+        response = response.add_message(msg);
+    }
+
+    Ok(response)
 }
 
 pub fn receive(

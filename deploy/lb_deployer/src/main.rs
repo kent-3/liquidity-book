@@ -356,7 +356,7 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let liquidity_parameters = lb_pair::LiquidityParameters {
+    let liquidity_parameters = lb_router::LiquidityParameters {
         token_x: created_lb_pair.token_x.clone(),
         token_y: created_lb_pair.token_y.clone(),
         bin_step: 100,

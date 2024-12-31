@@ -3,8 +3,9 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     Addr, Binary, ContractInfo, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
 };
+// TODO: replace these dependencies
 use shade_protocol::contract_interfaces::swap::core::TokenType;
-use std::ops::Deref;
+use shade_protocol::utils::asset::RawContract;
 
 #[derive(thiserror::Error, Debug)]
 pub enum LBRouterError {
@@ -184,7 +185,7 @@ pub struct Path {
 /// methods to interact with an LB Router contract.
 pub struct ILbRouter(pub ContractInfo);
 
-impl Deref for ILbRouter {
+impl std::ops::Deref for ILbRouter {
     type Target = ContractInfo;
 
     fn deref(&self) -> &Self::Target {
@@ -194,8 +195,8 @@ impl Deref for ILbRouter {
 
 // TODO: add the ExecuteMsg constructor methods
 impl ILbRouter {
-    pub fn get_factory(&self, querier: QuerierWrapper) -> StdResult<FactoryResponse> {
-        querier.query_wasm_smart::<FactoryResponse>(
+    pub fn get_factory(&self, querier: QuerierWrapper) -> StdResult<GetFactoryResponse> {
+        querier.query_wasm_smart::<GetFactoryResponse>(
             self.0.code_hash.clone(),
             self.0.address.clone(),
             &QueryMsg::GetFactory {},
@@ -209,7 +210,7 @@ impl ILbRouter {
         price: Uint256,
     ) -> StdResult<u32> {
         querier
-            .query_wasm_smart::<IdFromPriceResponse>(
+            .query_wasm_smart::<GetIdFromPriceResponse>(
                 self.0.code_hash.clone(),
                 self.0.address.clone(),
                 &QueryMsg::GetIdFromPrice { lb_pair, price },
@@ -225,7 +226,7 @@ impl ILbRouter {
         id: u32,
     ) -> StdResult<Uint256> {
         querier
-            .query_wasm_smart::<PriceFromIdResponse>(
+            .query_wasm_smart::<GetPriceFromIdResponse>(
                 self.0.code_hash.clone(),
                 self.0.address.clone(),
                 &QueryMsg::GetPriceFromId { lb_pair, id },
@@ -239,8 +240,8 @@ impl ILbRouter {
         lb_pair: ContractInfo,
         amount_out: Uint128,
         swap_for_y: bool,
-    ) -> StdResult<SwapInResponse> {
-        querier.query_wasm_smart::<SwapInResponse>(
+    ) -> StdResult<GetSwapInResponse> {
+        querier.query_wasm_smart::<GetSwapInResponse>(
             self.0.code_hash.clone(),
             self.0.address.clone(),
             &QueryMsg::GetSwapIn {
@@ -257,8 +258,8 @@ impl ILbRouter {
         lb_pair: ContractInfo,
         amount_in: Uint128,
         swap_for_y: bool,
-    ) -> StdResult<SwapOutResponse> {
-        querier.query_wasm_smart::<SwapOutResponse>(
+    ) -> StdResult<GetSwapOutResponse> {
+        querier.query_wasm_smart::<GetSwapOutResponse>(
             self.0.code_hash.clone(),
             self.0.address.clone(),
             &QueryMsg::GetSwapOut {
@@ -383,10 +384,12 @@ pub enum ExecuteMsg {
     },
 
     // not in joe-v2
-    // TODO: make this a vec of ContractInfo
     Register {
         address: String,
         code_hash: String,
+    },
+    RegisterBatch {
+        tokens: Vec<RawContract>,
     },
     Receive {
         sender: Addr,
@@ -426,26 +429,26 @@ pub struct SwapResponse {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(FactoryResponse)]
+    #[returns(GetFactoryResponse)]
     GetFactory {},
 
-    #[returns(IdFromPriceResponse)]
+    #[returns(GetIdFromPriceResponse)]
     GetIdFromPrice {
         lb_pair: ContractInfo,
         price: Uint256,
     },
 
-    #[returns(PriceFromIdResponse)]
+    #[returns(GetPriceFromIdResponse)]
     GetPriceFromId { lb_pair: ContractInfo, id: u32 },
 
-    #[returns(SwapInResponse)]
+    #[returns(GetSwapInResponse)]
     GetSwapIn {
         lb_pair: ContractInfo,
         amount_out: Uint128,
         swap_for_y: bool,
     },
 
-    #[returns(SwapOutResponse)]
+    #[returns(GetSwapOutResponse)]
     GetSwapOut {
         lb_pair: ContractInfo,
         amount_in: Uint128,
@@ -453,32 +456,30 @@ pub enum QueryMsg {
     },
 }
 
-// TODO: these should all start with 'Get' for clarity
-
 #[cw_serde]
-pub struct FactoryResponse {
+pub struct GetFactoryResponse {
     pub factory: Addr,
 }
 
 #[cw_serde]
-pub struct IdFromPriceResponse {
+pub struct GetIdFromPriceResponse {
     pub id: u32,
 }
 
 #[cw_serde]
-pub struct PriceFromIdResponse {
+pub struct GetPriceFromIdResponse {
     pub price: Uint256,
 }
 
 #[cw_serde]
-pub struct SwapInResponse {
+pub struct GetSwapInResponse {
     pub amount_in: Uint128,
     pub amount_out_left: Uint128,
     pub fee: Uint128,
 }
 
 #[cw_serde]
-pub struct SwapOutResponse {
+pub struct GetSwapOutResponse {
     pub amount_in_left: Uint128,
     pub amount_out: Uint128,
     pub fee: Uint128,

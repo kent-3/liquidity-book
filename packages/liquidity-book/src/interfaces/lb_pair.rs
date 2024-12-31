@@ -233,7 +233,6 @@ impl ILbPair {
                 self.0.address.clone(),
                 &QueryMsg::GetTokenY {},
             )
-            // TODO: probably shouldn't do this
             .map(|response| response.token_y)
     }
 
@@ -306,18 +305,6 @@ impl Default for LbPairInformation {
         }
     }
 }
-
-// #[cw_serde]
-// pub struct RemoveLiquidity {
-//     pub token_x: TokenType,
-//     pub token_y: TokenType,
-//     pub bin_step: u16,
-//     pub amount_x_min: Uint128,
-//     pub amount_y_min: Uint128,
-//     pub ids: Vec<u32>,
-//     pub amounts: Vec<Uint256>,
-//     pub deadline: Uint64,
-// }
 
 #[cw_serde]
 pub struct InstantiateMsg {

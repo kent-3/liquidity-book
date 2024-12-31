@@ -3,7 +3,7 @@ use crate::{
     prelude::{Error, Result},
     state::{FACTORY_V2_2, ROUTER_V2_2},
 };
-use cosmwasm_std::{ContractInfo, Deps, Uint128};
+use cosmwasm_std::{Deps, Uint128};
 use liquidity_book::interfaces::{
     lb_factory::ILbFactory,
     lb_pair::{ILbPair, LbPairInformation},
@@ -52,7 +52,7 @@ pub fn find_best_path_from_amount_in(
 
                         let swap_for_y = lb_pair.get_token_y(deps.querier)? == route[i + 1];
 
-                        let lb_router::SwapOutResponse {
+                        let lb_router::GetSwapOutResponse {
                             amount_in_left,
                             amount_out: swap_amount_out,
                             fee: fees,
