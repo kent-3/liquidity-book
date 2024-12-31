@@ -5,8 +5,8 @@ use cosmwasm_std::{
 };
 use liquidity_book::{
     interfaces::{
-        lb_pair::{ILbPair, LiquidityParameters},
-        lb_router::{Path, Version},
+        lb_pair::ILbPair,
+        lb_router::{LiquidityParameters, Path, Version},
     },
     libraries::{math::u24::U24, LiquidityConfigurations},
 };

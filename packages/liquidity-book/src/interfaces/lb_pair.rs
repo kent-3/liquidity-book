@@ -307,36 +307,17 @@ impl Default for LbPairInformation {
     }
 }
 
-#[cw_serde]
-pub struct LiquidityParameters {
-    pub token_x: TokenType,
-    pub token_y: TokenType,
-    pub bin_step: u16,
-    pub amount_x: Uint128,
-    pub amount_y: Uint128,
-    pub amount_x_min: Uint128,
-    pub amount_y_min: Uint128,
-    pub active_id_desired: u32,
-    pub id_slippage: u32,
-    pub delta_ids: Vec<i64>,
-    pub distribution_x: Vec<Uint64>,
-    pub distribution_y: Vec<Uint64>,
-    pub to: String,
-    pub refund_to: String,
-    pub deadline: Uint64,
-}
-
-#[cw_serde]
-pub struct RemoveLiquidity {
-    pub token_x: TokenType,
-    pub token_y: TokenType,
-    pub bin_step: u16,
-    pub amount_x_min: Uint128,
-    pub amount_y_min: Uint128,
-    pub ids: Vec<u32>,
-    pub amounts: Vec<Uint256>,
-    pub deadline: Uint64,
-}
+// #[cw_serde]
+// pub struct RemoveLiquidity {
+//     pub token_x: TokenType,
+//     pub token_y: TokenType,
+//     pub bin_step: u16,
+//     pub amount_x_min: Uint128,
+//     pub amount_y_min: Uint128,
+//     pub ids: Vec<u32>,
+//     pub amounts: Vec<Uint256>,
+//     pub deadline: Uint64,
+// }
 
 #[cw_serde]
 pub struct InstantiateMsg {

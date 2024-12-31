@@ -3,7 +3,7 @@
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
 use liquidity_book::interfaces::{
     lb_factory::{Implementation, StaticFeeParameters},
-    lb_pair::{LbPair, LbPairInformation, LiquidityParameters, RemoveLiquidity},
+    lb_pair::{LbPair, LbPairInformation},
 };
 use shade_protocol::{
     snip20::Snip20ReceiveMsg,
@@ -117,30 +117,6 @@ impl ExampleData for StaticFeeParameters {
     }
 }
 
-impl ExampleData for LiquidityParameters {
-    fn example() -> Self {
-        LiquidityParameters {
-            token_x: TokenType::example(),
-            token_y: TokenType::example(),
-            bin_step: BIN_STEP,
-            amount_x: Uint128::from(110u128),
-            amount_y: Uint128::from(110u128),
-            amount_x_min: Uint128::from(110u128),
-            amount_y_min: Uint128::from(110u128),
-            active_id_desired: ACTIVE_ID,
-            // TODO - write some function that converts a price slippage % to an id_slippage (would
-            // depend on bin_step)
-            id_slippage: 1000u32,
-            delta_ids: vec![-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
-            distribution_x: vec![Uint64::new(10u64); 11],
-            distribution_y: vec![Uint64::new(10u64); 11],
-            to: Addr::sender().to_string(),
-            refund_to: Addr::sender().to_string(),
-            deadline: Uint64::new(1701283067u64),
-        }
-    }
-}
-
 impl ExampleData for LbPairInformation {
     fn example() -> Self {
         LbPairInformation {
@@ -153,22 +129,6 @@ impl ExampleData for LbPairInformation {
             },
             created_by_owner: true,
             ignored_for_routing: false,
-        }
-    }
-}
-
-impl ExampleData for RemoveLiquidity {
-    fn example() -> Self {
-        RemoveLiquidity {
-            token_x: TokenType::example(),
-            token_y: TokenType::example(),
-            bin_step: BIN_STEP,
-            amount_x_min: Uint128::from(10u128),
-            amount_y_min: Uint128::from(10u128),
-            ids: vec![ACTIVE_ID],
-            // TODO - understand what "amounts" means. Is that a packed_uint128?
-            amounts: vec![Uint256::from_u128(10u128)],
-            deadline: Uint64::from(1701283067u64),
         }
     }
 }

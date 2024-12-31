@@ -2,7 +2,7 @@ use crate::{prelude::*, state::*};
 use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult};
 use ethnum::U256;
 use liquidity_book::{
-    interfaces::{lb_pair::*, lb_token},
+    interfaces::{lb_router::LiquidityParameters, lb_token},
     libraries::{
         math::{packed_u128_math::PackedUint128Math, u24::U24, uint256_to_u256::ConvertUint256},
         Bytes32,

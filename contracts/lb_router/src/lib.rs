@@ -4,13 +4,11 @@
 
 #![warn(missing_docs)]
 
+mod prelude;
+
 mod contract;
 mod execute;
 mod query;
 mod state;
-
-// TODO: Error types should be defined in the interfaces.
-mod error;
-mod prelude;
 
 pub use contract::{execute, instantiate, query, reply};

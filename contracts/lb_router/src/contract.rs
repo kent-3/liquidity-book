@@ -1,4 +1,3 @@
-// #![allow(unused)] // For beginning only.
 #![allow(missing_docs)]
 
 use crate::{execute::*, prelude::*, query::*, state::*};
