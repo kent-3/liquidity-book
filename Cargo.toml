@@ -38,18 +38,18 @@ secretrs = { git = "https://github.com/kent-3/secret-rust", branch = "sdk-upgrad
 
 [workspace.dependencies]
 liquidity-book = { path = "packages/liquidity-book" }
-cosmwasm-schema = { version = "1.4" }
-schemars = { version = "0.8" }
-serde = { version = "1.0" }
-serde_json = { version = "1.0" }
-serde-json-wasm = { version = "1.0" }
+cosmwasm-schema = { version = "1.5.9" }
+schemars = { version = "0.8.21" }
+serde = { version = "1.0.217" }
+serde_json = { version = "1.0.134" }
+serde-json-wasm = { version = "1.0.1" }
 base64 = "0.22.1"
-ethnum = { version = "1.4" }
-thiserror = { version = "1.0" }
-anyhow = "1.0"
-primitive-types = { version = "0.12", default-features = false }
-rand = "0.8"
-snafu = "0.8"
+ethnum = { version = "1.5.0" }
+thiserror = { version = "2.0.9" }
+anyhow = "1.0.95"
+primitive-types = { version = "0.13.1", default-features = false }
+rand = "0.8.5"
+snafu = "0.8.5"
 hex = "0.4.3"
 
 cc = { version = "=1.1.10" }
@@ -68,7 +68,7 @@ package = "secret-cosmwasm-storage"
 # tag = "v1.1.11-secret"
 
 [workspace.dependencies.secret-toolkit]
-version = "0.10.1"
+version = "0.10.2"
 default-features = false
 features = ["snip20", "storage", "viewing-key", "permit"]
 # git = "https://github.com/scrtlabs/secret-toolkit"
