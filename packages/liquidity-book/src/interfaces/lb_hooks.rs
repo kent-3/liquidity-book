@@ -32,7 +32,7 @@ impl ILbHooks {
     pub fn on_hooks_set(
         &self,
         hooks_parameters: HooksParameters,
-        on_hooks_set_data: Binary,
+        on_hooks_set_data: Option<Binary>,
     ) -> StdResult<WasmMsg> {
         let msg = ExecuteMsg::OnHooksSet {
             hooks_parameters,
@@ -70,7 +70,7 @@ pub struct InstantiateMsg {}
 pub enum ExecuteMsg {
     OnHooksSet {
         hooks_parameters: HooksParameters,
-        on_hooks_set_data: Binary,
+        on_hooks_set_data: Option<Binary>,
     },
     BeforeSwap {
         sender: String,

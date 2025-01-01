@@ -5,6 +5,7 @@ use liquidity_book::{
     interfaces::lb_pair::*,
     libraries::{
         constants::SCALE_OFFSET,
+        hooks::HooksParameters,
         math::{
             u24::U24,
             uint256_to_u256::{ConvertU256, ConvertUint256},
@@ -352,6 +353,26 @@ pub fn query_static_fee_parameters(deps: Deps) -> Result<StaticFeeParametersResp
     };
 
     Ok(response)
+}
+
+/// Gets the hooks parameters of the Liquidity Book Pair.
+pub fn query_lb_hooks_parameters(deps: Deps) -> Result<LbHooksParametersResponse> {
+    // TODO: decide if I want to de-structure the data for the response
+    // let HooksParameters {
+    //     address,
+    //     code_hash,
+    //     flags,
+    // } = HOOKS_PARAMETERS.load(deps.storage)?;
+    //
+    // Ok(LbHooksParametersResponse {
+    //     address,
+    //     code_hash,
+    //     flags,
+    // })
+
+    Ok(LbHooksParametersResponse {
+        hooks_parameters: HOOKS_PARAMETERS.load(deps.storage)?,
+    })
 }
 
 /// Returns the variable fee parameters of the Liquidity Book Pair.

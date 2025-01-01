@@ -245,16 +245,26 @@
       "properties": {
         "set_hooks_parameters": {
           "type": "object",
-          "required": [
-            "hooks_parameters",
-            "on_hooks_set_data"
-          ],
           "properties": {
             "hooks_parameters": {
-              "$ref": "#/definitions/HooksParameters"
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/HooksParameters"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "on_hooks_set_data": {
-              "$ref": "#/definitions/Binary"
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Binary"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "additionalProperties": false

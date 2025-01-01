@@ -289,7 +289,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
         }
         QueryMsg::GetProtocolFees {} => to_binary(&query_protocol_fees(deps)?),
         QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_parameters(deps)?),
-        QueryMsg::GetLbHooksParameters {} => todo!(),
+        QueryMsg::GetLbHooksParameters {} => to_binary(&query_lb_hooks_parameters(deps)?),
         QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_parameters(deps)?),
         QueryMsg::GetOracleParameters {} => to_binary(&query_oracle_params(deps)?),
         QueryMsg::GetOracleSampleAt { lookup_timestamp } => {

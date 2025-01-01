@@ -1,14 +1,18 @@
 #![allow(unused)]
 
-use crate::{Error, Result};
-use cosmwasm_std::{Binary, DepsMut, Env, Response, StdResult, Uint256};
+use crate::{state::LB_PAIR, Error, Result};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint256};
 use liquidity_book::libraries::{hooks::HooksParameters, Bytes32};
+
+pub fn only_trusted_caller(deps: Deps, info: MessageInfo) -> Result<()> {
+    _check_trusted_caller(deps, info)
+}
 
 pub fn on_hooks_set(
     deps: DepsMut,
     env: Env,
     hooks_parameters: HooksParameters,
-    on_hooks_set_data: Binary,
+    on_hooks_set_data: Option<Binary>,
 ) -> Result<Response> {
     // Implementation for OnHooksSet
     Ok(Response::default())
@@ -135,4 +139,15 @@ pub fn after_batch_transfer_from(
 ) -> Result<Response> {
     // Implementation for AfterBatchTransferFrom
     Ok(Response::default())
+}
+
+/// Checks that the caller is the LB Pair, otherwise reverts.
+pub fn _check_trusted_caller(deps: Deps, info: MessageInfo) -> Result<()> {
+    if let Some(lb_pair) = LB_PAIR.load(deps.storage)? {
+        if info.sender != lb_pair.address {
+            return Err(Error::InvalidCaller(info.sender));
+        }
+    }
+
+    Ok(())
 }

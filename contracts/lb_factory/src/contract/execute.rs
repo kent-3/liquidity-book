@@ -3,7 +3,7 @@ use super::{
     state::*,
     CREATE_LB_PAIR_REPLY_ID, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
-use crate::{Error, Result};
+use crate::{contract::MAX_FLASH_LOAN_FEE, Error, Result};
 use cosmwasm_std::{
     to_binary, Addr, Binary, ContractInfo, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response,
     SubMsg, Uint128, WasmMsg,
@@ -519,7 +519,7 @@ pub fn set_fee_parameters_on_pair(
 /// Needs to be called by an address with the LB_HOOKS_MANAGER_ROLE.
 /// Reverts if:
 /// - The pair doesn't exist
-/// - The hooks is `address(0)` or the hooks flags are all false
+/// - The hooks is an invalid address or the hooks flags are all false
 pub fn set_lb_hooks_parameters_on_pair(
     deps: DepsMut,
     env: Env,
@@ -530,17 +530,30 @@ pub fn set_lb_hooks_parameters_on_pair(
     hooks_parameters: HooksParameters,
     on_hooks_set_data: Binary,
 ) -> Result<Response> {
-    // ) external override onlyRole(LB_HOOKS_MANAGER_ROLE) {
+    // TODO: add this modifier
+    //     onlyRole(LB_HOOKS_MANAGER_ROLE)
+
+    // original:
     // if (Hooks.getHooks(hooksParameters) == address(0) || Hooks.getFlags(hooksParameters) == 0) {
     //     revert LBFactory__InvalidHooksParameters();
     // }
-    //
-    // _setLBHooksParametersOnPair(tokenX, tokenY, binStep, hooksParameters, onHooksSetData);
 
-    if hooks_parameters.flags == 0 {
+    // NOTE: Instead of checking if the address is 0, we check if the address is valid.
+    // TODO: Find a way to verify that the code_hash is correct for the given address.
+    if deps.api.addr_validate(&hooks_parameters.address).is_err() || hooks_parameters.flags == 0 {
         return Err(Error::InvalidHooksParameters);
     }
-    todo!()
+
+    _set_lb_hooks_parameters_on_pair(
+        deps,
+        env,
+        info,
+        token_x,
+        token_y,
+        bin_step,
+        Some(hooks_parameters),
+        Some(on_hooks_set_data),
+    )
 }
 
 /// Function to remove the hooks contract from the pair.
@@ -555,11 +568,10 @@ pub fn remove_lb_hooks_on_pair(
     token_y: TokenType,
     bin_step: u16,
 ) -> Result<Response> {
+    // TODO: add this modifier
     //     onlyRole(LB_HOOKS_MANAGER_ROLE)
-    // {
-    //     _setLBHooksParametersOnPair(tokenX, tokenY, binStep, 0, new bytes(0));
 
-    todo!()
+    _set_lb_hooks_parameters_on_pair(deps, env, info, token_x, token_y, bin_step, None, None)
 }
 
 /// Function to set the recipient of the fees. This address needs to be able to receive SNIP20s.
@@ -598,19 +610,30 @@ pub fn set_fee_recipient(
 /// - The flash_loan_fee is above the maximum flash loan fee
 pub fn set_flash_loan_fee(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     flash_loan_fee: Uint128,
 ) -> Result<Response> {
-    // uint256 oldFlashLoanFee = _flashLoanFee;
-    //
-    // if (oldFlashLoanFee == flashLoanFee) revert LBFactory__SameFlashLoanFee(flashLoanFee);
-    // if (flashLoanFee > _MAX_FLASHLOAN_FEE) revert LBFactory__FlashLoanFeeAboveMax(flashLoanFee, _MAX_FLASHLOAN_FEE);
-    //
-    // _flashLoanFee = flashLoanFee;
-    // emit FlashLoanFeeSet(oldFlashLoanFee, flashLoanFee);
+    let old_flash_loan_fee = FLASH_LOAN_FEE.load(deps.storage)?;
 
-    todo!()
+    if old_flash_loan_fee == flash_loan_fee {
+        return Err(Error::SameFlashLoanFee {
+            fee: flash_loan_fee,
+        });
+    }
+
+    if flash_loan_fee > MAX_FLASH_LOAN_FEE {
+        return Err(Error::FlashLoanFeeAboveMax {
+            fee: flash_loan_fee,
+            max_fee: MAX_FLASH_LOAN_FEE,
+        });
+    }
+
+    FLASH_LOAN_FEE.save(deps.storage, &flash_loan_fee)?;
+
+    let event = Event::flash_loan_fee_set(old_flash_loan_fee, flash_loan_fee);
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Function to add an asset to the whitelist of quote assets
@@ -668,6 +691,7 @@ pub fn remove_quote_asset(
 
     match found_asset {
         Some((index, Ok(quote_asset))) => {
+            // TODO: Is it okay to remove from the middle of an AppendStore?
             QUOTE_ASSET_WHITELIST.remove(deps.storage, index as u32)?;
 
             let event = Event::quote_asset_removed(quote_asset.unique_key());
@@ -721,13 +745,13 @@ pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo, pair: LbPair) ->
 /// Internal function to set a hooks contract to the pair
 pub fn _set_lb_hooks_parameters_on_pair(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     token_x: TokenType,
     token_y: TokenType,
     bin_step: u16,
-    hooks_parameters: HooksParameters,
-    on_hooks_set_data: Binary,
+    hooks_parameters: Option<HooksParameters>,
+    on_hooks_set_data: Option<Binary>,
 ) -> Result<Response> {
     // ILBPair lbPair = _getLBPairInformation(tokenX, tokenY, binStep).LBPair;
     //
@@ -736,22 +760,23 @@ pub fn _set_lb_hooks_parameters_on_pair(
     //
     // lbPair.setHooksParameters(hooksParameters, onHooksSetData);
 
-    let lb_pair = _get_lb_pair_information(deps.as_ref(), &token_x, &token_y, bin_step)
-        .ok_or_else(|| Error::LbPairNotCreated {
+    let Some(LbPairInformation { lb_pair, .. }) =
+        _get_lb_pair_information(deps.as_ref(), &token_x, &token_y, bin_step)
+    else {
+        return Err(Error::LbPairNotCreated {
             token_x: token_x.unique_key(),
             token_y: token_y.unique_key(),
             bin_step,
-        })?
-        .lb_pair;
-    let lb_pair = ILbPair(lb_pair.contract.clone());
+        });
+    };
 
-    // if lb_pair.get_lb_hooks_parameters(deps.querier)? == hooks_parameters {
-    //     return Err(Error::SameHooksParameters(hooks_parameters));
-    // }
-    //
-    // let msg = lb_pair.set_hooks_parameters(hooks_parameters, on_hooks_set_data);
-    //
-    // Ok(Response::new().add_submessage(msg))
+    let lb_pair = ILbPair(lb_pair.contract);
 
-    todo!()
+    if lb_pair.get_lb_hooks_parameters(deps.querier)? == hooks_parameters {
+        return Err(Error::SameHooksParameters(hooks_parameters));
+    }
+
+    let msg = lb_pair.set_hooks_parameters(hooks_parameters, on_hooks_set_data)?;
+
+    Ok(Response::new().add_message(msg))
 }

@@ -66,6 +66,8 @@ pub fn swap(
     swap_for_y: bool,
     to: String,
 ) -> Result<Response> {
+    let mut response = Response::new();
+
     let to = deps.api.addr_validate(&to)?;
 
     let hooks_parameters = HOOKS_PARAMETERS.load(deps.storage)?;
@@ -195,13 +197,15 @@ pub fn swap(
         return Err(Error::InsufficientAmountIn);
     };
 
-    let before_swap_hook = hooks::before_swap(
+    if let Some(before_swap_hook) = hooks::before_swap(
         hooks_parameters.clone(),
         &info.sender,
         &to,
         swap_for_y,
         amounts_left,
-    )?;
+    )? {
+        response = response.add_message(before_swap_hook)
+    }
 
     reserves = reserves.add(amounts_left)?;
 
@@ -285,32 +289,28 @@ pub fn swap(
     )?;
     PARAMETERS.save(deps.storage, parameters.set_active_id(active_id)?)?;
 
-    // SAFETY: We checked earlier that amounts_out > 0, so
+    // SAFETY: We checked earlier that amounts_out > 0, so one of
     // these bin transfer functions will always return Some.
-    let msg = if swap_for_y {
+    let transfer_msg = if swap_for_y {
         bin_transfer_y(amounts_out, token_y.clone(), to.clone())
     } else {
         bin_transfer_x(amounts_out, token_x.clone(), to.clone())
     }
     .expect("there must be a transfer message");
 
-    let after_swap_hook =
-        hooks::after_swap(hooks_parameters, &info.sender, &to, swap_for_y, amounts_out)?;
-
     let data = lb_pair::SwapResponse { amounts_out };
 
-    let mut response = Response::new()
+    response = response
         // .set_data(to_binary(&data)?)
-        // TODO: see if this works
+        // TODO: see if this works instead; skip the serialization
         .set_data(Binary::from(amounts_out))
-        .add_message(msg)
+        .add_message(transfer_msg)
         .add_events(events);
 
-    if let Some(msg) = before_swap_hook {
-        response = response.add_message(msg);
-    }
-    if let Some(msg) = after_swap_hook {
-        response = response.add_message(msg);
+    if let Some(after_swap_hook) =
+        hooks::after_swap(hooks_parameters, &info.sender, &to, swap_for_y, amounts_out)?
+    {
+        response = response.add_message(after_swap_hook);
     }
 
     Ok(response)
@@ -1055,29 +1055,38 @@ pub fn set_hooks_parameters(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    hooks_parameters: HooksParameters,
-    on_hooks_set_data: Binary,
+    hooks_parameters: Option<HooksParameters>,
+    on_hooks_set_data: Option<Binary>,
 ) -> Result<Response> {
     let factory = FACTORY.load(deps.storage)?;
     only_factory(&info.sender, &factory.address)?;
 
     HOOKS_PARAMETERS.save(deps.storage, &hooks_parameters)?;
 
-    let hooks = ContractInfo {
-        address: deps.api.addr_validate(&hooks_parameters.address)?,
-        code_hash: hooks_parameters.code_hash.clone(),
-    };
+    match hooks_parameters {
+        Some(ref hooks_parameters) => {
+            let hooks = ContractInfo {
+                address: deps.api.addr_validate(&hooks_parameters.address)?,
+                code_hash: hooks_parameters.code_hash.clone(),
+            };
+
+            // This LB Pair contract must already be set in the hooks contract.
+            if ILbHooks(hooks).get_lb_pair(deps.querier)? != env.contract.address {
+                return Err(Error::InvalidHooks);
+            }
+        }
+        None => {}
+    }
 
     let event = Event::hooks_parameters_set(&info.sender, &hooks_parameters);
 
-    // This LB Pair contract must already be set in the hooks contract.
-    if ILbHooks(hooks).get_lb_pair(deps.querier)? != env.contract.address {
-        return Err(Error::InvalidHooks);
+    let mut response = Response::new().add_event(event);
+
+    if let Some(on_hooks_set_hook) = hooks::on_hooks_set(hooks_parameters, on_hooks_set_data)? {
+        response = response.add_message(on_hooks_set_hook)
     }
 
-    let hook_msg = hooks::on_hooks_set(hooks_parameters, on_hooks_set_data)?;
-
-    Ok(Response::new().add_event(event).add_message(hook_msg))
+    Ok(response)
 }
 
 // TODO:

@@ -41,7 +41,7 @@ pub static ORACLE: Keymap<u16, OracleSample, Bincode2, WithoutIter> =
 pub static PARAMETERS: Item<PairParameters> = Item::new(b"pair_parameters");
 pub static RESERVES: Item<Bytes32> = Item::new(b"reserves");
 pub static PROTOCOL_FEES: Item<Bytes32> = Item::new(b"protocol_fees");
-pub static HOOKS_PARAMETERS: Item<HooksParameters> = Item::new(b"hooks_parameters");
+pub static HOOKS_PARAMETERS: Item<Option<HooksParameters>> = Item::new(b"hooks_parameters");
 
 pub static EPHEMERAL_LB_TOKEN: Item<EphemeralLbToken> = Item::new(b"ephemeral_lb_token");
 pub static EPHEMERAL_FLASH_LOAN: Item<EphemeralFlashLoan> = Item::new(b"ephemeral_flash_loan");

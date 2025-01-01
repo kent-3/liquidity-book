@@ -8,7 +8,7 @@ use liquidity_book::{
 use shade_protocol::swap::core::TokenType;
 
 /// Returns the LBPairInformation if it exists,
-/// if not, then the address 0 is returned. The order doesn't matter
+/// if not, then None is returned. The order doesn't matter
 pub fn _get_lb_pair_information(
     deps: Deps,
     token_a: &TokenType,

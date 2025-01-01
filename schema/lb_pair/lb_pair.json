@@ -464,16 +464,26 @@
         "properties": {
           "set_hooks_parameters": {
             "type": "object",
-            "required": [
-              "hooks_parameters",
-              "on_hooks_set_data"
-            ],
             "properties": {
               "hooks_parameters": {
-                "$ref": "#/definitions/HooksParameters"
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/HooksParameters"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "on_hooks_set_data": {
-                "$ref": "#/definitions/Binary"
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/Binary"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "additionalProperties": false
@@ -1305,33 +1315,43 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LbHooksParametersResponse",
       "type": "object",
-      "required": [
-        "code_hash",
-        "hooks_parameters"
-      ],
       "properties": {
-        "code_hash": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          "maxItems": 32,
-          "minItems": 32
-        },
         "hooks_parameters": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          "maxItems": 32,
-          "minItems": 32
+          "anyOf": [
+            {
+              "$ref": "#/definitions/HooksParameters"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "definitions": {
+        "HooksParameters": {
+          "type": "object",
+          "required": [
+            "address",
+            "code_hash",
+            "flags"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "code_hash": {
+              "type": "string"
+            },
+            "flags": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      }
     },
     "get_lb_token": {
       "$schema": "http://json-schema.org/draft-07/schema#",

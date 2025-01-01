@@ -185,6 +185,10 @@ pub fn decode(hooks_parameters: Bytes32) -> Parameters {
     parameters
 }
 
+// TODO:
+// I think get_hooks, set_hooks, and get_flags are useless now that I changed HooksParameters to
+// be a struct with pub fields.
+
 /**
  * @dev Helper function to get the hooks address from the encoded hooks parameters
  * @param hooksParameters The encoded hooks parameters
@@ -234,20 +238,21 @@ pub fn get_flags(hooks_parameters: Bytes32) -> [u8; 12] {
  * @param onHooksSetData The data to pass to the onHooksSet function
  */
 pub fn on_hooks_set(
-    hooks_parameters: HooksParameters,
-    on_hooks_set_data: Binary,
-) -> StdResult<WasmMsg> {
-    let on_hooks_set_msg = ExecuteMsg::OnHooksSet {
-        hooks_parameters: hooks_parameters.clone(),
-        on_hooks_set_data,
-    };
-
-    Ok(WasmMsg::Execute {
-        contract_addr: hooks_parameters.address,
-        code_hash: hooks_parameters.code_hash,
-        msg: to_binary(&on_hooks_set_msg)?,
-        funds: vec![],
-    })
+    hooks_parameters: Option<HooksParameters>,
+    on_hooks_set_data: Option<Binary>,
+) -> StdResult<Option<WasmMsg>> {
+    match hooks_parameters {
+        Some(hooks_parameters) => Ok(Some(WasmMsg::Execute {
+            contract_addr: hooks_parameters.address.clone(),
+            code_hash: hooks_parameters.code_hash.clone(),
+            msg: to_binary(&ExecuteMsg::OnHooksSet {
+                hooks_parameters,
+                on_hooks_set_data,
+            })?,
+            funds: vec![],
+        })),
+        None => Ok(None),
+    }
 }
 
 /**
@@ -260,28 +265,31 @@ pub fn on_hooks_set(
  * @param amountsIn The amounts in
  */
 pub fn before_swap(
-    hooks_parameters: HooksParameters,
+    hooks_parameters: Option<HooksParameters>,
     sender: &Addr,
     to: &Addr,
     swap_for_y: bool,
     amounts_in: Bytes32,
 ) -> StdResult<Option<WasmMsg>> {
-    if hooks_parameters.flags & BEFORE_SWAP != 0 {
-        let before_swap_msg = ExecuteMsg::BeforeSwap {
-            sender: sender.to_string(),
-            to: to.to_string(),
-            swap_for_y,
-            amounts_in,
-        };
-
-        Ok(Some(WasmMsg::Execute {
-            contract_addr: hooks_parameters.address,
-            code_hash: hooks_parameters.code_hash,
-            msg: to_binary(&before_swap_msg)?,
-            funds: vec![],
-        }))
-    } else {
-        Ok(None)
+    match hooks_parameters {
+        Some(hooks_parameters) => {
+            if hooks_parameters.flags & BEFORE_SWAP != 0 {
+                Ok(Some(WasmMsg::Execute {
+                    contract_addr: hooks_parameters.address,
+                    code_hash: hooks_parameters.code_hash,
+                    msg: to_binary(&ExecuteMsg::BeforeSwap {
+                        sender: sender.to_string(),
+                        to: to.to_string(),
+                        swap_for_y,
+                        amounts_in,
+                    })?,
+                    funds: vec![],
+                }))
+            } else {
+                Ok(None)
+            }
+        }
+        None => Ok(None),
     }
 }
 
@@ -295,36 +303,46 @@ pub fn before_swap(
  * @param amountsOut The amounts out
  */
 pub fn after_swap(
-    hooks_parameters: HooksParameters,
+    hooks_parameters: Option<HooksParameters>,
     sender: &Addr,
     to: &Addr,
     swap_for_y: bool,
     amounts_out: Bytes32,
 ) -> StdResult<Option<WasmMsg>> {
-    if hooks_parameters.flags & AFTER_SWAP != 0 {
-        let after_swap_msg = ExecuteMsg::AfterSwap {
-            sender: sender.to_string(),
-            to: to.to_string(),
-            swap_for_y,
-            amounts_out,
-        };
+    match hooks_parameters {
+        Some(hooks_parameters) => {
+            if hooks_parameters.flags & AFTER_SWAP != 0 {
+                // TODO: Alternate to avoid needing Result here.
+                // If we do this, there's no way to know if the problem was related to to_binary, but
+                // that basically never fails, right?
+                //
+                // let after_swap_msg = ExecuteMsg::AfterSwap {
+                //     sender: sender.to_string(),
+                //     to: to.to_string(),
+                //     swap_for_y,
+                //     amounts_out,
+                // };
+                //
+                // let Ok(after_swap_msg) = to_binary(&after_swap_msg) else {
+                //     return None;
+                // };
 
-        // TODO:
-        // Alternate to avoide needing Result here.
-        // If we do this, there's no way to know if the problem was related to to_binary, but
-        // that basically never fails, right?
-        // let Ok(after_swap_msg) = to_binary(&after_swap_msg) else {
-        //     return None;
-        // };
-
-        Ok(Some(WasmMsg::Execute {
-            contract_addr: hooks_parameters.address,
-            code_hash: hooks_parameters.code_hash,
-            msg: to_binary(&after_swap_msg)?,
-            funds: vec![],
-        }))
-    } else {
-        Ok(None)
+                Ok(Some(WasmMsg::Execute {
+                    contract_addr: hooks_parameters.address,
+                    code_hash: hooks_parameters.code_hash,
+                    msg: to_binary(&ExecuteMsg::AfterSwap {
+                        sender: sender.to_string(),
+                        to: to.to_string(),
+                        swap_for_y,
+                        amounts_out,
+                    })?,
+                    funds: vec![],
+                }))
+            } else {
+                Ok(None)
+            }
+        }
+        None => Ok(None),
     }
 }
 // TODO: all the rest of this module

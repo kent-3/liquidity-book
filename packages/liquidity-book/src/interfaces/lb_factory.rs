@@ -58,7 +58,7 @@ pub enum LbFactoryError {
     },
 
     #[error("Flash Loan Fee above max: {fee} > {max_fee}!")]
-    FlashLoanFeeAboveMax { fee: u8, max_fee: u8 },
+    FlashLoanFeeAboveMax { fee: Uint128, max_fee: Uint128 },
 
     #[error("Bin step {bin_step} is too low!")]
     BinStepTooLow { bin_step: u16 },
@@ -79,7 +79,7 @@ pub enum LbFactoryError {
     SameFeeRecipient { fee_recipient: Addr },
 
     #[error("Flash loan fee is already {fee}!")]
-    SameFlashLoanFee { fee: u8 },
+    SameFlashLoanFee { fee: Uint128 },
 
     // TODO: I don't this applies, since the lb_pair factory address is assigned on instantiation.
     #[error(
@@ -93,11 +93,11 @@ pub enum LbFactoryError {
     #[error("The LbPair implementation has not been set yet!")]
     ImplementationNotSet,
 
-    #[error("Hooks implementation {0} is the same!")]
+    #[error("Hooks implementation ({0}) is the same!")]
     SameHooksImplementation(Addr),
 
-    #[error("Hooks parameters {0:?} are the same!")]
-    SameHooksParameters(HooksParameters),
+    #[error("Hooks parameters ({0:?}) are the same!")]
+    SameHooksParameters(Option<HooksParameters>),
 
     #[error("Invalid hooks parameters!")]
     InvalidHooksParameters,
@@ -583,7 +583,7 @@ pub enum ExecuteMsg {
         token_y: TokenType,
         bin_step: u16,
         hooks_parameters: HooksParameters,
-        on_hooks_set_data: Binary,
+        on_hooks_set_data: Binary, // TODO: could this optional?
     },
     RemoveLBHooksOnPair {
         token_x: TokenType,

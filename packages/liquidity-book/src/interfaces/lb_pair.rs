@@ -312,7 +312,7 @@ pub trait LbPairEventExt {
             )
     }
 
-    fn hooks_parameters_set(sender: &Addr, hooks_parameters: &HooksParameters) -> Event {
+    fn hooks_parameters_set(sender: &Addr, hooks_parameters: &Option<HooksParameters>) -> Event {
         Event::new("hooks_parameters_set")
             .add_attribute_plaintext("sender", sender)
             .add_attribute_plaintext(
@@ -412,8 +412,8 @@ pub enum ExecuteMsg {
         max_volatility_accumulator: u32,
     },
     SetHooksParameters {
-        hooks_parameters: HooksParameters,
-        on_hooks_set_data: Binary,
+        hooks_parameters: Option<HooksParameters>,
+        on_hooks_set_data: Option<Binary>,
     },
     ForceDecay {},
     BatchTransferFrom {
@@ -603,11 +603,14 @@ pub struct StaticFeeParametersResponse {
     pub max_volatility_accumulator: u32,
 }
 
-// TODO: decide on this
+// TODO: decide on this. I think it's better to return flat data with generic types. but then I
+// have to do annoying type conversions internally
 #[cw_serde]
 pub struct LbHooksParametersResponse {
-    pub hooks_parameters: Bytes32,
-    pub code_hash: Bytes32,
+    pub hooks_parameters: Option<HooksParameters>,
+    // pub address: String,
+    // pub code_hash: String,
+    // pub flags: u16,
 }
 
 #[cw_serde]
@@ -707,7 +710,50 @@ impl Deref for ILbPair {
     }
 }
 
+// TODO: think if there's a way to have the [LbPair] type also have these methods. that way it would
+// have its associated tokens and bin step, in addition to the ContractInfo.
+
 impl ILbPair {
+    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
+        querier
+            .query_wasm_smart::<TokenXResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenX {},
+            )
+            .map(|response| response.token_x)
+    }
+    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
+        querier
+            .query_wasm_smart::<TokenYResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetTokenY {},
+            )
+            .map(|response| response.token_y)
+    }
+    pub fn get_active_id(&self, querier: QuerierWrapper) -> StdResult<u32> {
+        querier
+            .query_wasm_smart::<ActiveIdResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetActiveId {},
+            )
+            .map(|response| response.active_id)
+    }
+    pub fn get_lb_hooks_parameters(
+        &self,
+        querier: QuerierWrapper,
+    ) -> StdResult<Option<HooksParameters>> {
+        querier
+            .query_wasm_smart::<LbHooksParametersResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetLbHooksParameters {},
+            )
+            .map(|response| response.hooks_parameters)
+    }
+
     pub fn swap(&self, swap_for_y: bool, to: String) -> StdResult<WasmMsg> {
         let msg = ExecuteMsg::Swap { swap_for_y, to };
 
@@ -718,7 +764,25 @@ impl ILbPair {
             funds: vec![],
         })
     }
+    pub fn flash_loan(
+        &self,
+        receiver: ContractInfo,
+        amounts: Bytes32,
+        data: Option<Binary>,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::FlashLoan {
+            receiver,
+            amounts,
+            data,
+        };
 
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
     pub fn mint(
         &self,
         to: String,
@@ -738,7 +802,6 @@ impl ILbPair {
             funds: vec![],
         })
     }
-
     pub fn burn(
         &self,
         from: String,
@@ -760,44 +823,111 @@ impl ILbPair {
             funds: vec![],
         })
     }
+    pub fn collect_protocol_fees(&self) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::CollectProtocolFees {};
 
-    pub fn get_token_x(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
-        querier
-            .query_wasm_smart::<TokenXResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetTokenX {},
-            )
-            .map(|response| response.token_x)
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
     }
+    pub fn increase_oracle_length(&self, new_length: u16) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::IncreaseOracleLength { new_length };
 
-    pub fn get_token_y(&self, querier: QuerierWrapper) -> StdResult<TokenType> {
-        querier
-            .query_wasm_smart::<TokenYResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetTokenY {},
-            )
-            .map(|response| response.token_y)
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
     }
+    pub fn set_static_fee_parameters(
+        &self,
+        base_factor: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        variable_fee_control: u32,
+        protocol_share: u16,
+        max_volatility_accumulator: u32,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::SetStaticFeeParameters {
+            base_factor,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            variable_fee_control,
+            protocol_share,
+            max_volatility_accumulator,
+        };
 
-    pub fn get_active_id(&self, querier: QuerierWrapper) -> StdResult<u32> {
-        querier
-            .query_wasm_smart::<ActiveIdResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetActiveId {},
-            )
-            .map(|response| response.active_id)
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
     }
+    // TODO: I need a way to set the hooks_parameters to None
+    // should both arguments be Options?
+    pub fn set_hooks_parameters(
+        &self,
+        hooks_parameters: Option<HooksParameters>,
+        on_hooks_set_data: Option<Binary>,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::SetHooksParameters {
+            hooks_parameters,
+            on_hooks_set_data,
+        };
 
-    pub fn get_lb_hooks_parameters(&self, querier: QuerierWrapper) -> StdResult<Bytes32> {
-        querier
-            .query_wasm_smart::<LbHooksParametersResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetLbHooksParameters {},
-            )
-            .map(|response| response.hooks_parameters)
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+    pub fn force_decay(&self) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::ForceDecay {};
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+    pub fn batch_transfer_from(
+        &self,
+        from: String,
+        to: String,
+        ids: Vec<u32>,
+        amounts: Vec<Uint256>,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::BatchTransferFrom {
+            from,
+            to,
+            ids,
+            amounts,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+    pub fn set_contract_status(&self, contract_status: ContractStatus) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::SetContractStatus { contract_status };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
     }
 }
