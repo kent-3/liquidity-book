@@ -5,6 +5,7 @@ use liquidity_book::interfaces::lb_pair::{
     SwapOutResponse,
 };
 
+/// Get the factory address.
 pub fn get_factory(deps: Deps) -> Result<FactoryResponse> {
     let factory = FACTORY_V2_2.load(deps.storage)?;
 
@@ -13,6 +14,9 @@ pub fn get_factory(deps: Deps) -> Result<FactoryResponse> {
     })
 }
 
+/// Returns the approximate id corresponding to the inputted price.
+///
+/// Warning, the returned id may be inaccurate close to the start price of a bin.
 pub fn get_id_from_price(
     deps: Deps,
     lb_pair: ContractInfo,
@@ -30,6 +34,7 @@ pub fn get_id_from_price(
     Ok(IdFromPriceResponse { id })
 }
 
+/// Returns the price corresponding to the inputted id.
 pub fn get_price_from_id(
     deps: Deps,
     lb_pair: ContractInfo,
@@ -47,6 +52,7 @@ pub fn get_price_from_id(
     Ok(PriceFromIdResponse { price })
 }
 
+/// Simulate a swap in.
 pub fn get_swap_in(
     deps: Deps,
     lb_pair: ContractInfo,
@@ -74,6 +80,7 @@ pub fn get_swap_in(
     })
 }
 
+/// Simulate a swap out.
 pub fn get_swap_out(
     deps: Deps,
     lb_pair: ContractInfo,
