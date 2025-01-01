@@ -181,96 +181,6 @@ pub struct Path {
     pub token_path: Vec<TokenType>,
 }
 
-/// A thin wrapper around `ContractInfo` that provides additional
-/// methods to interact with an LB Router contract.
-pub struct ILbRouter(pub ContractInfo);
-
-impl std::ops::Deref for ILbRouter {
-    type Target = ContractInfo;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-// TODO: add the ExecuteMsg constructor methods
-impl ILbRouter {
-    pub fn get_factory(&self, querier: QuerierWrapper) -> StdResult<GetFactoryResponse> {
-        querier.query_wasm_smart::<GetFactoryResponse>(
-            self.0.code_hash.clone(),
-            self.0.address.clone(),
-            &QueryMsg::GetFactory {},
-        )
-    }
-
-    pub fn get_id_from_price(
-        &self,
-        querier: QuerierWrapper,
-        lb_pair: ContractInfo,
-        price: Uint256,
-    ) -> StdResult<u32> {
-        querier
-            .query_wasm_smart::<GetIdFromPriceResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetIdFromPrice { lb_pair, price },
-            )
-            .map(|response| response.id)
-    }
-
-    /// remember that price is a 128x128 fixed point number represented by a Uint256
-    pub fn get_price_from_id(
-        &self,
-        querier: QuerierWrapper,
-        lb_pair: ContractInfo,
-        id: u32,
-    ) -> StdResult<Uint256> {
-        querier
-            .query_wasm_smart::<GetPriceFromIdResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetPriceFromId { lb_pair, id },
-            )
-            .map(|response| response.price)
-    }
-
-    pub fn get_swap_in(
-        &self,
-        querier: QuerierWrapper,
-        lb_pair: ContractInfo,
-        amount_out: Uint128,
-        swap_for_y: bool,
-    ) -> StdResult<GetSwapInResponse> {
-        querier.query_wasm_smart::<GetSwapInResponse>(
-            self.0.code_hash.clone(),
-            self.0.address.clone(),
-            &QueryMsg::GetSwapIn {
-                lb_pair,
-                amount_out,
-                swap_for_y,
-            },
-        )
-    }
-
-    pub fn get_swap_out(
-        &self,
-        querier: QuerierWrapper,
-        lb_pair: ContractInfo,
-        amount_in: Uint128,
-        swap_for_y: bool,
-    ) -> StdResult<GetSwapOutResponse> {
-        querier.query_wasm_smart::<GetSwapOutResponse>(
-            self.0.code_hash.clone(),
-            self.0.address.clone(),
-            &QueryMsg::GetSwapOut {
-                lb_pair,
-                amount_in,
-                swap_for_y,
-            },
-        )
-    }
-}
-
 #[cw_serde]
 pub struct InstantiateMsg {
     pub factory: ContractInfo,
@@ -483,4 +393,94 @@ pub struct GetSwapOutResponse {
     pub amount_in_left: Uint128,
     pub amount_out: Uint128,
     pub fee: Uint128,
+}
+
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with an LB Router contract.
+pub struct ILbRouter(pub ContractInfo);
+
+impl std::ops::Deref for ILbRouter {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+// TODO: add the ExecuteMsg constructor methods
+impl ILbRouter {
+    pub fn get_factory(&self, querier: QuerierWrapper) -> StdResult<GetFactoryResponse> {
+        querier.query_wasm_smart::<GetFactoryResponse>(
+            self.0.code_hash.clone(),
+            self.0.address.clone(),
+            &QueryMsg::GetFactory {},
+        )
+    }
+
+    pub fn get_id_from_price(
+        &self,
+        querier: QuerierWrapper,
+        lb_pair: ContractInfo,
+        price: Uint256,
+    ) -> StdResult<u32> {
+        querier
+            .query_wasm_smart::<GetIdFromPriceResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetIdFromPrice { lb_pair, price },
+            )
+            .map(|response| response.id)
+    }
+
+    /// remember that price is a 128x128 fixed point number represented by a Uint256
+    pub fn get_price_from_id(
+        &self,
+        querier: QuerierWrapper,
+        lb_pair: ContractInfo,
+        id: u32,
+    ) -> StdResult<Uint256> {
+        querier
+            .query_wasm_smart::<GetPriceFromIdResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetPriceFromId { lb_pair, id },
+            )
+            .map(|response| response.price)
+    }
+
+    pub fn get_swap_in(
+        &self,
+        querier: QuerierWrapper,
+        lb_pair: ContractInfo,
+        amount_out: Uint128,
+        swap_for_y: bool,
+    ) -> StdResult<GetSwapInResponse> {
+        querier.query_wasm_smart::<GetSwapInResponse>(
+            self.0.code_hash.clone(),
+            self.0.address.clone(),
+            &QueryMsg::GetSwapIn {
+                lb_pair,
+                amount_out,
+                swap_for_y,
+            },
+        )
+    }
+
+    pub fn get_swap_out(
+        &self,
+        querier: QuerierWrapper,
+        lb_pair: ContractInfo,
+        amount_in: Uint128,
+        swap_for_y: bool,
+    ) -> StdResult<GetSwapOutResponse> {
+        querier.query_wasm_smart::<GetSwapOutResponse>(
+            self.0.code_hash.clone(),
+            self.0.address.clone(),
+            &QueryMsg::GetSwapOut {
+                lb_pair,
+                amount_in,
+                swap_for_y,
+            },
+        )
+    }
 }

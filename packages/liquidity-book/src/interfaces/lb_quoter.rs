@@ -25,6 +25,18 @@ pub enum LbQuoterError {
 }
 
 #[cw_serde]
+#[derive(Default)]
+pub struct Quote {
+    pub route: Vec<TokenType>,
+    pub pairs: Vec<ContractInfo>,
+    pub bin_steps: Vec<u16>,
+    pub versions: Vec<Version>,
+    pub amounts: Vec<Uint128>,
+    pub virtual_amounts_without_slippage: Vec<Uint128>,
+    pub fees: Vec<Uint128>,
+}
+
+#[cw_serde]
 pub struct InstantiateMsg {
     pub factory_v2_2: Option<RawContract>,
     pub router_v2_2: Option<RawContract>,
@@ -64,16 +76,4 @@ pub struct FactoryV2_2Response {
 #[cw_serde]
 pub struct RouterV2_2Response {
     pub router_v2_2: Option<ContractInfo>,
-}
-
-#[cw_serde]
-#[derive(Default)]
-pub struct Quote {
-    pub route: Vec<TokenType>,
-    pub pairs: Vec<ContractInfo>,
-    pub bin_steps: Vec<u16>,
-    pub versions: Vec<Version>,
-    pub amounts: Vec<Uint128>,
-    pub virtual_amounts_without_slippage: Vec<Uint128>,
-    pub fees: Vec<Uint128>,
 }

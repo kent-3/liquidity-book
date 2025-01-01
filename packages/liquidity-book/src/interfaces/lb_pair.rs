@@ -388,7 +388,6 @@ pub enum ExecuteMsg {
     },
     Mint {
         to: String,
-        // TODO: Change to the new encoded Bytes32 approach.
         liquidity_configs: Vec<LiquidityConfigurations>,
         refund_to: String,
     },

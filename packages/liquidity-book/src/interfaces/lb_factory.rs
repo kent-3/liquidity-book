@@ -311,211 +311,6 @@ pub trait LbFactoryEventExt {
 
 impl LbFactoryEventExt for Event {}
 
-/// A thin wrapper around `ContractInfo` that provides additional
-/// methods to interact with the LB Factory contract.
-#[derive(Serialize, Deserialize, Clone)]
-pub struct ILbFactory(pub ContractInfo);
-
-impl std::ops::Deref for ILbFactory {
-    type Target = ContractInfo;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-// TODO: add all the other message types
-impl ILbFactory {
-    pub fn create_lb_pair(
-        &self,
-        token_x: TokenType,
-        token_y: TokenType,
-        active_id: u32,
-        bin_step: u16,
-        viewing_key: String,
-        entropy: String,
-        // TODO: do we need to be able to set the `funds`?
-    ) -> StdResult<CosmosMsg> {
-        let msg = ExecuteMsg::CreateLbPair {
-            token_x,
-            token_y,
-            active_id,
-            bin_step,
-            viewing_key,
-            entropy,
-        };
-
-        Ok(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: self.address.to_string(),
-            code_hash: self.code_hash.clone(),
-            msg: to_binary(&msg)?,
-            funds: vec![],
-        }))
-    }
-
-    pub fn get_fee_recipient(&self, querier: QuerierWrapper) -> StdResult<Addr> {
-        querier
-            .query_wasm_smart::<FeeRecipientResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetFeeRecipient {},
-            )
-            .map(|response| response.fee_recipient)
-    }
-
-    pub fn get_flash_loan_fee(&self, querier: QuerierWrapper) -> StdResult<Uint128> {
-        querier
-            .query_wasm_smart::<FlashLoanFeeResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetFlashLoanFee {},
-            )
-            .map(|response| response.flash_loan_fee)
-    }
-
-    pub fn get_all_lb_pairs(
-        &self,
-        querier: QuerierWrapper,
-        token_x: TokenType,
-        token_y: TokenType,
-    ) -> StdResult<Vec<LbPairInformation>> {
-        // let token_x: TokenType = token_x.clone().into();
-        // let token_y: TokenType = token_y.clone().into();
-
-        // which style is better?
-
-        // A:
-
-        // let AllLbPairsResponse { lb_pairs_available } = querier.query_wasm_smart(
-        //     self.0.code_hash.clone(),
-        //     self.0.address.clone(),
-        //     &QueryMsg::GetAllLbPairs {
-        //         token_x: token_x.into(),
-        //         token_y: token_y.into(),
-        //     },
-        // )?;
-        //
-        // Ok(lb_pairs_available)
-
-        // B:
-
-        querier
-            .query_wasm_smart::<AllLbPairsResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetAllLbPairs { token_x, token_y },
-            )
-            .map(|response| response.lb_pairs_available)
-    }
-
-    pub fn get_lb_pair_information(
-        &self,
-        querier: QuerierWrapper,
-        token_x: TokenType,
-        token_y: TokenType,
-        bin_step: u16,
-    ) -> StdResult<LbPairInformation> {
-        querier
-            .query_wasm_smart::<LbPairInformationResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetLbPairInformation {
-                    token_x,
-                    token_y,
-                    bin_step,
-                },
-            )
-            .map(|response| response.lb_pair_information)
-    }
-}
-
-// pub trait ILbFactory {
-//     fn get_all_lb_pairs(
-//         &self,
-//         querier: QuerierWrapper,
-//         token_x: ContractInfo,
-//         token_y: ContractInfo,
-//     ) -> StdResult<Vec<LbPairInformation>>;
-//     fn get_lb_pair_information(
-//         &self,
-//         querier: QuerierWrapper,
-//         token_x: ContractInfo,
-//         token_y: ContractInfo,
-//         bin_step: u16,
-//     ) -> StdResult<LbPairInformation>;
-// }
-//
-// impl ILbFactory for ContractInfo {
-//     fn get_all_lb_pairs(
-//         &self,
-//         querier: QuerierWrapper,
-//         token_x: ContractInfo,
-//         token_y: ContractInfo,
-//     ) -> StdResult<Vec<LbPairInformation>> {
-//         // which style is better?
-//
-//         // A:
-//
-//         // let AllLbPairsResponse { lb_pairs_available } = querier.query_wasm_smart(
-//         //     self.code_hash.clone(),
-//         //     self.address.clone(),
-//         //     &QueryMsg::GetAllLbPairs {
-//         //         token_x: token_x.into(),
-//         //         token_y: token_y.into(),
-//         //     },
-//         // )?;
-//         //
-//         // Ok(lb_pairs_available)
-//
-//         // B:
-//
-//         querier
-//             .query_wasm_smart::<AllLbPairsResponse>(
-//                 self.code_hash.clone(),
-//                 self.address.clone(),
-//                 &QueryMsg::GetAllLbPairs {
-//                     token_x: token_x.into(),
-//                     token_y: token_y.into(),
-//                 },
-//             )
-//             .map(|response| response.lb_pairs_available)
-//     }
-//
-//     fn get_lb_pair_information(
-//         &self,
-//         querier: QuerierWrapper,
-//         token_x: ContractInfo,
-//         token_y: ContractInfo,
-//         bin_step: u16,
-//     ) -> StdResult<LbPairInformation> {
-//         // let LbPairInformationResponse {
-//         //     lb_pair_information,
-//         // } = querier.query_wasm_smart(
-//         //     self.code_hash.clone(),
-//         //     self.address.clone(),
-//         //     &QueryMsg::GetLbPairInformation {
-//         //         token_x: token_x.into(),
-//         //         token_y: token_y.into(),
-//         //         bin_step,
-//         //     },
-//         // )?;
-//         //
-//         // Ok(lb_pair_information)
-//
-//         querier
-//             .query_wasm_smart::<LbPairInformationResponse>(
-//                 self.code_hash.clone(),
-//                 self.address.clone(),
-//                 &QueryMsg::GetLbPairInformation {
-//                     token_x: token_x.into(),
-//                     token_y: token_y.into(),
-//                     bin_step,
-//                 },
-//             )
-//             .map(|response| response.lb_pair_information)
-//     }
-// }
-
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin_auth: RawContract,
@@ -749,4 +544,102 @@ pub struct OpenBinStepsResponse {
 #[cw_serde]
 pub struct AllLbPairsResponse {
     pub lb_pairs_available: Vec<LbPairInformation>,
+}
+
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with the LB Factory contract.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ILbFactory(pub ContractInfo);
+
+impl std::ops::Deref for ILbFactory {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+// TODO: add all the other message types
+impl ILbFactory {
+    pub fn create_lb_pair(
+        &self,
+        token_x: TokenType,
+        token_y: TokenType,
+        active_id: u32,
+        bin_step: u16,
+        viewing_key: String,
+        entropy: String,
+        // TODO: do we need to be able to set the `funds`?
+    ) -> StdResult<CosmosMsg> {
+        let msg = ExecuteMsg::CreateLbPair {
+            token_x,
+            token_y,
+            active_id,
+            bin_step,
+            viewing_key,
+            entropy,
+        };
+
+        Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        }))
+    }
+
+    pub fn get_fee_recipient(&self, querier: QuerierWrapper) -> StdResult<Addr> {
+        querier
+            .query_wasm_smart::<FeeRecipientResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetFeeRecipient {},
+            )
+            .map(|response| response.fee_recipient)
+    }
+
+    pub fn get_flash_loan_fee(&self, querier: QuerierWrapper) -> StdResult<Uint128> {
+        querier
+            .query_wasm_smart::<FlashLoanFeeResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetFlashLoanFee {},
+            )
+            .map(|response| response.flash_loan_fee)
+    }
+
+    pub fn get_all_lb_pairs(
+        &self,
+        querier: QuerierWrapper,
+        token_x: TokenType,
+        token_y: TokenType,
+    ) -> StdResult<Vec<LbPairInformation>> {
+        querier
+            .query_wasm_smart::<AllLbPairsResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetAllLbPairs { token_x, token_y },
+            )
+            .map(|response| response.lb_pairs_available)
+    }
+
+    pub fn get_lb_pair_information(
+        &self,
+        querier: QuerierWrapper,
+        token_x: TokenType,
+        token_y: TokenType,
+        bin_step: u16,
+    ) -> StdResult<LbPairInformation> {
+        querier
+            .query_wasm_smart::<LbPairInformationResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetLbPairInformation {
+                    token_x,
+                    token_y,
+                    bin_step,
+                },
+            )
+            .map(|response| response.lb_pair_information)
+    }
 }

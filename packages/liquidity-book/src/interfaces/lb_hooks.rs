@@ -15,54 +15,6 @@ pub enum LbHooksError {
     CwErr(#[from] StdError),
 }
 
-/// A thin wrapper around `ContractInfo` that provides additional
-/// methods to interact with an LB Hooks contract.
-#[cw_serde]
-pub struct ILbHooks(pub ContractInfo);
-
-impl Deref for ILbHooks {
-    type Target = ContractInfo;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl ILbHooks {
-    pub fn on_hooks_set(
-        &self,
-        hooks_parameters: HooksParameters,
-        on_hooks_set_data: Option<Binary>,
-    ) -> StdResult<WasmMsg> {
-        let msg = ExecuteMsg::OnHooksSet {
-            hooks_parameters,
-            on_hooks_set_data,
-        };
-
-        Ok(WasmMsg::Execute {
-            contract_addr: self.address.to_string(),
-            code_hash: self.code_hash.clone(),
-            msg: to_binary(&msg)?,
-            funds: vec![],
-        })
-    }
-
-    pub fn get_lb_pair(&self, querier: QuerierWrapper) -> StdResult<Addr> {
-        querier
-            .query_wasm_smart::<GetLbPairResponse>(
-                self.0.code_hash.clone(),
-                self.0.address.clone(),
-                &QueryMsg::GetLbPair {},
-            )
-            .and_then(|response| {
-                response
-                    .lb_pair
-                    .ok_or(StdError::generic_err("No linked LB pair"))
-            })
-            .map(|ilb_pair| ilb_pair.address.clone())
-    }
-}
-
 #[cw_serde]
 pub struct InstantiateMsg {}
 
@@ -156,4 +108,52 @@ pub struct GetLbPairResponse {
 #[cw_serde]
 pub struct IsLinkedResponse {
     pub is_linked: bool,
+}
+
+/// A thin wrapper around `ContractInfo` that provides additional
+/// methods to interact with an LB Hooks contract.
+#[cw_serde]
+pub struct ILbHooks(pub ContractInfo);
+
+impl Deref for ILbHooks {
+    type Target = ContractInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ILbHooks {
+    pub fn on_hooks_set(
+        &self,
+        hooks_parameters: HooksParameters,
+        on_hooks_set_data: Option<Binary>,
+    ) -> StdResult<WasmMsg> {
+        let msg = ExecuteMsg::OnHooksSet {
+            hooks_parameters,
+            on_hooks_set_data,
+        };
+
+        Ok(WasmMsg::Execute {
+            contract_addr: self.address.to_string(),
+            code_hash: self.code_hash.clone(),
+            msg: to_binary(&msg)?,
+            funds: vec![],
+        })
+    }
+
+    pub fn get_lb_pair(&self, querier: QuerierWrapper) -> StdResult<Addr> {
+        querier
+            .query_wasm_smart::<GetLbPairResponse>(
+                self.0.code_hash.clone(),
+                self.0.address.clone(),
+                &QueryMsg::GetLbPair {},
+            )
+            .and_then(|response| {
+                response
+                    .lb_pair
+                    .ok_or(StdError::generic_err("No linked LB pair"))
+            })
+            .map(|ilb_pair| ilb_pair.address.clone())
+    }
 }
