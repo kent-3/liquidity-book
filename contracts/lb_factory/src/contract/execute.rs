@@ -16,9 +16,7 @@ use liquidity_book::{
         },
     },
     libraries::{
-        hooks::{self, HooksParameters},
-        math::encoded::Encoded,
-        pair_parameter_helper::PairParameters,
+        hooks::HooksParameters, math::encoded::Encoded, pair_parameter_helper::PairParameters,
         price_helper::PriceHelper,
     },
 };
@@ -28,11 +26,9 @@ use shade_protocol::{
     utils::callback::ExecuteCallback,
 };
 
-/// Sets the LbPair implementation details.
+/// Set the LbPair implementation details.
 ///
-/// # Arguments
-///
-/// * `new_lb_pair_implementation` - The code ID and code hash of the implementation.
+/// Needs to be called by the owner.
 pub fn set_lb_pair_implementation(
     deps: DepsMut,
     _env: Env,
@@ -64,11 +60,9 @@ pub fn set_lb_pair_implementation(
     Ok(Response::new().add_event(event))
 }
 
-/// Sets the LbToken implementation details.
+/// Set the LbToken implementation details.
 ///
-/// # Arguments
-///
-/// * `new_lb_token_implementation` - The code ID and code hash of the implementation.
+/// Needs to be called by the owner.
 pub fn set_lb_token_implementation(
     deps: DepsMut,
     _env: Env,
@@ -294,23 +288,68 @@ pub fn create_lb_pair_part2(deps: DepsMut, _env: Env, reply_data: Binary) -> Res
         .add_event(event))
 }
 
+/// Function to set whether the pair is ignored or not for routing, it will make the pair unusable by the router.
+/// Needs to be called by the owner.
+///
+/// Reverts if:
+/// - The pair doesn't exist
+/// - The ignored state is already in the same state
 pub fn set_lb_pair_ignored(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     token_x: TokenType,
     token_y: TokenType,
     bin_step: u16,
     ignored: bool,
 ) -> Result<Response> {
-    todo!()
+    let config = STATE.load(deps.storage)?;
+    validate_admin(
+        &deps.querier,
+        AdminPermissions::LiquidityBookAdmin,
+        info.sender.to_string(),
+        &config.admin_auth,
+    )?;
 
-    // let event = Event::lb_pair_ignored_state_changed(lb_pair, ignored);
-    //
-    // Ok(Response::new().add_event(event))
+    let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
+
+    let Some(mut pair_information) = LB_PAIRS_INFO.get(
+        deps.storage,
+        &(token_a.unique_key(), token_b.unique_key(), bin_step),
+    ) else {
+        return Err(Error::LbPairDoesNotExist {
+            token_x: token_x.unique_key(),
+            token_y: token_y.unique_key(),
+            bin_step,
+        });
+    };
+
+    if pair_information.ignored_for_routing == ignored {
+        return Err(Error::LbPairIgnoredIsAlreadyInTheSameState);
+    }
+
+    pair_information.ignored_for_routing = ignored;
+
+    LB_PAIRS_INFO.insert(
+        deps.storage,
+        &(token_a.unique_key(), token_b.unique_key(), bin_step),
+        &pair_information,
+    )?;
+
+    // TODO: should the event include the full LbPair details or only the address?
+    let event = Event::lb_pair_ignored_state_changed(
+        pair_information.lb_pair.contract.address.to_string(),
+        ignored,
+    );
+
+    Ok(Response::new().add_event(event))
 }
 
 /// Sets the preset parameters of a bin step
+/// Needs to be called by the owner.
+///
+/// Reverts if:
+/// - The binStep is lower than the minimum bin step
 ///
 /// # Arguments
 ///
@@ -383,12 +422,8 @@ pub fn set_preset(
     Ok(Response::new().add_event(event))
 }
 
-/// Sets if the preset is open or not to be used by users
-///
-/// # Arguments
-///
-/// * `bin_step` - The bin step in basis point, used to calculate the price
-/// * `is_open` - Whether the preset is open or not
+/// Sets if the preset is open or not to be used by users.
+/// Needs to be called by the owner.
 pub fn set_preset_open_state(
     deps: DepsMut,
     _env: Env,
@@ -421,11 +456,8 @@ pub fn set_preset_open_state(
     Ok(Response::new().add_event(event))
 }
 
-/// Remove the preset linked to a bin_step
-///
-/// # Arguments
-///
-/// * `bin_step` - The bin step to remove
+/// Remove the preset linked to a bin step.
+/// Needs to be called by the owner.
 pub fn remove_preset(
     deps: DepsMut,
     _env: Env,
@@ -452,7 +484,8 @@ pub fn remove_preset(
     Ok(Response::new().add_event(event))
 }
 
-/// Function to set the fee parameters of a LbPair
+/// Function to set the fee parameters of a LbPair.
+/// Needs to be called by the owner.
 ///
 /// # Arguments
 ///

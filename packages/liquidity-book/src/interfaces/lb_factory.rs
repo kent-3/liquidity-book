@@ -81,7 +81,9 @@ pub enum LbFactoryError {
     #[error("Flash loan fee is already {fee}!")]
     SameFlashLoanFee { fee: Uint128 },
 
-    // TODO: I don't this applies, since the lb_pair factory address is assigned on instantiation.
+    // TODO: I don't think this applies, since the lb_pair factory address is assigned on instantiation.
+    // In a perfect world, the lb_pair contract would be hardcoded with the factory address, so
+    // that no one else could use it. But that would be a terrible deployment process.
     #[error(
         "LbPair safety check failed. {lb_pair_implementation} factory address does not match this one!"
     )]
@@ -156,19 +158,19 @@ impl Default for LbPairInformation {
             bin_step: 0,
             lb_pair: LbPair {
                 token_x: TokenType::NativeToken {
-                    denom: "none".to_string(),
+                    denom: "".to_string(),
                 },
                 token_y: TokenType::NativeToken {
-                    denom: "none".to_string(),
+                    denom: "".to_string(),
                 },
                 bin_step: 0,
                 contract: ContractInfo {
-                    address: Addr::unchecked("0"),
+                    address: Addr::unchecked(""),
                     code_hash: "".to_string(),
                 },
             },
             created_by_owner: false,
-            ignored_for_routing: true,
+            ignored_for_routing: false,
         }
     }
 }
@@ -257,6 +259,7 @@ pub trait LbFactoryEventExt {
             )
     }
 
+    // TODO: should lb_pair be a String or the full LbPair type?
     fn lb_pair_ignored_state_changed(lb_pair: String, ignored: bool) -> Event {
         Event::new("lb_pair_ignored_state_changed")
             .add_attribute_plaintext("lb_pair", lb_pair)

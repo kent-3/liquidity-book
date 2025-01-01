@@ -4,6 +4,8 @@ use cosmwasm_std::{
     SubMsgResult, Uint128,
 };
 use liquidity_book::interfaces::lb_factory::*;
+use secret_toolkit::crypto::sha_256;
+use std::sync::LazyLock;
 
 mod execute;
 mod helper;
@@ -14,14 +16,19 @@ use execute::*;
 use query::*;
 use state::*;
 
-// TODO: add this
-// bytes32 public constant LB_HOOKS_MANAGER_ROLE = keccak256("LB_HOOKS_MANAGER_ROLE");
+// TODO: Figure out the role stuff from original.
+// I need to learn about Ownable2Step and AccessControl from solidity.
+
+// TODO: see if LazyLock works OK in contracts
+// using sha256 instead of keccak256 just because it's more easily available
+pub static LB_HOOKS_MANAGER_ROLE: LazyLock<[u8; 32]> =
+    LazyLock::new(|| sha_256(b"LB_HOOKS_MANAGER_ROLE"));
 static OFFSET_IS_PRESET_OPEN: u8 = 255;
 static MIN_BIN_STEP: u8 = 1; // 0.001%
 static MAX_FLASH_LOAN_FEE: Uint128 = Uint128::new(10_u128.pow(17)); // 10%
 static PUBLIC_VIEWING_KEY: &str = "lb_rocks"; // TODO: decide if this should be public and static
 
-const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
+pub const CREATE_LB_PAIR_REPLY_ID: u64 = 1u64;
 
 #[entry_point]
 pub fn instantiate(
@@ -190,31 +197,29 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::GetMinBinStep {} => to_binary(&query_min_bin_step(deps)?),
-        QueryMsg::GetFeeRecipient {} => to_binary(&query_fee_recipient(deps)?),
-        QueryMsg::GetMaxFlashLoanFee {} => to_binary(&query_max_flash_loan_fee(deps)?),
-        QueryMsg::GetFlashLoanFee {} => to_binary(&query_flash_loan_fee(deps)?),
-        QueryMsg::GetLbPairImplementation {} => to_binary(&query_lb_pair_implementation(deps)?),
-        QueryMsg::GetLbTokenImplementation {} => to_binary(&query_lb_token_implementation(deps)?),
-        QueryMsg::GetNumberOfLbPairs {} => to_binary(&query_number_of_lb_pairs(deps)?),
-        QueryMsg::GetLbPairAtIndex { index } => to_binary(&query_lb_pair_at_index(deps, index)?),
-        QueryMsg::GetNumberOfQuoteAssets {} => to_binary(&query_number_of_quote_assets(deps)?),
+        QueryMsg::GetMinBinStep {} => to_binary(&get_min_bin_step(deps)?),
+        QueryMsg::GetFeeRecipient {} => to_binary(&get_fee_recipient(deps)?),
+        QueryMsg::GetMaxFlashLoanFee {} => to_binary(&get_max_flash_loan_fee(deps)?),
+        QueryMsg::GetFlashLoanFee {} => to_binary(&get_flash_loan_fee(deps)?),
+        QueryMsg::GetLbPairImplementation {} => to_binary(&get_lb_pair_implementation(deps)?),
+        QueryMsg::GetLbTokenImplementation {} => to_binary(&get_lb_token_implementation(deps)?),
+        QueryMsg::GetNumberOfLbPairs {} => to_binary(&get_number_of_lb_pairs(deps)?),
+        QueryMsg::GetLbPairAtIndex { index } => to_binary(&get_lb_pair_at_index(deps, index)?),
+        QueryMsg::GetNumberOfQuoteAssets {} => to_binary(&get_number_of_quote_assets(deps)?),
         QueryMsg::GetQuoteAssetAtIndex { index } => {
-            to_binary(&query_quote_asset_at_index(deps, index)?)
+            to_binary(&get_quote_asset_at_index(deps, index)?)
         }
-        QueryMsg::IsQuoteAsset { token } => to_binary(&query_is_quote_asset(deps, token)?),
+        QueryMsg::IsQuoteAsset { token } => to_binary(&is_quote_asset(deps, token)?),
         QueryMsg::GetLbPairInformation {
             token_x,
             token_y,
             bin_step,
-        } => to_binary(&query_lb_pair_information(
-            deps, token_x, token_y, bin_step,
-        )?),
-        QueryMsg::GetPreset { bin_step } => to_binary(&query_preset(deps, bin_step)?),
-        QueryMsg::GetAllBinSteps {} => to_binary(&query_all_bin_steps(deps)?),
-        QueryMsg::GetOpenBinSteps {} => to_binary(&query_open_bin_steps(deps)?),
+        } => to_binary(&get_lb_pair_information(deps, token_x, token_y, bin_step)?),
+        QueryMsg::GetPreset { bin_step } => to_binary(&get_preset(deps, bin_step)?),
+        QueryMsg::GetAllBinSteps {} => to_binary(&get_all_bin_steps(deps)?),
+        QueryMsg::GetOpenBinSteps {} => to_binary(&get_open_bin_steps(deps)?),
         QueryMsg::GetAllLbPairs { token_x, token_y } => {
-            to_binary(&query_all_lb_pairs(deps, token_x, token_y)?)
+            to_binary(&get_all_lb_pairs(deps, token_x, token_y)?)
         }
     }
     .map_err(Error::StdError)

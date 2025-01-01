@@ -1,11 +1,14 @@
 use super::{LB_PAIRS_INFO, OFFSET_IS_PRESET_OPEN};
-use crate::{Error, Result};
 use cosmwasm_std::Deps;
 use liquidity_book::{
     interfaces::lb_factory::LbPairInformation,
     libraries::{Bytes32, Encoded},
 };
 use shade_protocol::swap::core::TokenType;
+
+pub fn _is_preset_open(preset: Bytes32) -> bool {
+    preset.decode_bool(OFFSET_IS_PRESET_OPEN)
+}
 
 /// Returns the LBPairInformation if it exists,
 /// if not, then None is returned. The order doesn't matter
@@ -30,8 +33,4 @@ pub fn _sort_tokens(token_a: TokenType, token_b: TokenType) -> (TokenType, Token
     } else {
         (token_b, token_a)
     }
-}
-
-pub fn _is_preset_open(preset: Bytes32) -> bool {
-    preset.decode_bool(OFFSET_IS_PRESET_OPEN)
 }

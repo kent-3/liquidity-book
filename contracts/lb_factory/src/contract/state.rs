@@ -66,9 +66,6 @@ pub enum ContractStatus {
 pub struct State {
     pub contract_info: ContractInfo,
     pub owner: Addr,
-    // pub fee_recipient: Addr,
-    // pub lb_pair_implementation: Implementation,
-    // pub lb_token_implementation: Implementation,
     // TODO: change to ContractInfo, or maybe get rid of these auth contracts...
     pub admin_auth: Contract,
     pub query_auth: Contract,
