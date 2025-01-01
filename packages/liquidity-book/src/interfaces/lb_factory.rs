@@ -2,6 +2,7 @@ use super::lb_pair::LbPair;
 use crate::libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
+    hooks::HooksParameters,
     math::{
         liquidity_configurations::LiquidityConfigurationsError, u128x128_math::U128x128MathError,
         u256x256_math::U256x256MathError,
@@ -11,7 +12,8 @@ use crate::libraries::{
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
-    to_binary, Addr, ContractInfo, CosmosMsg, Event, QuerierWrapper, StdResult, Uint128, WasmMsg,
+    to_binary, Addr, Binary, ContractInfo, CosmosMsg, Event, QuerierWrapper, StdResult, Uint128,
+    WasmMsg,
 };
 use serde::{Deserialize, Serialize};
 use shade_protocol::{
@@ -90,6 +92,18 @@ pub enum LbFactoryError {
 
     #[error("The LbPair implementation has not been set yet!")]
     ImplementationNotSet,
+
+    #[error("Hooks implementation {0} is the same!")]
+    SameHooksImplementation(Addr),
+
+    #[error("Hooks parameters {0:?} are the same!")]
+    SameHooksParameters(HooksParameters),
+
+    #[error("Invalid hooks parameters!")]
+    InvalidHooksParameters,
+
+    #[error("Cannot grant default admin role!")]
+    CannotGrantDefaultAdminRole,
 
     // not in joe-v2
     #[error("{0}!")]
@@ -523,8 +537,7 @@ pub enum ExecuteMsg {
     CreateLbPair {
         token_x: TokenType,
         token_y: TokenType,
-        // u24
-        active_id: u32,
+        active_id: u32, // u24
         bin_step: u16,
         viewing_key: String,
         entropy: String,
@@ -541,11 +554,9 @@ pub enum ExecuteMsg {
         filter_period: u16,
         decay_period: u16,
         reduction_factor: u16,
-        // u24
-        variable_fee_control: u32,
+        variable_fee_control: u32, // u24
         protocol_share: u16,
-        // u24
-        max_volatility_accumulator: u32,
+        max_volatility_accumulator: u32, // u24
         is_open: bool,
     },
     SetPresetOpenState {
@@ -563,19 +574,28 @@ pub enum ExecuteMsg {
         filter_period: u16,
         decay_period: u16,
         reduction_factor: u16,
-        // u24
-        variable_fee_control: u32,
+        variable_fee_control: u32, // u24
         protocol_share: u16,
-        // u24
-        max_volatility_accumulator: u32,
+        max_volatility_accumulator: u32, // u24
     },
-    // TODO: Hooks
-    SetLBHooksParametersOnPair,
-    RemoveLBHooksOnPair,
+    SetLBHooksParametersOnPair {
+        token_x: TokenType,
+        token_y: TokenType,
+        bin_step: u16,
+        hooks_parameters: HooksParameters,
+        on_hooks_set_data: Binary,
+    },
+    RemoveLBHooksOnPair {
+        token_x: TokenType,
+        token_y: TokenType,
+        bin_step: u16,
+    },
     SetFeeRecipient {
         fee_recipient: Addr,
     },
-    SetFlashLoanFee,
+    SetFlashLoanFee {
+        flash_loan_fee: Uint128,
+    },
     AddQuoteAsset {
         asset: TokenType,
     },

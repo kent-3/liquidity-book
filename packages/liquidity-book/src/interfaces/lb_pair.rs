@@ -603,6 +603,7 @@ pub struct StaticFeeParametersResponse {
     pub max_volatility_accumulator: u32,
 }
 
+// TODO: decide on this
 #[cw_serde]
 pub struct LbHooksParametersResponse {
     pub hooks_parameters: Bytes32,

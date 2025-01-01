@@ -1,20 +1,25 @@
 use super::{
-    helper::{_is_preset_open, _sort_tokens},
+    helper::{_get_lb_pair_information, _is_preset_open, _sort_tokens},
     state::*,
     CREATE_LB_PAIR_REPLY_ID, MIN_BIN_STEP, OFFSET_IS_PRESET_OPEN,
 };
 use crate::{Error, Result};
 use cosmwasm_std::{
     to_binary, Addr, Binary, ContractInfo, CosmosMsg, DepsMut, Env, Event, MessageInfo, Response,
-    SubMsg, WasmMsg,
+    SubMsg, Uint128, WasmMsg,
 };
 use liquidity_book::{
     interfaces::{
         lb_factory::*,
-        lb_pair::{ExecuteMsg as LbPairExecuteMsg, InstantiateMsg as LbPairInstantiateMsg, LbPair},
+        lb_pair::{
+            ExecuteMsg as LbPairExecuteMsg, ILbPair, InstantiateMsg as LbPairInstantiateMsg, LbPair,
+        },
     },
     libraries::{
-        math::encoded::Encoded, pair_parameter_helper::PairParameters, price_helper::PriceHelper,
+        hooks::{self, HooksParameters},
+        math::encoded::Encoded,
+        pair_parameter_helper::PairParameters,
+        price_helper::PriceHelper,
     },
 };
 use shade_protocol::{
@@ -318,7 +323,7 @@ pub fn set_lb_pair_ignored(
 /// * `protocol_share` - The share of the fees received by the protocol
 /// * `max_volatility_accumulator` - The max value of the volatility accumulator
 /// * `is_open` - Whether the preset is open or not to be used by users
-pub fn set_pair_preset(
+pub fn set_preset(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -510,11 +515,54 @@ pub fn set_fee_parameters_on_pair(
     Ok(Response::new().add_message(msg))
 }
 
+/// Function to set the hooks parameters of a pair.
+/// Needs to be called by an address with the LB_HOOKS_MANAGER_ROLE.
+/// Reverts if:
+/// - The pair doesn't exist
+/// - The hooks is `address(0)` or the hooks flags are all false
+pub fn set_lb_hooks_parameters_on_pair(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token_x: TokenType,
+    token_y: TokenType,
+    bin_step: u16,
+    hooks_parameters: HooksParameters,
+    on_hooks_set_data: Binary,
+) -> Result<Response> {
+    // ) external override onlyRole(LB_HOOKS_MANAGER_ROLE) {
+    // if (Hooks.getHooks(hooksParameters) == address(0) || Hooks.getFlags(hooksParameters) == 0) {
+    //     revert LBFactory__InvalidHooksParameters();
+    // }
+    //
+    // _setLBHooksParametersOnPair(tokenX, tokenY, binStep, hooksParameters, onHooksSetData);
+
+    if hooks_parameters.flags == 0 {
+        return Err(Error::InvalidHooksParameters);
+    }
+    todo!()
+}
+
+/// Function to remove the hooks contract from the pair.
+/// Needs to be called by an address with the LB_HOOKS_MANAGER_ROLE.
+/// Reverts if:
+/// - The pair doesn't exist
+pub fn remove_lb_hooks_on_pair(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token_x: TokenType,
+    token_y: TokenType,
+    bin_step: u16,
+) -> Result<Response> {
+    //     onlyRole(LB_HOOKS_MANAGER_ROLE)
+    // {
+    //     _setLBHooksParametersOnPair(tokenX, tokenY, binStep, 0, new bytes(0));
+
+    todo!()
+}
+
 /// Function to set the recipient of the fees. This address needs to be able to receive SNIP20s.
-///
-/// # Arguments
-///
-/// * `fee_recipient` - The address of the recipient
 pub fn set_fee_recipient(
     deps: DepsMut,
     _env: Env,
@@ -543,11 +591,29 @@ pub fn set_fee_recipient(
     Ok(Response::new().add_event(event))
 }
 
+/// Function to set the flash loan fee.
+/// Needs to be called by the owner.
+/// Reverts if:
+/// - The flash_loan_fee is the same as the current one
+/// - The flash_loan_fee is above the maximum flash loan fee
+pub fn set_flash_loan_fee(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    flash_loan_fee: Uint128,
+) -> Result<Response> {
+    // uint256 oldFlashLoanFee = _flashLoanFee;
+    //
+    // if (oldFlashLoanFee == flashLoanFee) revert LBFactory__SameFlashLoanFee(flashLoanFee);
+    // if (flashLoanFee > _MAX_FLASHLOAN_FEE) revert LBFactory__FlashLoanFeeAboveMax(flashLoanFee, _MAX_FLASHLOAN_FEE);
+    //
+    // _flashLoanFee = flashLoanFee;
+    // emit FlashLoanFeeSet(oldFlashLoanFee, flashLoanFee);
+
+    todo!()
+}
+
 /// Function to add an asset to the whitelist of quote assets
-///
-/// # Arguments
-///
-/// * `quote_asset` - The quote asset (e.g: NATIVE, USDC...)
 pub fn add_quote_asset(
     deps: DepsMut,
     _env: Env,
@@ -581,10 +647,6 @@ pub fn add_quote_asset(
 }
 
 /// Function to remove an asset from the whitelist of quote assets
-///
-/// # Arguments
-///
-/// * `quote_asset` - The quote asset (e.g: NATIVE, USDC...)
 pub fn remove_quote_asset(
     deps: DepsMut,
     _env: Env,
@@ -620,6 +682,8 @@ pub fn remove_quote_asset(
     }
 }
 
+/// Function to force the decay of the volatility accumulator of a pair.
+/// Needs to be called by the owner.
 pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo, pair: LbPair) -> Result<Response> {
     let config = STATE.load(deps.storage)?;
     validate_admin(
@@ -652,4 +716,42 @@ pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo, pair: LbPair) ->
     }));
 
     Ok(response)
+}
+
+/// Internal function to set a hooks contract to the pair
+pub fn _set_lb_hooks_parameters_on_pair(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token_x: TokenType,
+    token_y: TokenType,
+    bin_step: u16,
+    hooks_parameters: HooksParameters,
+    on_hooks_set_data: Binary,
+) -> Result<Response> {
+    // ILBPair lbPair = _getLBPairInformation(tokenX, tokenY, binStep).LBPair;
+    //
+    // if (address(lbPair) == address(0)) revert LBFactory__LBPairNotCreated(tokenX, tokenY, binStep);
+    // if (lbPair.getLBHooksParameters() == hooksParameters) revert LBFactory__SameHooksParameters(hooksParameters);
+    //
+    // lbPair.setHooksParameters(hooksParameters, onHooksSetData);
+
+    let lb_pair = _get_lb_pair_information(deps.as_ref(), &token_x, &token_y, bin_step)
+        .ok_or_else(|| Error::LbPairNotCreated {
+            token_x: token_x.unique_key(),
+            token_y: token_y.unique_key(),
+            bin_step,
+        })?
+        .lb_pair;
+    let lb_pair = ILbPair(lb_pair.contract.clone());
+
+    // if lb_pair.get_lb_hooks_parameters(deps.querier)? == hooks_parameters {
+    //     return Err(Error::SameHooksParameters(hooks_parameters));
+    // }
+    //
+    // let msg = lb_pair.set_hooks_parameters(hooks_parameters, on_hooks_set_data);
+    //
+    // Ok(Response::new().add_submessage(msg))
+
+    todo!()
 }

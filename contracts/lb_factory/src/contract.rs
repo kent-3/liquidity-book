@@ -110,7 +110,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             protocol_share,
             max_volatility_accumulator,
             is_open,
-        } => set_pair_preset(
+        } => set_preset(
             deps,
             env,
             info,
@@ -154,12 +154,33 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             protocol_share,
             max_volatility_accumulator,
         ),
-        ExecuteMsg::SetLBHooksParametersOnPair => todo!(),
-        ExecuteMsg::RemoveLBHooksOnPair => todo!(),
+        ExecuteMsg::SetLBHooksParametersOnPair {
+            token_x,
+            token_y,
+            bin_step,
+            hooks_parameters,
+            on_hooks_set_data,
+        } => set_lb_hooks_parameters_on_pair(
+            deps,
+            env,
+            info,
+            token_x,
+            token_y,
+            bin_step,
+            hooks_parameters,
+            on_hooks_set_data,
+        ),
+        ExecuteMsg::RemoveLBHooksOnPair {
+            token_x,
+            token_y,
+            bin_step,
+        } => remove_lb_hooks_on_pair(deps, env, info, token_x, token_y, bin_step),
         ExecuteMsg::SetFeeRecipient { fee_recipient } => {
             set_fee_recipient(deps, env, info, fee_recipient)
         }
-        ExecuteMsg::SetFlashLoanFee => todo!(),
+        ExecuteMsg::SetFlashLoanFee { flash_loan_fee } => {
+            set_flash_loan_fee(deps, env, info, flash_loan_fee)
+        }
         ExecuteMsg::AddQuoteAsset { asset } => add_quote_asset(deps, env, info, asset),
         ExecuteMsg::RemoveQuoteAsset { asset } => remove_quote_asset(deps, env, info, asset),
         ExecuteMsg::ForceDecay { pair } => force_decay(deps, env, info, pair),
