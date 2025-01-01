@@ -5,7 +5,7 @@ use liquidity_book::interfaces::lb_pair::{
     SwapOutResponse,
 };
 
-pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
+pub fn get_factory(deps: Deps) -> Result<FactoryResponse> {
     let factory = FACTORY_V2_2.load(deps.storage)?;
 
     Ok(FactoryResponse {
@@ -13,7 +13,7 @@ pub fn query_factory(deps: Deps) -> Result<FactoryResponse> {
     })
 }
 
-pub fn query_id_from_price(
+pub fn get_id_from_price(
     deps: Deps,
     lb_pair: ContractInfo,
     price: Uint256,
@@ -30,7 +30,7 @@ pub fn query_id_from_price(
     Ok(IdFromPriceResponse { id })
 }
 
-pub fn query_price_from_id(
+pub fn get_price_from_id(
     deps: Deps,
     lb_pair: ContractInfo,
     id: u32,
@@ -47,7 +47,7 @@ pub fn query_price_from_id(
     Ok(PriceFromIdResponse { price })
 }
 
-pub fn query_swap_in(
+pub fn get_swap_in(
     deps: Deps,
     lb_pair: ContractInfo,
     amount_out: Uint128,
@@ -74,7 +74,7 @@ pub fn query_swap_in(
     })
 }
 
-pub fn query_swap_out(
+pub fn get_swap_out(
     deps: Deps,
     lb_pair: ContractInfo,
     amount_in: Uint128,

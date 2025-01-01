@@ -277,44 +277,44 @@ pub fn receiver_callback(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::GetFactory {} => to_binary(&query_factory(deps)?),
-        QueryMsg::GetTokenX {} => to_binary(&query_token_x(deps)?),
-        QueryMsg::GetTokenY {} => to_binary(&query_token_y(deps)?),
-        QueryMsg::GetBinStep {} => to_binary(&query_bin_step(deps)?),
-        QueryMsg::GetReserves {} => to_binary(&query_reserves(deps)?),
-        QueryMsg::GetActiveId {} => to_binary(&query_active_id(deps)?),
-        QueryMsg::GetBin { id } => to_binary(&query_bin(deps, id)?),
+        QueryMsg::GetFactory {} => to_binary(&get_factory(deps)?),
+        QueryMsg::GetTokenX {} => to_binary(&get_token_x(deps)?),
+        QueryMsg::GetTokenY {} => to_binary(&get_token_y(deps)?),
+        QueryMsg::GetBinStep {} => to_binary(&get_bin_step(deps)?),
+        QueryMsg::GetReserves {} => to_binary(&get_reserves(deps)?),
+        QueryMsg::GetActiveId {} => to_binary(&get_active_id(deps)?),
+        QueryMsg::GetBin { id } => to_binary(&get_bin(deps, id)?),
         QueryMsg::GetNextNonEmptyBin { swap_for_y, id } => {
-            to_binary(&query_next_non_empty_bin(deps, swap_for_y, id)?)
+            to_binary(&get_next_non_empty_bin(deps, swap_for_y, id)?)
         }
-        QueryMsg::GetProtocolFees {} => to_binary(&query_protocol_fees(deps)?),
-        QueryMsg::GetStaticFeeParameters {} => to_binary(&query_static_fee_parameters(deps)?),
-        QueryMsg::GetLbHooksParameters {} => to_binary(&query_lb_hooks_parameters(deps)?),
-        QueryMsg::GetVariableFeeParameters {} => to_binary(&query_variable_fee_parameters(deps)?),
-        QueryMsg::GetOracleParameters {} => to_binary(&query_oracle_params(deps)?),
+        QueryMsg::GetProtocolFees {} => to_binary(&get_protocol_fees(deps)?),
+        QueryMsg::GetStaticFeeParameters {} => to_binary(&get_static_fee_parameters(deps)?),
+        QueryMsg::GetLbHooksParameters {} => to_binary(&get_lb_hooks_parameters(deps)?),
+        QueryMsg::GetVariableFeeParameters {} => to_binary(&get_variable_fee_parameters(deps)?),
+        QueryMsg::GetOracleParameters {} => to_binary(&get_oracle_params(deps)?),
         QueryMsg::GetOracleSampleAt { lookup_timestamp } => {
-            to_binary(&query_oracle_sample_at(deps, env, lookup_timestamp)?)
+            to_binary(&get_oracle_sample_at(deps, env, lookup_timestamp)?)
         }
-        QueryMsg::GetPriceFromId { id } => to_binary(&query_price_from_id(deps, id)?),
-        QueryMsg::GetIdFromPrice { price } => to_binary(&query_id_from_price(deps, price)?),
+        QueryMsg::GetPriceFromId { id } => to_binary(&get_price_from_id(deps, id)?),
+        QueryMsg::GetIdFromPrice { price } => to_binary(&get_id_from_price(deps, price)?),
         QueryMsg::GetSwapIn {
             amount_out,
             swap_for_y,
-        } => to_binary(&query_swap_in(deps, env, amount_out.u128(), swap_for_y)?),
+        } => to_binary(&get_swap_in(deps, env, amount_out.u128(), swap_for_y)?),
         QueryMsg::GetSwapOut {
             amount_in,
             swap_for_y,
-        } => to_binary(&query_swap_out(deps, env, amount_in.u128(), swap_for_y)?),
+        } => to_binary(&get_swap_out(deps, env, amount_in.u128(), swap_for_y)?),
 
         // not in joe-v2
-        QueryMsg::GetLbToken {} => to_binary(&query_lb_token(deps)?),
-        QueryMsg::GetLbTokenSupply { id } => to_binary(&query_total_supply(deps, id)?),
-        QueryMsg::GetBins { ids } => to_binary(&query_bins(deps, ids)?),
+        QueryMsg::GetLbToken {} => to_binary(&get_lb_token(deps)?),
+        QueryMsg::GetLbTokenSupply { id } => to_binary(&get_total_supply(deps, id)?),
+        QueryMsg::GetBins { ids } => to_binary(&get_bins(deps, ids)?),
         QueryMsg::GetAllBins {
             id,
             page,
             page_size,
-        } => to_binary(&query_all_bins(deps, env, page, page_size, id)?),
+        } => to_binary(&get_all_bins(deps, env, page, page_size, id)?),
     }
     .map_err(Error::StdError)
 }

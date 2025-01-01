@@ -582,23 +582,23 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::GetFactory {} => to_binary(&query_factory(deps)?),
+        QueryMsg::GetFactory {} => to_binary(&get_factory(deps)?),
         QueryMsg::GetIdFromPrice { lb_pair, price } => {
-            to_binary(&query_id_from_price(deps, lb_pair, price)?)
+            to_binary(&get_id_from_price(deps, lb_pair, price)?)
         }
         QueryMsg::GetPriceFromId { lb_pair, id } => {
-            to_binary(&query_price_from_id(deps, lb_pair, id)?)
+            to_binary(&get_price_from_id(deps, lb_pair, id)?)
         }
         QueryMsg::GetSwapIn {
             lb_pair,
             amount_out,
             swap_for_y,
-        } => to_binary(&query_swap_in(deps, lb_pair, amount_out, swap_for_y)?),
+        } => to_binary(&get_swap_in(deps, lb_pair, amount_out, swap_for_y)?),
         QueryMsg::GetSwapOut {
             lb_pair,
             amount_in,
             swap_for_y,
-        } => to_binary(&query_swap_out(deps, lb_pair, amount_in, swap_for_y)?),
+        } => to_binary(&get_swap_out(deps, lb_pair, amount_in, swap_for_y)?),
     }
     .map_err(Error::CwErr)
 }

@@ -666,7 +666,7 @@ fn update_bin(
     let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
 
     let price = PriceHelper::get_price_from_id(id, bin_step)?;
-    let supply = _query_total_supply(deps.as_ref(), id)?;
+    let supply = _get_total_supply(deps.as_ref(), id)?;
 
     let (mut shares, amounts_in) =
         bin_reserves.get_shares_and_effective_amounts_in(amounts_in, price, supply)?;
@@ -791,7 +791,7 @@ pub fn burn(
                 active_id: i as u32,
             })?;
 
-        let supply = _query_total_supply(deps.as_ref(), id)?;
+        let supply = _get_total_supply(deps.as_ref(), id)?;
 
         burn_tokens.push(TokenAmount {
             token_id: id.to_string(),

@@ -1,4 +1,4 @@
-use crate::{contract::*, query::query_swap_in, state::*, Error, Result};
+use crate::{contract::*, query::get_swap_in, state::*, Error, Result};
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, ContractInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Response, StdResult, SubMsg, Uint128, Uint256, Uint64,
@@ -546,7 +546,7 @@ fn _get_amounts_in(
             Version::V1 => unimplemented!(),
             Version::V2 => unimplemented!(),
             _ => {
-                query_swap_in(
+                get_swap_in(
                     deps,
                     pair.0.clone(),
                     amounts_in[i],

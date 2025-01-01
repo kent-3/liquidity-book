@@ -234,7 +234,7 @@ pub fn calculate_id(
     Ok(id as u32)
 }
 
-pub fn _query_total_supply(deps: Deps, id: u32) -> Result<U256> {
+pub fn _get_total_supply(deps: Deps, id: u32) -> Result<U256> {
     let lb_token = LB_TOKEN.load(deps.storage)?;
 
     let msg = lb_token::QueryMsg::IdTotalBalance { id: id.to_string() };
