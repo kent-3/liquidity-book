@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OracleParametersResponse",
+  "type": "object",
+  "required": [
+    "active_size",
+    "first_timestamp",
+    "last_updated",
+    "sample_lifetime",
+    "size"
+  ],
+  "properties": {
+    "active_size": {
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    },
+    "first_timestamp": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "last_updated": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "sample_lifetime": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0.0
+    },
+    "size": {
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false
+}

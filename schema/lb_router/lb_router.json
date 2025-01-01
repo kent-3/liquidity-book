@@ -1,0 +1,1234 @@
+{
+  "contract_name": "lb-schema",
+  "contract_version": "0.1.0",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InstantiateMsg",
+    "type": "object",
+    "required": [
+      "factory"
+    ],
+    "properties": {
+      "factory": {
+        "$ref": "#/definitions/ContractInfo"
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "Addr": {
+        "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+        "type": "string"
+      },
+      "ContractInfo": {
+        "type": "object",
+        "required": [
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/Addr"
+          },
+          "code_hash": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "execute": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ExecuteMsg",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": [
+          "create_lb_pair"
+        ],
+        "properties": {
+          "create_lb_pair": {
+            "type": "object",
+            "required": [
+              "active_id",
+              "bin_step",
+              "token_x",
+              "token_y"
+            ],
+            "properties": {
+              "active_id": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "bin_step": {
+                "type": "integer",
+                "format": "uint16",
+                "minimum": 0.0
+              },
+              "token_x": {
+                "$ref": "#/definitions/TokenType"
+              },
+              "token_y": {
+                "$ref": "#/definitions/TokenType"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "add_liquidity"
+        ],
+        "properties": {
+          "add_liquidity": {
+            "type": "object",
+            "required": [
+              "liquidity_parameters"
+            ],
+            "properties": {
+              "liquidity_parameters": {
+                "$ref": "#/definitions/LiquidityParameters"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "add_liquidity_native"
+        ],
+        "properties": {
+          "add_liquidity_native": {
+            "type": "object",
+            "required": [
+              "liquidity_parameters"
+            ],
+            "properties": {
+              "liquidity_parameters": {
+                "$ref": "#/definitions/LiquidityParameters"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "remove_liquidity"
+        ],
+        "properties": {
+          "remove_liquidity": {
+            "type": "object",
+            "required": [
+              "amount_x_min",
+              "amount_y_min",
+              "amounts",
+              "bin_step",
+              "deadline",
+              "ids",
+              "to",
+              "token_x",
+              "token_y"
+            ],
+            "properties": {
+              "amount_x_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_y_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amounts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              },
+              "bin_step": {
+                "type": "integer",
+                "format": "uint16",
+                "minimum": 0.0
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              },
+              "to": {
+                "type": "string"
+              },
+              "token_x": {
+                "$ref": "#/definitions/ContractInfo"
+              },
+              "token_y": {
+                "$ref": "#/definitions/ContractInfo"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "remove_liquidity_native"
+        ],
+        "properties": {
+          "remove_liquidity_native": {
+            "type": "object",
+            "required": [
+              "amount_native_min",
+              "amount_token_min",
+              "amounts",
+              "bin_step",
+              "deadline",
+              "ids",
+              "to",
+              "token"
+            ],
+            "properties": {
+              "amount_native_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_token_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amounts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              },
+              "bin_step": {
+                "type": "integer",
+                "format": "uint16",
+                "minimum": 0.0
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              },
+              "to": {
+                "type": "string"
+              },
+              "token": {
+                "$ref": "#/definitions/TokenType"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_exact_tokens_for_tokens"
+        ],
+        "properties": {
+          "swap_exact_tokens_for_tokens": {
+            "type": "object",
+            "required": [
+              "amount_in",
+              "amount_out_min",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_in": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_out_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_exact_tokens_for_native"
+        ],
+        "properties": {
+          "swap_exact_tokens_for_native": {
+            "type": "object",
+            "required": [
+              "amount_in",
+              "amount_out_min_native",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_in": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_out_min_native": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_exact_nativefor_tokens"
+        ],
+        "properties": {
+          "swap_exact_nativefor_tokens": {
+            "type": "object",
+            "required": [
+              "amount_out_min",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_out_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_tokens_for_exact_tokens"
+        ],
+        "properties": {
+          "swap_tokens_for_exact_tokens": {
+            "type": "object",
+            "required": [
+              "amount_in_max",
+              "amount_out",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_in_max": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_out": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_tokens_for_exact_native"
+        ],
+        "properties": {
+          "swap_tokens_for_exact_native": {
+            "type": "object",
+            "required": [
+              "amount_in_max",
+              "amount_native_out",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_in_max": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_native_out": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_nativefor_exact_tokens"
+        ],
+        "properties": {
+          "swap_nativefor_exact_tokens": {
+            "type": "object",
+            "required": [
+              "amount_out",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_out": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_exact_tokens_for_tokens_supporting_fee_on_transfer_tokens"
+        ],
+        "properties": {
+          "swap_exact_tokens_for_tokens_supporting_fee_on_transfer_tokens": {
+            "type": "object",
+            "required": [
+              "amount_in",
+              "amount_out_min",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_in": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_out_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_exact_tokens_for_nativesupporting_fee_on_transfer_tokens"
+        ],
+        "properties": {
+          "swap_exact_tokens_for_nativesupporting_fee_on_transfer_tokens": {
+            "type": "object",
+            "required": [
+              "amount_in",
+              "amount_out_min_native",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_in": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "amount_out_min_native": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "swap_exact_nativefor_tokens_supporting_fee_on_transfer_tokens"
+        ],
+        "properties": {
+          "swap_exact_nativefor_tokens_supporting_fee_on_transfer_tokens": {
+            "type": "object",
+            "required": [
+              "amount_out_min",
+              "deadline",
+              "path",
+              "to"
+            ],
+            "properties": {
+              "amount_out_min": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "deadline": {
+                "$ref": "#/definitions/Uint64"
+              },
+              "path": {
+                "$ref": "#/definitions/Path"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "sweep"
+        ],
+        "properties": {
+          "sweep": {
+            "type": "object",
+            "required": [
+              "amount",
+              "to",
+              "token"
+            ],
+            "properties": {
+              "amount": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "to": {
+                "type": "string"
+              },
+              "token": {
+                "$ref": "#/definitions/TokenType"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "sweep_lb_token"
+        ],
+        "properties": {
+          "sweep_lb_token": {
+            "type": "object",
+            "required": [
+              "amounts",
+              "ids",
+              "to",
+              "token"
+            ],
+            "properties": {
+              "amounts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Uint128"
+                }
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              },
+              "to": {
+                "type": "string"
+              },
+              "token": {
+                "$ref": "#/definitions/ContractInfo"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "register"
+        ],
+        "properties": {
+          "register": {
+            "type": "object",
+            "required": [
+              "address",
+              "code_hash"
+            ],
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "code_hash": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "register_batch"
+        ],
+        "properties": {
+          "register_batch": {
+            "type": "object",
+            "required": [
+              "tokens"
+            ],
+            "properties": {
+              "tokens": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/RawContract"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "receive"
+        ],
+        "properties": {
+          "receive": {
+            "type": "object",
+            "required": [
+              "amount",
+              "from",
+              "msg",
+              "sender"
+            ],
+            "properties": {
+              "amount": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "from": {
+                "$ref": "#/definitions/Addr"
+              },
+              "memo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "msg": {
+                "$ref": "#/definitions/Binary"
+              },
+              "sender": {
+                "$ref": "#/definitions/Addr"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "definitions": {
+      "Addr": {
+        "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+        "type": "string"
+      },
+      "Binary": {
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "string"
+      },
+      "ContractInfo": {
+        "type": "object",
+        "required": [
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/Addr"
+          },
+          "code_hash": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LiquidityParameters": {
+        "description": "The liquidity parameters, such as: - tokenX: The address of token X - tokenY: The address of token Y - binStep: The bin step of the pair - amountX: The amount to send of token X - amountY: The amount to send of token Y - amountXMin: The min amount of token X added to liquidity - amountYMin: The min amount of token Y added to liquidity - activeIdDesired: The active id that user wants to add liquidity from - idSlippage: The number of id that are allowed to slip - deltaIds: The list of delta ids to add liquidity (`deltaId = activeId - desiredId`) - distributionX: The distribution of tokenX with sum(distributionX) = 1e18 (100%) or 0 (0%) - distributionY: The distribution of tokenY with sum(distributionY) = 1e18 (100%) or 0 (0%) - to: The address of the recipient - refundTo: The address of the recipient of the refunded tokens if too much tokens are sent - deadline: The deadline of the transaction",
+        "type": "object",
+        "required": [
+          "active_id_desired",
+          "amount_x",
+          "amount_x_min",
+          "amount_y",
+          "amount_y_min",
+          "bin_step",
+          "deadline",
+          "delta_ids",
+          "distribution_x",
+          "distribution_y",
+          "id_slippage",
+          "refund_to",
+          "to",
+          "token_x",
+          "token_y"
+        ],
+        "properties": {
+          "active_id_desired": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "amount_x": {
+            "$ref": "#/definitions/Uint128"
+          },
+          "amount_x_min": {
+            "$ref": "#/definitions/Uint128"
+          },
+          "amount_y": {
+            "$ref": "#/definitions/Uint128"
+          },
+          "amount_y_min": {
+            "$ref": "#/definitions/Uint128"
+          },
+          "bin_step": {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          },
+          "deadline": {
+            "$ref": "#/definitions/Uint64"
+          },
+          "delta_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "distribution_x": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Uint64"
+            }
+          },
+          "distribution_y": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Uint64"
+            }
+          },
+          "id_slippage": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "refund_to": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "token_x": {
+            "$ref": "#/definitions/TokenType"
+          },
+          "token_y": {
+            "$ref": "#/definitions/TokenType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Path": {
+        "description": "The path parameters, such as: - pairBinSteps: The list of bin steps of the pairs to go through - versions: The list of versions of the pairs to go through - tokenPath: The list of tokens in the path to go through",
+        "type": "object",
+        "required": [
+          "pair_bin_steps",
+          "token_path",
+          "versions"
+        ],
+        "properties": {
+          "pair_bin_steps": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          },
+          "token_path": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/TokenType"
+            }
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Version"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "RawContract": {
+        "description": "A contract that does not contain a validated address. Should be accepted as user input because we shouldn't assume addresses are verified Addrs. https://docs.rs/cosmwasm-std/latest/cosmwasm_std/struct.Addr.html",
+        "type": "object",
+        "required": [
+          "address",
+          "code_hash"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "code_hash": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TokenType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "custom_token"
+            ],
+            "properties": {
+              "custom_token": {
+                "type": "object",
+                "required": [
+                  "contract_addr",
+                  "token_code_hash"
+                ],
+                "properties": {
+                  "contract_addr": {
+                    "$ref": "#/definitions/Addr"
+                  },
+                  "token_code_hash": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "native_token"
+            ],
+            "properties": {
+              "native_token": {
+                "type": "object",
+                "required": [
+                  "denom"
+                ],
+                "properties": {
+                  "denom": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Uint128": {
+        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use secret_cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+        "type": "string"
+      },
+      "Uint256": {
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use secret_cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+        "type": "string"
+      },
+      "Uint64": {
+        "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use secret_cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+        "type": "string"
+      },
+      "Version": {
+        "description": "This enum represents the version of the pair requested - V1: Joe V1 pair - V2: LB pair V2. Also called legacyPair - V2_1: LB pair V2.1 - V2_2: LB pair V2.2 (current version)",
+        "type": "string",
+        "enum": [
+          "v1",
+          "v2",
+          "v2_1",
+          "v2_2"
+        ]
+      }
+    }
+  },
+  "query": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "QueryMsg",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": [
+          "get_factory"
+        ],
+        "properties": {
+          "get_factory": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_id_from_price"
+        ],
+        "properties": {
+          "get_id_from_price": {
+            "type": "object",
+            "required": [
+              "lb_pair",
+              "price"
+            ],
+            "properties": {
+              "lb_pair": {
+                "$ref": "#/definitions/ContractInfo"
+              },
+              "price": {
+                "$ref": "#/definitions/Uint256"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_price_from_id"
+        ],
+        "properties": {
+          "get_price_from_id": {
+            "type": "object",
+            "required": [
+              "id",
+              "lb_pair"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "lb_pair": {
+                "$ref": "#/definitions/ContractInfo"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_swap_in"
+        ],
+        "properties": {
+          "get_swap_in": {
+            "type": "object",
+            "required": [
+              "amount_out",
+              "lb_pair",
+              "swap_for_y"
+            ],
+            "properties": {
+              "amount_out": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "lb_pair": {
+                "$ref": "#/definitions/ContractInfo"
+              },
+              "swap_for_y": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "get_swap_out"
+        ],
+        "properties": {
+          "get_swap_out": {
+            "type": "object",
+            "required": [
+              "amount_in",
+              "lb_pair",
+              "swap_for_y"
+            ],
+            "properties": {
+              "amount_in": {
+                "$ref": "#/definitions/Uint128"
+              },
+              "lb_pair": {
+                "$ref": "#/definitions/ContractInfo"
+              },
+              "swap_for_y": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "definitions": {
+      "Addr": {
+        "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+        "type": "string"
+      },
+      "ContractInfo": {
+        "type": "object",
+        "required": [
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/Addr"
+          },
+          "code_hash": {
+            "default": "",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Uint128": {
+        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use secret_cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+        "type": "string"
+      },
+      "Uint256": {
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use secret_cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+        "type": "string"
+      }
+    }
+  },
+  "migrate": null,
+  "sudo": null,
+  "responses": {
+    "get_factory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GetFactoryResponse",
+      "type": "object",
+      "required": [
+        "factory"
+      ],
+      "properties": {
+        "factory": {
+          "$ref": "#/definitions/Addr"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        }
+      }
+    },
+    "get_id_from_price": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GetIdFromPriceResponse",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "get_price_from_id": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GetPriceFromIdResponse",
+      "type": "object",
+      "required": [
+        "price"
+      ],
+      "properties": {
+        "price": {
+          "$ref": "#/definitions/Uint256"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Uint256": {
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances out of primitive uint types or `new` to provide big endian bytes:\n\n``` # use secret_cosmwasm_std::Uint256; let a = Uint256::from(258u128); let b = Uint256::new([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); ```",
+          "type": "string"
+        }
+      }
+    },
+    "get_swap_in": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GetSwapInResponse",
+      "type": "object",
+      "required": [
+        "amount_in",
+        "amount_out_left",
+        "fee"
+      ],
+      "properties": {
+        "amount_in": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "amount_out_left": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "fee": {
+          "$ref": "#/definitions/Uint128"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use secret_cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "get_swap_out": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GetSwapOutResponse",
+      "type": "object",
+      "required": [
+        "amount_in_left",
+        "amount_out",
+        "fee"
+      ],
+      "properties": {
+        "amount_in_left": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "amount_out": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "fee": {
+          "$ref": "#/definitions/Uint128"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use secret_cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

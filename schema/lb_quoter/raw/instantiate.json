@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "properties": {
+    "factory_v2_2": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RawContract"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "router_v2_2": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RawContract"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "RawContract": {
+      "description": "A contract that does not contain a validated address. Should be accepted as user input because we shouldn't assume addresses are verified Addrs. https://docs.rs/cosmwasm-std/latest/cosmwasm_std/struct.Addr.html",
+      "type": "object",
+      "required": [
+        "address",
+        "code_hash"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "code_hash": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

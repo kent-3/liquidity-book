@@ -7,7 +7,8 @@ members = [
   "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_token",
-  "deploy/lb_deployer",
+  "script/lb_deployer",
+  "script/lb_schema",
   # TODO: update the tests to reflect recent changes
   "tests",
 ]
@@ -38,7 +39,7 @@ secretrs = { git = "https://github.com/kent-3/secret-rust", branch = "sdk-upgrad
 
 [workspace.dependencies]
 liquidity-book = { path = "packages/liquidity-book" }
-cosmwasm-schema = { version = "1.5.9" }
+cosmwasm-schema = { version = "2.2.0" }
 schemars = { version = "0.8.21" }
 serde = { version = "1.0.217" }
 serde_json = { version = "1.0.134" }

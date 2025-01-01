@@ -1,0 +1,8 @@
+[package]
+name = "lb-schema"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+liquidity-book = { workspace = true }

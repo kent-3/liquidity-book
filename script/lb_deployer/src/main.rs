@@ -77,11 +77,11 @@ async fn main() -> Result<()> {
     let wallet_address = secretrs.wallet.addr();
 
     // Store Code
-    let admin = Path::new("./deploy/lb_deployer/code/admin.wasm.gz");
-    let query_auth = Path::new("./deploy/lb_deployer/code/query_auth.wasm.gz");
-    let query_router = Path::new("./deploy/lb_deployer/code/query_router.wasm");
-    let snip20 = Path::new("./deploy/lb_deployer/code/snip20.wasm.gz");
-    let snip25 = Path::new("./deploy/lb_deployer/code/snip25-amber.wasm.gz");
+    let admin = Path::new("./script/lb_deployer/code/admin.wasm.gz");
+    let query_auth = Path::new("./script/lb_deployer/code/query_auth.wasm.gz");
+    let query_router = Path::new("./script/lb_deployer/code/query_router.wasm");
+    let snip20 = Path::new("./script/lb_deployer/code/snip20.wasm.gz");
+    let snip25 = Path::new("./script/lb_deployer/code/snip25-amber.wasm.gz");
     let lb_factory = Path::new("./code/lb_factory.wasm.gz");
     let lb_pair = Path::new("./code/lb_pair.wasm.gz");
     let lb_token = Path::new("./code/lb_token.wasm.gz");
