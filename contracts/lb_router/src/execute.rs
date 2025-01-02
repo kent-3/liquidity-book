@@ -55,7 +55,7 @@ pub fn add_liquidity(
         Version::V2_2,
     )?);
 
-    if liquidity_parameters.token_x != lb_pair.get_token_x(deps.querier)?.into() {
+    if liquidity_parameters.token_x != lb_pair.get_token_x(deps.querier)? {
         return Err(Error::WrongTokenOrder);
     }
 
@@ -79,7 +79,7 @@ pub fn add_liquidity(
 
     let response = [transfer_from_x, transfer_from_y]
         .into_iter()
-        .filter_map(|msg| msg)
+        .flatten()
         .fold(Response::new(), |resp, msg| resp.add_message(msg));
 
     _add_liquidity(deps, env, response, liquidity_parameters, lb_pair)
@@ -121,7 +121,7 @@ pub fn remove_liquidity(
         deps.as_ref(),
         token_x.clone().into(),
         token_y.clone().into(),
-        bin_step.clone(),
+        bin_step,
         Version::V2_2,
     )?);
     let is_wrong_order = TokenType::from(token_x) != lb_pair.get_token_x(deps.querier)?;
@@ -752,7 +752,7 @@ fn _get_pairs(
             deps,
             token.clone(),
             token_next.clone(),
-            pair_bin_steps[i].clone(),
+            pair_bin_steps[i],
             versions[i].clone(),
         )?);
     }

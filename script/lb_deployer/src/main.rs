@@ -519,7 +519,7 @@ pub async fn setup_client(
     let mut enclave_key = [0u8; 32];
     enclave_key.copy_from_slice(&enclave_key_bytes[0..32]);
 
-    let wallet = Account::from_mnemonic(&MNEMONIC).expect("Failed to parse mnemonic");
+    let wallet = Account::from_mnemonic(MNEMONIC).expect("Failed to parse mnemonic");
     let wallet_address = wallet.addr();
     // TODO: figure out a more secure seed
     let seed = sha256(wallet.addr().as_bytes());

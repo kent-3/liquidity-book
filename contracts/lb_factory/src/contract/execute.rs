@@ -117,7 +117,7 @@ pub fn create_lb_pair(
 
     let preset = PRESETS
         .get(deps.storage, &bin_step)
-        .ok_or_else(|| Error::BinStepHasNoPreset { bin_step })?;
+        .ok_or(Error::BinStepHasNoPreset { bin_step })?;
 
     let is_owner = info.sender == config.owner;
 
@@ -731,11 +731,9 @@ pub fn remove_quote_asset(
 
             Ok(Response::new().add_event(event))
         }
-        _ => {
-            return Err(Error::QuoteAssetNotWhitelisted {
-                quote_asset: asset.unique_key(),
-            });
-        }
+        _ => Err(Error::QuoteAssetNotWhitelisted {
+            quote_asset: asset.unique_key(),
+        }),
     }
 }
 

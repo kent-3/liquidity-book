@@ -214,7 +214,7 @@ pub async fn store_code(path: &Path, gas: u64) -> Result<u64> {
     let timeout_ms = 60_000;
 
     // sleep first because there's no point in checking right after broadcasting
-    sleep(Duration::from_millis(6000 as u64 / 2)).await;
+    sleep(Duration::from_millis(6000u64 / 2)).await;
 
     loop {
         info!("Checking for Tx...");
@@ -236,7 +236,7 @@ pub async fn store_code(path: &Path, gas: u64) -> Result<u64> {
             ));
         };
 
-        sleep(Duration::from_millis(6000 as u64)).await;
+        sleep(Duration::from_millis(6000u64)).await;
     }
 
     let tx_msg_data = TxMsgData::decode(hex::decode(&tx_response.data)?.as_ref())?;
@@ -411,7 +411,7 @@ pub async fn instantiate<T: Serialize>(
     let timeout_ms = 60_000;
 
     // sleep first because there's no point in checking right after broadcasting
-    sleep(Duration::from_millis(6000 as u64 / 2)).await;
+    sleep(Duration::from_millis(6000u64 / 2)).await;
 
     loop {
         info!("Checking for Tx...");
@@ -433,7 +433,7 @@ pub async fn instantiate<T: Serialize>(
             ));
         };
 
-        sleep(Duration::from_millis(6000 as u64)).await;
+        sleep(Duration::from_millis(6000u64)).await;
     }
 
     let tx_msg_data = TxMsgData::decode(hex::decode(&tx_response.data)?.as_ref())?;
@@ -564,7 +564,7 @@ pub async fn execute<T: Serialize + std::fmt::Debug>(
     let timeout_ms = 60_000;
 
     // sleep first because there's no point in checking right after broadcasting
-    sleep(Duration::from_millis(6000 as u64 / 2)).await;
+    sleep(Duration::from_millis(6000u64 / 2)).await;
 
     loop {
         info!("Checking for Tx...");
@@ -586,7 +586,7 @@ pub async fn execute<T: Serialize + std::fmt::Debug>(
             ));
         };
 
-        sleep(Duration::from_millis(6000 as u64)).await;
+        sleep(Duration::from_millis(6000u64)).await;
     }
 
     let tx_msg_data = TxMsgData::decode(hex::decode(&tx_response.data)?.as_ref())?;

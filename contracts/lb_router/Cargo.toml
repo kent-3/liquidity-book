@@ -5,6 +5,9 @@ authors = ["Kent"]
 edition = "2021"
 exclude = ["contract.wasm", "hash.txt"]
 
+[lints]
+workspace = true
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

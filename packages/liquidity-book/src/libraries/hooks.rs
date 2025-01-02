@@ -47,6 +47,8 @@ pub const AFTER_TRANSFER: u16 = 1 << 9;
 //     }
 // }
 
+// NOTE: We can't fit the code hash inside the single Bytes32, so using this struct instead.
+
 #[cw_serde]
 pub struct HooksParameters {
     pub address: String,   // Contract address (human-readable)
@@ -164,25 +166,23 @@ pub fn encode(parameters: Parameters) -> Bytes32 {
  * @return parameters The hooks parameters
  */
 pub fn decode(hooks_parameters: Bytes32) -> Parameters {
-    let mut parameters = Parameters::default();
-
-    parameters.hooks = get_hooks(hooks_parameters);
-
     // Convert to ethnum::U256 to get access to bitwise operations
+    let bytes = hooks_parameters;
     let hooks_parameters = U256::from_be_bytes(hooks_parameters);
 
-    parameters.before_swap = (hooks_parameters & BEFORE_SWAP_FLAG) != 0;
-    parameters.after_swap = (hooks_parameters & AFTER_SWAP_FLAG) != 0;
-    parameters.before_flash_loan = (hooks_parameters & BEFORE_FLASH_LOAN_FLAG) != 0;
-    parameters.after_flash_loan = (hooks_parameters & AFTER_FLASH_LOAN_FLAG) != 0;
-    parameters.before_mint = (hooks_parameters & BEFORE_MINT_FLAG) != 0;
-    parameters.after_mint = (hooks_parameters & AFTER_MINT_FLAG) != 0;
-    parameters.before_burn = (hooks_parameters & BEFORE_BURN_FLAG) != 0;
-    parameters.after_burn = (hooks_parameters & AFTER_BURN_FLAG) != 0;
-    parameters.before_batch_transfer_from = (hooks_parameters & BEFORE_TRANSFER_FLAG) != 0;
-    parameters.after_batch_transfer_from = (hooks_parameters & AFTER_TRANSFER_FLAG) != 0;
-
-    parameters
+    Parameters {
+        hooks: get_hooks(bytes),
+        before_swap: (hooks_parameters & BEFORE_SWAP_FLAG) != 0,
+        after_swap: (hooks_parameters & AFTER_SWAP_FLAG) != 0,
+        before_flash_loan: (hooks_parameters & BEFORE_FLASH_LOAN_FLAG) != 0,
+        after_flash_loan: (hooks_parameters & AFTER_FLASH_LOAN_FLAG) != 0,
+        before_mint: (hooks_parameters & BEFORE_MINT_FLAG) != 0,
+        after_mint: (hooks_parameters & AFTER_MINT_FLAG) != 0,
+        before_burn: (hooks_parameters & BEFORE_BURN_FLAG) != 0,
+        after_burn: (hooks_parameters & AFTER_BURN_FLAG) != 0,
+        before_batch_transfer_from: (hooks_parameters & BEFORE_TRANSFER_FLAG) != 0,
+        after_batch_transfer_from: (hooks_parameters & AFTER_TRANSFER_FLAG) != 0,
+    }
 }
 
 // TODO:
@@ -196,12 +196,7 @@ pub fn decode(hooks_parameters: Bytes32) -> Parameters {
  */
 pub fn get_hooks(hooks_parameters: Bytes32) -> CanonicalAddr {
     // Extract the upper 20 bytes (big-endian)
-    let canonical = CanonicalAddr::from(&hooks_parameters[12..32]);
-
-    canonical
-
-    // Humanize the canonical address
-    // deps.api.addr_humanize(&canonical).unwrap()
+    CanonicalAddr::from(&hooks_parameters[12..32])
 }
 
 /**

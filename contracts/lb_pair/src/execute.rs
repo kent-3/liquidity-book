@@ -835,9 +835,9 @@ pub fn burn(
     )?;
 
     RESERVES.update(deps.storage, |reserves| -> StdResult<Bytes32> {
-        Ok(reserves
+        reserves
             .sub(amounts_out)
-            .map_err(|e| StdError::generic_err(e.to_string()))?)
+            .map_err(|e| StdError::generic_err(e.to_string()))
     })?;
 
     let events = vec![
@@ -988,9 +988,9 @@ pub fn set_static_fee_parameters(
     )?;
 
     {
-        let mut parameters = parameters.clone();
+        let mut parameters_ = parameters;
         let bin_step = BIN_STEP.load(deps.storage)?;
-        let max_parameters = parameters.set_volatility_accumulator(max_volatility_accumulator)?;
+        let max_parameters = parameters_.set_volatility_accumulator(max_volatility_accumulator)?;
         let total_fee =
             max_parameters.get_base_fee(bin_step) + max_parameters.get_variable_fee(bin_step);
         if total_fee > MAX_TOTAL_FEE {
@@ -1056,19 +1056,16 @@ pub fn set_hooks_parameters(
 
     HOOKS_PARAMETERS.save(deps.storage, &hooks_parameters)?;
 
-    match hooks_parameters {
-        Some(ref hooks_parameters) => {
-            let hooks = ContractInfo {
-                address: deps.api.addr_validate(&hooks_parameters.address)?,
-                code_hash: hooks_parameters.code_hash.clone(),
-            };
+    if let Some(ref hooks_parameters) = hooks_parameters {
+        let hooks = ContractInfo {
+            address: deps.api.addr_validate(&hooks_parameters.address)?,
+            code_hash: hooks_parameters.code_hash.clone(),
+        };
 
-            // This LB Pair contract must already be set in the hooks contract.
-            if ILbHooks(hooks).get_lb_pair(deps.querier)? != env.contract.address {
-                return Err(Error::InvalidHooks);
-            }
+        // This LB Pair contract must already be set in the hooks contract.
+        if ILbHooks(hooks).get_lb_pair(deps.querier)? != env.contract.address {
+            return Err(Error::InvalidHooks);
         }
-        None => {}
     }
 
     let event = Event::hooks_parameters_set(&info.sender, &hooks_parameters);

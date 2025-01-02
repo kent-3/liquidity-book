@@ -326,7 +326,7 @@ pub fn receive(
 
 #[entry_point]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
-    match (msg.id.into(), msg.result) {
+    match (msg.id, msg.result) {
         (CREATE_LB_PAIR_REPLY_ID, SubMsgResult::Ok(s)) => match s.data {
             Some(data) => {
                 let lb_pair: lb_pair::LbPair = from_binary(&data)?;
@@ -369,18 +369,23 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                     amounts_left,
                     liquidity_minted,
                 } = from_binary(&data)?;
-                let liq = EPHEMERAL_ADD_LIQUIDITY.load(deps.storage)?;
+
+                let EphemeralAddLiquidity {
+                    amount_x_min,
+                    amount_y_min,
+                    deposit_ids,
+                } = EPHEMERAL_ADD_LIQUIDITY.load(deps.storage)?;
 
                 let amounts_added = amounts_received.sub(amounts_left)?;
 
                 let amount_x_added = Uint128::from(amounts_added.decode_x());
                 let amount_y_added = Uint128::from(amounts_added.decode_y());
 
-                if amount_x_added < liq.amount_x_min || amount_y_added < liq.amount_y_min {
+                if amount_x_added < amount_x_min || amount_y_added < amount_y_min {
                     return Err(Error::AmountSlippageCaught {
-                        amount_x_min: liq.amount_x_min.to_string(),
+                        amount_x_min: amount_x_min.to_string(),
                         amount_x: amount_x_added.to_string(),
-                        amount_y_min: liq.amount_y_min.to_string(),
+                        amount_y_min: amount_y_min.to_string(),
                         amount_y: amount_y_added.to_string(),
                     });
                 }
@@ -389,11 +394,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                 let amount_y_left = Uint128::from(amounts_left.decode_y());
 
                 let data = lb_router::AddLiquidityResponse {
-                    amount_x_added: amount_x_added.into(),
-                    amount_y_added: amount_y_added.into(),
-                    amount_x_left: amount_x_left.into(),
-                    amount_y_left: amount_y_left.into(),
-                    deposit_ids: liq.deposit_ids,
+                    amount_x_added,
+                    amount_y_added,
+                    amount_x_left,
+                    amount_y_left,
+                    deposit_ids,
                     liquidity_minted,
                 };
 

@@ -21,17 +21,17 @@ pub fn find_best_path_from_amount_in(
         return Err(Error::InvalidLength);
     }
 
-    let mut quote = Quote::default();
-
-    quote.route = route.clone();
-
     let swap_length = route.len() - 1;
-    quote.pairs = Vec::with_capacity(swap_length);
-    quote.bin_steps = Vec::with_capacity(swap_length);
-    quote.versions = Vec::with_capacity(swap_length);
-    quote.fees = Vec::with_capacity(swap_length);
-    quote.amounts = Vec::with_capacity(swap_length);
-    quote.virtual_amounts_without_slippage = Vec::with_capacity(route.len());
+
+    let mut quote = Quote {
+        route: route.clone(),
+        pairs: Vec::with_capacity(swap_length),
+        bin_steps: Vec::with_capacity(swap_length),
+        versions: Vec::with_capacity(swap_length),
+        fees: Vec::with_capacity(swap_length),
+        amounts: Vec::with_capacity(swap_length),
+        virtual_amounts_without_slippage: Vec::with_capacity(route.len()),
+    };
 
     quote.amounts[0] = amount_in;
     quote.virtual_amounts_without_slippage[0] = amount_in;
@@ -45,10 +45,10 @@ pub fn find_best_path_from_amount_in(
                 route[i + 1].clone(),
             )?;
 
-            if lb_pairs_available.len() > 0 && quote.amounts[i] > Uint128::zero() {
-                for j in 0..lb_pairs_available.len() {
-                    if !lb_pairs_available[j].ignored_for_routing {
-                        let lb_pair = ILbPair(lb_pairs_available[j].clone().lb_pair.contract);
+            if !lb_pairs_available.is_empty() && quote.amounts[i] > Uint128::zero() {
+                for lb_pair_information in &lb_pairs_available {
+                    if !lb_pair_information.ignored_for_routing {
+                        let lb_pair = ILbPair(lb_pair_information.clone().lb_pair.contract);
 
                         let swap_for_y = lb_pair.get_token_y(deps.querier)? == route[i + 1];
 
@@ -68,7 +68,7 @@ pub fn find_best_path_from_amount_in(
                         {
                             quote.amounts[i + 1] = swap_amount_out;
                             quote.pairs[i] = lb_pair.0.clone();
-                            quote.bin_steps[i] = lb_pairs_available[j].bin_step;
+                            quote.bin_steps[i] = lb_pair_information.bin_step;
                             quote.versions[i] = lb_router::Version::V2_2;
 
                             //  // Getting current price

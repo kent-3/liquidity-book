@@ -23,6 +23,12 @@ default-members = [
 ]
 resolver = "2"
 
+[workspace.lints.rust]
+unused = "allow" # TODO: turn this off
+
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+
 [profile.release]
 opt-level = 3
 debug = false
