@@ -180,60 +180,6 @@ pub fn register_pair_token(
     Ok(())
 }
 
-pub fn match_lengths(liquidity_parameters: &LiquidityParameters) -> Result<()> {
-    if liquidity_parameters.delta_ids.len() != liquidity_parameters.distribution_x.len()
-        || liquidity_parameters.delta_ids.len() != liquidity_parameters.distribution_y.len()
-    {
-        return Err(Error::LengthsMismatch);
-    }
-    Ok(())
-}
-
-pub fn check_ids_bounds(liquidity_parameters: &LiquidityParameters) -> Result<()> {
-    if liquidity_parameters.active_id_desired > U24::MAX
-        || liquidity_parameters.id_slippage > U24::MAX
-    {
-        return Err(Error::IdDesiredOverflows {
-            id_desired: liquidity_parameters.active_id_desired,
-            id_slippage: liquidity_parameters.id_slippage,
-        });
-    }
-    Ok(())
-}
-
-pub fn check_active_id_slippage(
-    liquidity_parameters: &LiquidityParameters,
-    active_id: u32,
-) -> Result<()> {
-    if liquidity_parameters.active_id_desired + liquidity_parameters.id_slippage < active_id
-        || active_id + liquidity_parameters.id_slippage < liquidity_parameters.active_id_desired
-    {
-        return Err(Error::IdSlippageCaught {
-            active_id_desired: liquidity_parameters.active_id_desired,
-            id_slippage: liquidity_parameters.id_slippage,
-            active_id,
-        });
-    }
-    Ok(())
-}
-
-//function won't distinguish between overflow and underflow errors; it'll throw the same DeltaIdOverflows
-pub fn calculate_id(
-    liquidity_parameters: &LiquidityParameters,
-    active_id: u32,
-    i: usize,
-) -> Result<u32> {
-    let id: i64 = active_id as i64 + liquidity_parameters.delta_ids[i];
-
-    if id < 0 || id as u32 > U24::MAX {
-        return Err(Error::DeltaIdOverflows {
-            delta_id: liquidity_parameters.delta_ids[i],
-        });
-    }
-
-    Ok(id as u32)
-}
-
 pub fn _get_total_supply(deps: Deps, id: u32) -> Result<U256> {
     let lb_token = LB_TOKEN.load(deps.storage)?;
 
