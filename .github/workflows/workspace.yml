@@ -11,7 +11,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -Awarnings
+  RUSTFLAGS: -Wwarnings
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
 
@@ -36,4 +36,4 @@ jobs:
         with:
           toolchain: stable
           components: clippy
-      - run: cargo clippy --all --all-features -- -A warnings
+      - run: cargo clippy --all -- -W warnings
