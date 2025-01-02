@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Event, Uint128};
+use cosmwasm_std::{Addr, Event, Uint128, Uint256};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbTokenError {
@@ -14,14 +14,14 @@ pub enum LbTokenError {
     #[error("TransferExceedsBalance: from {from}, id {id}, amount {amount}")]
     TransferExceedsBalance {
         from: Addr,
-        id: Uint128,
-        amount: Uint128,
+        id: u32,
+        amount: Uint256,
     },
     #[error("BurnExceedsBalance: from {from}, id {id}, amount {amount}")]
     BurnExceedsBalance {
         from: Addr,
-        id: Uint128,
-        amount: Uint128,
+        id: u32,
+        amount: Uint256,
     },
 
     #[error(transparent)]
@@ -33,8 +33,8 @@ pub trait LbTokenEventExt {
         sender: Addr,
         from: Addr,
         to: Addr,
-        ids: Vec<Uint128>,
-        amounts: Vec<Uint128>,
+        ids: Vec<u32>,
+        amounts: Vec<Uint256>,
     ) -> Event {
         Event::new("transfer_batch")
             .add_attribute_plaintext("sender", sender)
@@ -60,14 +60,14 @@ pub struct InstantiateMsg {}
 #[cw_serde]
 pub enum ExecuteMsg {
     ApproveForAll {
-        spender: Addr,
+        spender: String,
         approved: bool,
     },
     BatchTransferFrom {
-        from: Addr,
-        to: Addr,
-        ids: Vec<Uint128>,
-        amounts: Vec<Uint128>,
+        from: String,
+        to: String,
+        ids: Vec<u32>,
+        amounts: Vec<Uint256>,
     },
 }
 
@@ -79,16 +79,16 @@ pub enum QueryMsg {
     #[returns(SymbolResponse)]
     Symbol,
     #[returns(TotalSupplyResponse)]
-    TotalSupply { id: Uint128 },
+    TotalSupply { id: u32 },
     #[returns(BalanceResponse)]
-    BalanceOf { account: Addr, id: Uint128 },
+    BalanceOf { account: String, id: u32 },
     #[returns(BalanceBatchResponse)]
     BalanceOfBatch {
-        accounts: Vec<Addr>,
-        ids: Vec<Uint128>,
+        accounts: Vec<String>,
+        ids: Vec<u32>,
     },
     #[returns(ApprovalResponse)]
-    IsApprovedForAll { owner: Addr, spender: Addr },
+    IsApprovedForAll { owner: String, spender: String },
 }
 
 #[cw_serde]
@@ -103,17 +103,17 @@ pub struct SymbolResponse {
 
 #[cw_serde]
 pub struct TotalSupplyResponse {
-    pub total_supply: Uint128,
+    pub total_supply: Uint256,
 }
 
 #[cw_serde]
 pub struct BalanceResponse {
-    pub balance: Uint128,
+    pub balance: Uint256,
 }
 
 #[cw_serde]
 pub struct BalanceBatchResponse {
-    pub balances: Vec<Uint128>,
+    pub balances: Vec<Uint256>,
 }
 
 #[cw_serde]

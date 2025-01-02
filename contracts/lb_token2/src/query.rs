@@ -1,8 +1,5 @@
 use crate::{Error, Result};
-use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    Uint128,
-};
+use cosmwasm_std::{Deps, Uint256};
 use liquidity_book::interfaces::lb_token2::*;
 
 pub fn query_name(deps: Deps) -> Result<NameResponse> {
@@ -19,33 +16,35 @@ pub fn query_symbol(deps: Deps) -> Result<SymbolResponse> {
     })
 }
 
-pub fn query_total_supply(deps: Deps, id: Uint128) -> Result<TotalSupplyResponse> {
+pub fn query_total_supply(deps: Deps, id: u32) -> Result<TotalSupplyResponse> {
     // Implement total supply query logic
-    Ok(TotalSupplyResponse { total_supply: id })
+    Ok(TotalSupplyResponse {
+        total_supply: Uint256::from_u128(100u128),
+    })
 }
 
-pub fn query_balance_of(deps: Deps, account: Addr, id: Uint128) -> Result<BalanceResponse> {
+pub fn query_balance_of(deps: Deps, account: String, id: u32) -> Result<BalanceResponse> {
     // Implement balance query logic
     Ok(BalanceResponse {
-        balance: Uint128::from(100u128),
+        balance: Uint256::from(100u128),
     })
 }
 
 pub fn query_balance_of_batch(
     deps: Deps,
-    accounts: Vec<Addr>,
-    ids: Vec<Uint128>,
+    accounts: Vec<String>,
+    ids: Vec<u32>,
 ) -> Result<BalanceBatchResponse> {
     // Implement batch balance query logic
     Ok(BalanceBatchResponse {
-        balances: vec![Uint128::from(100u128); accounts.len()],
+        balances: vec![Uint256::from(100u128); accounts.len()],
     })
 }
 
 pub fn query_is_approved_for_all(
     deps: Deps,
-    owner: Addr,
-    spender: Addr,
+    owner: String,
+    spender: String,
 ) -> Result<ApprovalResponse> {
     // Implement approval query logic
     Ok(ApprovalResponse { approved: true })

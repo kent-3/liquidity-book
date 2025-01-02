@@ -1,7 +1,6 @@
 use crate::{execute::*, query::*, Error, Result};
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    Uint128,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use liquidity_book::interfaces::lb_token2::*;
 
