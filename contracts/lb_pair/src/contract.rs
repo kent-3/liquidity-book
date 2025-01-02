@@ -148,7 +148,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             ExecuteMsg::Mint { .. }
             | ExecuteMsg::Swap { .. }
             | ExecuteMsg::Burn { .. }
-            | ExecuteMsg::Receive(..) => {
+            // | ExecuteMsg::Receive(..) 
+            => {
                 return Err(Error::TransactionBlock());
             }
             _ => {}
@@ -164,7 +165,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 
     match msg {
         ExecuteMsg::Swap { swap_for_y, to } => swap(deps, env, info, swap_for_y, to),
-        // TODO:
         ExecuteMsg::FlashLoan {
             receiver,
             amounts,
@@ -233,46 +233,45 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             CONTRACT_STATUS.save(deps.storage, &contract_status)?;
 
             Ok(Response::default().add_attribute("new_status", contract_status.to_string()))
-        }
-        ExecuteMsg::Receive(msg) => {
-            let checked_addr = deps.api.addr_validate(&msg.from)?;
-            receiver_callback(deps, env, info, checked_addr, msg.amount, msg.msg)
-        }
+        } // ExecuteMsg::Receive(msg) => {
+          //     let checked_addr = deps.api.addr_validate(&msg.from)?;
+          //     receiver_callback(deps, env, info, checked_addr, msg.amount, msg.msg)
+          // }
     }
 }
 
 // TODO: I think we should remove this! The swap function should always be called by the lb-router.
 // Users send tokens to the router, then it transfer tokens to the lb-pair.
 
-pub fn receiver_callback(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    _from: Addr,
-    _amount: Uint128,
-    msg: Option<Binary>,
-) -> Result<Response> {
-    let msg = msg.ok_or(Error::ReceiverMsgEmpty)?;
-
-    let response = match from_binary(&msg)? {
-        InvokeMsg::Swap { swap_for_y, to } => {
-            // this check needs to be here instead of in execute() because it is impossible to (cleanly) distinguish between swaps and lp withdraws until this point
-            // if contract_status is FreezeAll, this fn will never be called, so only need to check LpWithdrawOnly here
-            if CONTRACT_STATUS.load(deps.storage)? == ContractStatus::LpWithdrawOnly {
-                return Err(Error::TransactionBlock());
-            }
-
-            if info.sender != TOKEN_X.load(deps.storage)?.unique_key()
-                && info.sender != TOKEN_Y.load(deps.storage)?.unique_key()
-            {
-                return Err(Error::NoMatchingTokenInPair);
-            }
-
-            swap(deps, env, info, swap_for_y, to)?
-        }
-    };
-    Ok(response)
-}
+// pub fn receiver_callback(
+//     deps: DepsMut,
+//     env: Env,
+//     info: MessageInfo,
+//     _from: Addr,
+//     _amount: Uint128,
+//     msg: Option<Binary>,
+// ) -> Result<Response> {
+//     let msg = msg.ok_or(Error::ReceiverMsgEmpty)?;
+//
+//     let response = match from_binary(&msg)? {
+//         InvokeMsg::Swap { swap_for_y, to } => {
+//             // this check needs to be here instead of in execute() because it is impossible to (cleanly) distinguish between swaps and lp withdraws until this point
+//             // if contract_status is FreezeAll, this fn will never be called, so only need to check LpWithdrawOnly here
+//             if CONTRACT_STATUS.load(deps.storage)? == ContractStatus::LpWithdrawOnly {
+//                 return Err(Error::TransactionBlock());
+//             }
+//
+//             if info.sender != TOKEN_X.load(deps.storage)?.unique_key()
+//                 && info.sender != TOKEN_Y.load(deps.storage)?.unique_key()
+//             {
+//                 return Err(Error::NoMatchingTokenInPair);
+//             }
+//
+//             swap(deps, env, info, swap_for_y, to)?
+//         }
+//     };
+//     Ok(response)
+// }
 
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
