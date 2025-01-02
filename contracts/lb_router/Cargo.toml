@@ -8,9 +8,6 @@ exclude = ["contract.wasm", "hash.txt"]
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[[bin]]
-name = "schema"
-
 [features]
 default = []
 backtraces = ["cosmwasm-std/backtraces"]
