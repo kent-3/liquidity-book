@@ -9,6 +9,7 @@ members = [
   "contracts/lb_token",
   "script/lb_deployer",
   "script/lb_schema",
+  "script/lb_secretcli",
   # TODO: update the tests to reflect recent changes
   "tests",
 ]

@@ -1,5 +1,7 @@
 [alias]
 deploy = "run -p lb-deployer"
+schema = "run -p lb-schema"
+secretcli = "run -p lb-secretcli"
 
 [build]
 # target = "wasm32-unknown-unknown"

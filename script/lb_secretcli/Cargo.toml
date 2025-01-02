@@ -1,0 +1,12 @@
+[package]
+name = "lb-secretcli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+liquidity-book = { workspace = true }
+shade-protocol = { workspace = true }
+ethnum = { workspace = true }
+serde_json = { workspace = true }
