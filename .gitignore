@@ -9,9 +9,4 @@
 # Text file backups
 **/*.rs.bk
 
-contract.wasm
-contract.wasm.gz
-
-**/node_modules
-
 .env
