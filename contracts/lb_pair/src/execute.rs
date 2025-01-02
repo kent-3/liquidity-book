@@ -219,9 +219,7 @@ pub fn swap(
     let mut events: Vec<Event> = Vec::new();
 
     loop {
-        let bin_reserves = BINS
-            .get(deps.storage, &active_id)
-            .ok_or_else(|| Error::ZeroBinReserve { active_id })?;
+        let bin_reserves = BINS.get(deps.storage, &active_id).unwrap_or_default();
 
         if !bin_reserves.is_empty(!swap_for_y) {
             parameters.update_volatility_accumulator(active_id)?;
@@ -266,6 +264,7 @@ pub fn swap(
             break;
         } else {
             let next_id = _get_next_non_empty_bin(deps.as_ref(), swap_for_y, active_id);
+
             if next_id == 0 || next_id == (U24::MAX) {
                 return Err(Error::OutOfLiquidity);
             }
@@ -784,13 +783,7 @@ pub fn burn(
             return Err(Error::ZeroShares { id });
         }
 
-        // TODO: this error doesn't seem right. if Some(0) was returned, it would not error.
-        let bin_reserves = BINS
-            .get(deps.storage, &id)
-            .ok_or_else(|| Error::ZeroBinReserve {
-                active_id: i as u32,
-            })?;
-
+        let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
         let supply = _get_total_supply(deps.as_ref(), id)?;
 
         burn_tokens.push(TokenAmount {

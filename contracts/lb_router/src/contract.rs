@@ -378,10 +378,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 if amount_x_added < liq.amount_x_min || amount_y_added < liq.amount_y_min {
                     return Err(Error::AmountSlippageCaught {
-                        amount_x_min: liq.amount_x_min,
-                        amount_x: amount_x_added,
-                        amount_y_min: liq.amount_y_min,
-                        amount_y: amount_y_added,
+                        amount_x_min: liq.amount_x_min.to_string(),
+                        amount_x: amount_x_added.to_string(),
+                        amount_y_min: liq.amount_y_min.to_string(),
+                        amount_y: amount_y_added.to_string(),
                     });
                 }
 
@@ -430,10 +430,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 if amount_x < amount_x_min || amount_y < amount_y_min {
                     return Err(Error::AmountSlippageCaught {
-                        amount_x_min,
-                        amount_x,
-                        amount_y_min,
-                        amount_y,
+                        amount_x_min: amount_x_min.to_string(),
+                        amount_x: amount_x.to_string(),
+                        amount_y_min: amount_y_min.to_string(),
+                        amount_y: amount_y.to_string(),
                     });
                 }
 
@@ -600,5 +600,5 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
             swap_for_y,
         } => to_binary(&get_swap_out(deps, lb_pair, amount_in, swap_for_y)?),
     }
-    .map_err(Error::CwErr)
+    .map_err(Error::StdError)
 }

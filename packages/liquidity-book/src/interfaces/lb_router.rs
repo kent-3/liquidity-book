@@ -7,91 +7,91 @@ use cosmwasm_std::{
 use shade_protocol::contract_interfaces::swap::core::TokenType;
 use shade_protocol::utils::asset::RawContract;
 
+// TODO: decide on capitalization in errors...
+
 #[derive(thiserror::Error, Debug)]
 pub enum LbRouterError {
-    #[error("The sender is not WNATIVE")]
+    #[error("The sender is not WNATIVE!")]
     SenderIsNotWNATIVE,
-
-    #[error("Pair not created: {token_x}, {token_y}, bin step: {bin_step}")]
+    #[error("Pair not created! {token_x}, {token_y}, bin step: {bin_step}")]
     PairNotCreated {
         token_x: String,
         token_y: String,
         bin_step: u16,
     },
-
-    #[error("Wrong amounts. Amount: {amount}, Reserve: {reserve}")]
+    #[error("Wrong amounts! amount: {amount}, reserve: {reserve}")]
     WrongAmounts { amount: Uint128, reserve: Uint128 },
-
-    #[error("Swap overflows for bin id {id}")]
+    #[error("Swap overflows for bin {id}!")]
     SwapOverflows { id: u32 },
-
-    #[error("Broken swap safety check")]
+    #[error("Broken swap safety check!")]
     BrokenSwapSafetyCheck,
-
-    #[error("Not factory owner")]
+    #[error("Not factory owner!")]
     NotFactoryOwner,
-
-    #[error("Too many tokens in. Excess: {excess}")]
+    #[error("Too many tokens in! excess: {excess}")]
     TooManyTokensIn { excess: Uint128 },
-
-    #[error("Bin reserve overflows for bin id {id}")]
+    #[error("Bin reserve overflows for bin {id}!")]
     BinReserveOverflows { id: Uint128 },
-
-    #[error("Bin id overflows: {id}")]
+    #[error("Bin id overflows: {id}!")]
     IdOverflows { id: Uint128 },
-
-    #[error("Path lengths mismatch")]
+    #[error("Path lengths mismatch!")]
     LengthsMismatch,
-
-    #[error("Wrong token order")]
+    #[error("Wrong token order!")]
     WrongTokenOrder,
 
+    // I don't think this one is used anymore
+    // #[error(
+    //     "Amount left unswapped. : Amount Left In: {amount_left_in}, Total Amount: {total_amount}, swapped_amount: {swapped_amount}"
+    // )]
+    // AmountInLeft {
+    //     amount_left_in: Uint128,
+    //     total_amount: Uint128,
+    //     swapped_amount: Uint128,
+    // },
+
+    // TODO: should I format these errors like this or use debug notation?
+
+    // #[error(
+    //     "Id slippage caught. Active id desired: {active_id_desired}, Id slippage: {id_slippage}, Active id: {active_id}"
+    // )]
     #[error("{self:?}")]
     IdSlippageCaught {
         active_id_desired: u32,
         id_slippage: u32,
         active_id: u32,
     },
-
+    // #[error(
+    //     "Amount slippage caught. AmountXMin: {amount_x_min}, AmountX: {amount_x}, AmountYMin: {amount_y_min}, AmountY: {amount_y}"
+    // )]
     #[error("{self:?}")]
     AmountSlippageCaught {
-        amount_x_min: Uint128,
-        amount_x: Uint128,
-        amount_y_min: Uint128,
-        amount_y: Uint128,
+        amount_x_min: String,
+        amount_x: String,
+        amount_y_min: String,
+        amount_y: String,
     },
-
-    #[error("Id desired overflows. Id desired: {id_desired}, Id slippage: {id_slippage}")]
+    #[error("ID desired overflows! ID desired: {id_desired}, ID slippage: {id_slippage}")]
     IdDesiredOverflows { id_desired: u32, id_slippage: u32 },
-
-    #[error("Failed to send WNATIVE to recipient {recipient}. Amount: {amount}")]
+    #[error("Failed to send NATIVE to recipient {recipient}! Amount: {amount}")]
     FailedToSendNATIVE { recipient: String, amount: Uint128 },
-
-    #[error("Deadline exceeded: {timestamp} > {deadline}")]
+    #[error("Deadline exceeded: {timestamp} > {deadline}!")]
     DeadlineExceeded { deadline: u64, timestamp: u64 },
-
-    #[error("Amount slippage BP too big. Amount slippage: {amount_slippage}")]
+    #[error("Amount slippage BP too big! Amount slippage: {amount_slippage}")]
     AmountSlippageBpTooBig { amount_slippage: String },
-
-    #[error("Insufficient amount out. Amount out min: {amount_out_min}, Amount out: {amount_out}")]
+    #[error("Insufficient amount out! Amount out min: {amount_out_min}, Amount out: {amount_out}")]
     InsufficientAmountOut {
         amount_out_min: Uint128,
         amount_out: Uint128,
     },
-
-    #[error("Max amount in exceeded. Amount in max: {amount_in_max}, Amount in: {amount_in}")]
+    #[error("Max amount in exceeded! Amount in max: {amount_in_max}, Amount in: {amount_in}")]
     MaxAmountInExceeded {
         amount_in_max: Uint128,
         amount_in: Uint128,
     },
-
-    #[error("Invalid token path: {wrong_token}")]
+    #[error("Invalid token path: {wrong_token}!")]
     InvalidTokenPath { wrong_token: String },
-
-    #[error("Invalid version: {0}")]
+    #[error("Invalid version: {0}!")]
     InvalidVersion(u32),
-
-    #[error("Wrong WNATIVE liquidity parameters. token_x: {token_x}, token_y: {token_y}, amount_x: {amount_x}, amount_y: {amount_y}, msg_value: {msg_value}")]
+    #[error("Wrong native liquidity parameters! token_x: {token_x}, token_y: {token_y}, amount_x: {amount_x}, amount_y: {amount_y}, msg_value: {msg_value}")]
     WrongNativeLiquidityParameters {
         token_x: String,
         token_y: String,
@@ -100,7 +100,8 @@ pub enum LbRouterError {
         msg_value: Uint128,
     },
 
-    // not in joe-v2
+    // --- not in joe-v2 ---
+    //
     #[error("Generic {0}")]
     Generic(String),
     #[error("Unknown reply id: {id}")]
@@ -109,7 +110,7 @@ pub enum LbRouterError {
     ReplyDataMissing,
 
     #[error(transparent)]
-    CwErr(#[from] cosmwasm_std::StdError),
+    StdError(#[from] cosmwasm_std::StdError),
     #[error(transparent)]
     LbError(#[from] crate::libraries::Error),
     #[error(transparent)]
