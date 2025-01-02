@@ -7,6 +7,7 @@ members = [
   "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_token",
+  "contracts/lb_token2",
   "script/lb_deployer",
   "script/lb_schema",
   "script/lb_secretcli",

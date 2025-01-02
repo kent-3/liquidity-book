@@ -5,3 +5,4 @@ pub mod lb_pair;
 pub mod lb_quoter;
 pub mod lb_router;
 pub mod lb_token;
+pub mod lb_token2;
