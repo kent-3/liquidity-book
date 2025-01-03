@@ -8,6 +8,8 @@ mod helper;
 mod query;
 mod state;
 
+mod lb_token;
+
 pub use contract::{execute, instantiate, query, reply};
 
 // Use this crate's custom Error type
