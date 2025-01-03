@@ -1,13 +1,19 @@
-use ethnum::{serde::bytes::be, U256};
+#![allow(unused)]
+
 // Use this crate's custom Error type
 pub use liquidity_book::interfaces::lb_token2::LbTokenError as Error;
 
 /// Alias for Result<T, LbTokenError>
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, Uint256};
-use liquidity_book::{interfaces::lb_token2::*, Bytes32};
-use secret_toolkit::storage::{Item, Keymap};
+use cosmwasm_std::{
+    Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, Uint256,
+};
+use liquidity_book::interfaces::lb_token2::*;
+use secret_toolkit::{
+    serialization::Bincode2,
+    storage::{Item, Keymap, KeymapBuilder, WithoutIter},
+};
 
 // TODO: There is no TOTAL total supply function... which kinda makes sense, since there are so
 // many bins. It would cost more gas to always track the total supply, but maybe it's worth it?
@@ -56,7 +62,8 @@ pub(crate) static TOTAL_SUPPLY: Item<Uint256> = Item::new(b"total_supply");
 pub(crate) static BALANCES: Keymap<u32, Uint256> = Keymap::new(b"balances");
 
 /// The mapping from token id to total supply.
-pub(crate) static TOTAL_SUPPLIES: Keymap<u32, Uint256> = Keymap::new(b"total_supplies");
+pub(crate) static TOTAL_SUPPLIES: Keymap<u32, Uint256, Bincode2, WithoutIter> =
+    KeymapBuilder::new(b"total_supplies").without_iter().build();
 
 /// Mapping from account to spender approvals.
 pub(crate) static SPENDER_APPROVALS: Keymap<String, bool> = Keymap::new(b"spender_approvals");
@@ -371,4 +378,17 @@ pub(crate) fn _check_length(length_a: usize, length_b: usize) -> Result<()> {
     } else {
         Ok(())
     }
+}
+
+// TODO: test if this works
+pub(crate) fn _get_all_user_bins(deps: Deps, account: String) -> StdResult<Vec<u32>> {
+    let user_balances = BALANCES.add_suffix(account.as_bytes());
+
+    // won't be sorted
+    let keys: StdResult<Vec<u32>> = user_balances.iter_keys(deps.storage)?.collect();
+
+    keys.and_then(|mut vec| {
+        vec.sort_unstable();
+        Ok(vec)
+    })
 }
