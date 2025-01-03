@@ -1,8 +1,15 @@
-use crate::{execute::*, helper::*, query::*, state::*, Error, Result};
+use crate::{
+    execute::*,
+    helper::*,
+    lb_token::{total_supply, TOTAL_SUPPLY},
+    query::*,
+    state::*,
+    Error, Result,
+};
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Env,
     Event, MessageInfo, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128,
-    WasmMsg,
+    Uint256, WasmMsg,
 };
 use liquidity_book::{
     interfaces::{lb_pair::*, lb_token, lb_token::state_structs::LbPair},
@@ -119,6 +126,8 @@ pub fn instantiate(
     PARAMETERS.save(deps.storage, &pair_parameters)?;
     RESERVES.save(deps.storage, &Bytes32::default())?;
     PROTOCOL_FEES.save(deps.storage, &Bytes32::default())?;
+
+    TOTAL_SUPPLY.save(deps.storage, &Uint256::zero())?;
 
     LB_TOKEN.save(
         deps.storage,
@@ -312,7 +321,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
 
         // not in joe-v2
         QueryMsg::GetLbToken {} => to_binary(&get_lb_token(deps)?),
-        QueryMsg::GetLbTokenSupply { id } => to_binary(&get_total_supply(deps, id)?),
+        QueryMsg::GetLbTokenSupply { id } => to_binary(&total_supply(deps, id)), // TODO: testing
         QueryMsg::GetBins { ids } => to_binary(&get_bins(deps, ids)?),
         QueryMsg::GetAllBins {
             id,

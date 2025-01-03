@@ -593,7 +593,7 @@ fn mint_bins(
 
     let mut amounts_left = amounts_received;
 
-    let mut mint_tokens: Vec<TokenAmount> = Vec::new();
+    // let mut mint_tokens: Vec<TokenAmount> = Vec::new();
 
     for (i, liquidity_config) in liquidity_configs.iter().enumerate() {
         let (max_amounts_in_to_bin, id) = liquidity_config.get_amounts_and_id(amounts_received)?;
@@ -615,32 +615,32 @@ fn mint_bins(
         arrays.amounts[i] = amounts_in_to_bin;
         arrays.liquidity_minted[i] = shares;
 
-        // TODO: just a thought...
-        // _mint(deps, to.clone(), id, shares.u256_to_uint256())?;
+        // TODO: use the internal mint instead
+        _mint(deps, to.clone(), id, shares.u256_to_uint256())?;
 
-        mint_tokens.push(TokenAmount {
-            token_id: id.to_string(),
-            balances: vec![TokenIdBalance {
-                address: to.clone(),
-                amount: shares.u256_to_uint256(),
-            }],
-        });
+        // mint_tokens.push(TokenAmount {
+        //     token_id: id.to_string(),
+        //     balances: vec![TokenIdBalance {
+        //         address: to.clone(),
+        //         amount: shares.u256_to_uint256(),
+        //     }],
+        // });
     }
 
-    let lb_token = LB_TOKEN.load(deps.storage)?;
+    // let lb_token = LB_TOKEN.load(deps.storage)?;
+    //
+    // let mint_tokens_msg = wasm_execute(
+    //     lb_token.address,
+    //     lb_token.code_hash,
+    //     &lb_token::ExecuteMsg::MintTokens {
+    //         mint_tokens,
+    //         memo: None,
+    //         padding: None,
+    //     },
+    //     vec![],
+    // )?;
 
-    let mint_tokens_msg = wasm_execute(
-        lb_token.address,
-        lb_token.code_hash,
-        &lb_token::ExecuteMsg::MintTokens {
-            mint_tokens,
-            memo: None,
-            padding: None,
-        },
-        vec![],
-    )?;
-
-    messages.push(mint_tokens_msg.into());
+    // messages.push(mint_tokens_msg.into());
 
     Ok(amounts_left)
 }
@@ -674,10 +674,10 @@ fn update_bin(
     let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
 
     let price = PriceHelper::get_price_from_id(id, bin_step)?;
-    let supply = _get_total_supply(deps.as_ref(), id)?;
+    // let supply = _get_total_supply(deps.as_ref(), id)?;
 
     // TODO: switch to internal impl
-    // let supply = total_supply(deps.as_ref(), id).uint256_to_u256();
+    let supply = total_supply(deps.as_ref(), id).uint256_to_u256();
 
     let (mut shares, amounts_in) =
         bin_reserves.get_shares_and_effective_amounts_in(amounts_in, price, supply)?;
@@ -781,7 +781,7 @@ pub fn burn(
     let token_x = TOKEN_X.load(deps.storage)?;
     let token_y = TOKEN_Y.load(deps.storage)?;
 
-    let mut burn_tokens: Vec<TokenAmount> = Vec::new();
+    // let mut burn_tokens: Vec<TokenAmount> = Vec::new();
 
     let mut amounts = vec![[0u8; 32]; ids.len()];
 
@@ -796,21 +796,21 @@ pub fn burn(
         }
 
         let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
-        let supply = _get_total_supply(deps.as_ref(), id)?;
+        // let supply = _get_total_supply(deps.as_ref(), id)?;
 
         // TODO: switch to internal impl
-        // let supply = total_supply(deps.as_ref(), id).uint256_to_u256();
+        let supply = total_supply(deps.as_ref(), id).uint256_to_u256();
 
         // TODO: interesting... burn internally instead of sending message to other contract
-        // _burn(deps, from.clone(), id, amount_to_burn)?;
+        _burn(deps, from.clone(), id, amount_to_burn)?;
 
-        burn_tokens.push(TokenAmount {
-            token_id: id.to_string(),
-            balances: vec![TokenIdBalance {
-                address: from.clone(),
-                amount: amount_to_burn,
-            }],
-        });
+        // burn_tokens.push(TokenAmount {
+        //     token_id: id.to_string(),
+        //     balances: vec![TokenIdBalance {
+        //         address: from.clone(),
+        //         amount: amount_to_burn,
+        //     }],
+        // });
 
         let amounts_out_from_bin =
             bin_reserves.get_amount_out_of_bin(amount_to_burn.uint256_to_u256(), supply)?;
@@ -839,18 +839,18 @@ pub fn burn(
         amounts_out = amounts_out.add(amounts_out_from_bin)?;
     }
 
-    let lb_token = LB_TOKEN.load(deps.storage)?;
-
-    let burn_tokens_msg = wasm_execute(
-        lb_token.address,
-        lb_token.code_hash,
-        &lb_token::ExecuteMsg::BurnTokens {
-            burn_tokens,
-            memo: None,
-            padding: None,
-        },
-        vec![],
-    )?;
+    // let lb_token = LB_TOKEN.load(deps.storage)?;
+    //
+    // let burn_tokens_msg = wasm_execute(
+    //     lb_token.address,
+    //     lb_token.code_hash,
+    //     &lb_token::ExecuteMsg::BurnTokens {
+    //         burn_tokens,
+    //         memo: None,
+    //         padding: None,
+    //     },
+    //     vec![],
+    // )?;
 
     RESERVES.update(deps.storage, |reserves| -> StdResult<Bytes32> {
         reserves
@@ -875,7 +875,7 @@ pub fn burn(
 
     Ok(Response::default()
         .set_data(response_data)
-        .add_message(burn_tokens_msg)
+        // .add_message(burn_tokens_msg)
         .add_messages(transfer_messages)
         .add_events(events))
 }

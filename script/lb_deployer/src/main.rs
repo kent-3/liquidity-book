@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
     let lb_factory_code_id = store_code(lb_factory, 2_100_000).await?;
     let lb_pair_code_id = store_code(lb_pair, 3_600_000).await?;
     let lb_token_code_id = store_code(lb_token, 2_600_000).await?;
-    let lb_router_code_id = store_code(lb_router, 2_100_000).await?;
+    let lb_router_code_id = store_code(lb_router, 2_500_000).await?;
     let lb_quoter_code_id = store_code(lb_quoter, 1_000_000).await?;
 
     info!("Gas used to store codes: {}", check_gas());

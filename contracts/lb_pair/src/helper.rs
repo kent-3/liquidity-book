@@ -192,14 +192,14 @@ pub fn _get_total_supply(deps: Deps, id: u32) -> Result<U256> {
     )?;
 
     let total_supply = match res {
-        lb_token::QueryAnswer::IdTotalBalance { amount } => amount.uint256_to_u256(),
+        lb_token::QueryAnswer::IdTotalBalance { amount } => amount,
         _ => return Err(Error::Generic("Wrong response for lb_token".to_string())),
     };
 
     // TODO:
     // let total_supply = TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default();
 
-    Ok(total_supply)
+    Ok(total_supply.uint256_to_u256())
 }
 
 pub fn query_token_symbol(deps: Deps, code_hash: String, address: Addr) -> Result<String> {
