@@ -1,7 +1,9 @@
 use crate::{
     execute::*,
     helper::*,
-    lb_token::{total_supply, TOTAL_SUPPLY},
+    lb_token::{
+        balance_of, balance_of_batch, is_approved_for_all, name, symbol, total_supply, TOTAL_SUPPLY,
+    },
     query::*,
     state::*,
     Error, Result,
@@ -319,9 +321,21 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
             swap_for_y,
         } => to_binary(&get_swap_out(deps, env, amount_in.u128(), swap_for_y)?),
 
+        // lb-token
+        QueryMsg::Name {} => to_binary(&name()),
+        QueryMsg::Symbol {} => to_binary(&symbol()),
+        QueryMsg::TotalSupply { id } => to_binary(&total_supply(deps, id)),
+        QueryMsg::BalanceOf { account, id } => to_binary(&balance_of(deps, account, id)),
+        QueryMsg::BalanceOfBatch { accounts, ids } => {
+            to_binary(&balance_of_batch(deps, accounts, ids)?)
+        }
+        QueryMsg::IsApprovedForAll { owner, spender } => {
+            to_binary(&is_approved_for_all(deps, owner, spender))
+        }
+
         // not in joe-v2
-        QueryMsg::GetLbToken {} => to_binary(&get_lb_token(deps)?),
-        QueryMsg::GetLbTokenSupply { id } => to_binary(&total_supply(deps, id)), // TODO: testing
+        QueryMsg::GetLbToken {} => to_binary(&get_lb_token(deps)?), // TODO: delete
+        QueryMsg::GetLbTokenSupply { id } => to_binary(&total_supply(deps, id)), // TODO: delete
         QueryMsg::GetBins { ids } => to_binary(&get_bins(deps, ids)?),
         QueryMsg::GetAllBins {
             id,
