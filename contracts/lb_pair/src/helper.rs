@@ -1,4 +1,4 @@
-use crate::{state::*, Error, Result};
+use crate::{lb_token::TOTAL_SUPPLIES, state::*, Error, Result};
 use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult};
 use ethnum::U256;
 use liquidity_book::{
@@ -191,12 +191,15 @@ pub fn _get_total_supply(deps: Deps, id: u32) -> Result<U256> {
         &msg,
     )?;
 
-    let total_supply_uint256 = match res {
-        lb_token::QueryAnswer::IdTotalBalance { amount } => amount,
+    let total_supply = match res {
+        lb_token::QueryAnswer::IdTotalBalance { amount } => amount.uint256_to_u256(),
         _ => return Err(Error::Generic("Wrong response for lb_token".to_string())),
     };
 
-    Ok(total_supply_uint256.uint256_to_u256())
+    // TODO:
+    // let total_supply = TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default();
+
+    Ok(total_supply)
 }
 
 pub fn query_token_symbol(deps: Deps, code_hash: String, address: Addr) -> Result<String> {

@@ -1,7 +1,7 @@
 use crate::{
     contract::FLASH_LOAN_REPLY_ID,
     helper::*,
-    lb_token::{_burn, _mint},
+    lb_token::{_burn, _mint, total_supply},
     state::*,
     Error, Result,
 };
@@ -676,6 +676,9 @@ fn update_bin(
     let price = PriceHelper::get_price_from_id(id, bin_step)?;
     let supply = _get_total_supply(deps.as_ref(), id)?;
 
+    // TODO: switch to internal impl
+    // let supply = total_supply(deps.as_ref(), id).uint256_to_u256();
+
     let (mut shares, amounts_in) =
         bin_reserves.get_shares_and_effective_amounts_in(amounts_in, price, supply)?;
     let amounts_in_to_bin = amounts_in;
@@ -794,6 +797,9 @@ pub fn burn(
 
         let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
         let supply = _get_total_supply(deps.as_ref(), id)?;
+
+        // TODO: switch to internal impl
+        // let supply = total_supply(deps.as_ref(), id).uint256_to_u256();
 
         // TODO: interesting... burn internally instead of sending message to other contract
         // _burn(deps, from.clone(), id, amount_to_burn)?;
@@ -1095,7 +1101,7 @@ pub fn set_hooks_parameters(
 /// Overrides the batch transfer function to call the hooks before and after the transfer
 pub fn batch_transfer_from(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     from: String,
     to: String,
@@ -1122,7 +1128,7 @@ pub fn batch_transfer_from(
 
     // TODO: interesting... this is supposed to call the internal LBToken batch_transfer_from
     // instead of adding a message to an external token contract.
-    // crate::lb_token::execute::batch_transfer_from(deps, env, info, from, to, ids, amounts)?;
+    // super::lb_token::batch_transfer_from(deps, env, info, from.to_string(), to.to_string(), ids, amounts)?;
 
     let lb_token = LB_TOKEN.load(deps.storage)?;
     // TODO: will this allow a "BatchTransferFrom" type of message?

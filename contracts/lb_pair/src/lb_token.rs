@@ -1,14 +1,52 @@
+use ethnum::{serde::bytes::be, U256};
 // Use this crate's custom Error type
 pub use liquidity_book::interfaces::lb_token2::LbTokenError as Error;
 
 /// Alias for Result<T, LbTokenError>
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, Uint256};
-use liquidity_book::interfaces::lb_token2::*;
-use secret_toolkit::storage::Keymap;
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, Uint256};
+use liquidity_book::{interfaces::lb_token2::*, Bytes32};
+use secret_toolkit::storage::{Item, Keymap};
+
+// TODO: There is no TOTAL total supply function... which kinda makes sense, since there are so
+// many bins. It would cost more gas to always track the total supply, but maybe it's worth it?
+// This total supply would represent the "total liquidity" or the largest amount that can be swapped.
+
+// TODO: while we're at it, we could add even more state to track which bins each user has
+// liquidity in, and each user's total liquidity?
+
+// TODO: U256 is serialized as a "0x" prefixed hex strings by default. Figure out how to make it
+// use bytes instead.
+// They give this example in the docs, but I would need to create a wrapper struct I guess:
+// #[derive(Deserialize, Serialize)]
+// struct Example {
+//     a: U256, // "0x2a"
+//     #[serde(with = "ethnum::serde::decimal")]
+//     b: I256, // "-42"
+//     #[serde(with = "ethnum::serde::prefixed")]
+//     c: U256, // "0x2a" or "42"
+//     #[serde(with = "ethnum::serde::permissive")]
+//     d: I256, // "-0x2a" or "-42" or -42
+//     #[serde(with = "ethnum::serde::bytes::be")]
+//     e: U256, // [0x2a, 0x00, ..., 0x00]
+//     #[serde(with = "ethnum::serde::bytes::le")]
+//     f: I256, // [0xd6, 0xff, ..., 0xff]
+//     #[serde(with = "ethnum::serde::compressed_bytes::be")]
+//     g: U256, // [0x2a]
+//     #[serde(with = "ethnum::serde::compressed_bytes::le")]
+//     h: I256, // [0xd6]
+// }
+
+// TODO: OR just use Uint256 instead?
 
 // NOTE: use address as suffix to create nested Keymaps for BALANCES and SPENDER_APPROVALS.
+
+// TODO: exploring this idea
+// TODO: I think this needs to be initialized during contract instantation, or the update function
+// will fail.
+/// global total supply tracker
+pub(crate) static TOTAL_SUPPLY: Item<Uint256> = Item::new(b"total_supply");
 
 /// The mapping from account to token id to account balance.
 pub(crate) static BALANCES: Keymap<u32, Uint256> = Keymap::new(b"balances");
@@ -39,64 +77,80 @@ pub fn check_length(length_a: usize, length_b: usize) -> Result<()> {
     _check_length(length_a, length_b)
 }
 
+// TODO: flatten these query responses?
+
 /// Returns the name of the token.
-pub fn name() -> Result<NameResponse> {
-    Ok(NameResponse {
-        name: "Liquidity Book Token".to_string(),
-    })
+pub fn name() -> String {
+    // Ok(NameResponse {
+    //     name: "Liquidity Book Token".to_string(),
+    // })
+
+    "Liquidity Book Token".to_string()
 }
 
 /// Returns the symbol of the token, usually a shorter version of the name.
-pub fn symbol() -> Result<SymbolResponse> {
-    Ok(SymbolResponse {
-        symbol: "LBT".to_string(),
-    })
+pub fn symbol() -> String {
+    // Ok(SymbolResponse {
+    //     symbol: "LBT".to_string(),
+    // })
+
+    "LBT".to_string()
 }
 
 /// Returns the total supply of token of type `id`.
-pub fn total_supply(deps: Deps, id: u32) -> Result<TotalSupplyResponse> {
-    Ok(TotalSupplyResponse {
-        total_supply: TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default(),
-    })
+pub fn total_supply(deps: Deps, id: u32) -> Uint256 {
+    // TODO: decide
+
+    // Ok(TotalSupplyResponse {
+    //     total_supply: TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default(),
+    // })
+
+    // U256::from_be_bytes(TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default())
+
+    TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default()
 }
 
 // TODO: viewing keys
 
 /// Returns the amount of tokens of type `id` owned by `account`.
-pub fn balance_of(deps: Deps, account: String, id: u32) -> Result<BalanceResponse> {
-    Ok(BalanceResponse {
-        balance: BALANCES
-            .add_suffix(account.as_bytes())
-            .get(deps.storage, &id)
-            .unwrap_or_default(),
-    })
+pub fn balance_of(deps: Deps, account: String, id: u32) -> Uint256 {
+    // Ok(BalanceResponse {
+    //     balance: BALANCES
+    //         .add_suffix(account.as_bytes())
+    //         .get(deps.storage, &id)
+    //         .unwrap_or_default(),
+    // })
+
+    BALANCES
+        .add_suffix(account.as_bytes())
+        .get(deps.storage, &id)
+        .unwrap_or_default()
 }
 
 /// Return the balance of multiple (account/id) pairs.
-pub fn balance_of_batch(
-    deps: Deps,
-    accounts: Vec<String>,
-    ids: Vec<u32>,
-) -> Result<BalanceBatchResponse> {
-    // Implement batch balance query logic
+pub fn balance_of_batch(deps: Deps, accounts: Vec<String>, ids: Vec<u32>) -> Result<Vec<Uint256>> {
     check_length(accounts.len(), ids.len())?;
 
     let mut batch_balances = Vec::with_capacity(accounts.len());
 
     for i in 0..accounts.len() {
-        batch_balances[i] = balance_of(deps, accounts[i].clone(), ids[i])?.balance
+        batch_balances[i] = balance_of(deps, accounts[i].clone(), ids[i])
     }
 
-    Ok(BalanceBatchResponse {
-        balances: batch_balances,
-    })
+    // Ok(BalanceBatchResponse {
+    //     balances: batch_balances,
+    // })
+
+    Ok(batch_balances)
 }
 
 /// Returns true if `spender` is approved to transfer `owner`'s tokens or if `spender` is the `owner`.
-pub fn is_approved_for_all(deps: Deps, owner: String, spender: String) -> Result<ApprovalResponse> {
-    Ok(ApprovalResponse {
-        approved: _is_approved_for_all(deps, &owner, &spender),
-    })
+pub fn is_approved_for_all(deps: Deps, owner: String, spender: String) -> bool {
+    // Ok(ApprovalResponse {
+    //     approved: _is_approved_for_all(deps, &owner, &spender),
+    // })
+
+    _is_approved_for_all(deps, &owner, &spender)
 }
 
 /// Grants or revokes permission to `spender` to transfer the caller's tokens, according to `approved`.
@@ -110,7 +164,7 @@ pub fn approve_for_all(
     _approve_for_all(deps, info.sender.to_string(), spender, approved)
 }
 
-// NOTE: this is overridden by the function of the same name in crate::execute to include the hooks
+/// Batch transfers `amounts` of `ids` from `from` to `to`.
 pub fn batch_transfer_from(
     deps: DepsMut,
     env: Env,
@@ -128,9 +182,8 @@ pub fn batch_transfer_from(
     _batch_transfer_from(deps, env, info, from, to, ids, amounts)
 }
 
+/// Returns true if `spender` is approved to transfer `owner`'s tokens or if `spender` is the `owner`.
 pub(crate) fn _is_approved_for_all(deps: Deps, owner: &String, spender: &String) -> bool {
-    // return owner == spender || _spenderApprovals[owner][spender];
-
     owner == spender
         || SPENDER_APPROVALS
             .add_suffix(owner.as_bytes())
@@ -149,6 +202,12 @@ pub(crate) fn _mint(deps: &mut DepsMut, account: Addr, id: u32, amount: Uint256)
     bin_total_supply += amount;
 
     TOTAL_SUPPLIES.insert(deps.storage, &id, &bin_total_supply)?;
+
+    // TODO: potentially
+    TOTAL_SUPPLY.update(deps.storage, |mut total_supply| -> StdResult<_> {
+        total_supply += amount;
+        Ok(total_supply)
+    })?;
 
     let mut balance = BALANCES
         .add_suffix(account.as_bytes())
@@ -198,6 +257,12 @@ pub(crate) fn _burn(deps: &mut DepsMut, account: Addr, id: u32, amount: Uint256)
     TOTAL_SUPPLIES.insert(deps.storage, &id, &bin_total_supply)?;
 
     account_balances.insert(deps.storage, &id, &(balance - amount))?;
+
+    // TODO: potentially
+    TOTAL_SUPPLY.update(deps.storage, |mut total_supply| -> StdResult<_> {
+        total_supply -= amount;
+        Ok(total_supply)
+    })?;
 
     Ok(())
 

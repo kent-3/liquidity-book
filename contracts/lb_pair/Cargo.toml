@@ -26,7 +26,7 @@ serde_json = { workspace = true }
 serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }
 secret-toolkit = { workspace = true }
-ethnum = { workspace = true }
+ethnum = { workspace = true, features = ["serde"] }
 hex = { workspace = true }
 # the only thing we're using here is the snip20 interface...
 shade-protocol = { workspace = true }
