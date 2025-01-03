@@ -8,6 +8,7 @@ members = [
   "contracts/lb_router",
   "contracts/lb_token",
   "contracts/lb_token2",
+  "contracts/snip20-reference-impl",
   "script/lb_deployer",
   "script/lb_schema",
   "script/lb_secretcli",
