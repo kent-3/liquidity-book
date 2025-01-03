@@ -1,5 +1,10 @@
-use crate::lb_token::execute::_mint;
-use crate::{contract::FLASH_LOAN_REPLY_ID, helper::*, state::*, Error, Result};
+use crate::{
+    contract::FLASH_LOAN_REPLY_ID,
+    helper::*,
+    lb_token::{_burn, _mint},
+    state::*,
+    Error, Result,
+};
 use cosmwasm_std::{
     to_binary, wasm_execute, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Empty, Env,
     Event, MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
@@ -751,7 +756,7 @@ fn update_bin(
 ///
 /// * `amounts` - The amounts of token X and token Y received by the user
 pub fn burn(
-    deps: DepsMut,
+    deps: &mut DepsMut,
     _env: Env,
     info: MessageInfo,
     from: String,
@@ -789,6 +794,9 @@ pub fn burn(
 
         let bin_reserves = BINS.get(deps.storage, &id).unwrap_or_default();
         let supply = _get_total_supply(deps.as_ref(), id)?;
+
+        // TODO: interesting... burn internally instead of sending message to other contract
+        // _burn(deps, from.clone(), id, amount_to_burn)?;
 
         burn_tokens.push(TokenAmount {
             token_id: id.to_string(),

@@ -142,7 +142,12 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {
+pub fn execute(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response> {
     match CONTRACT_STATUS.load(deps.storage)? {
         ContractStatus::FreezeAll => match msg {
             ExecuteMsg::Mint { .. }
@@ -180,7 +185,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
             to,
             ids,
             amounts_to_burn,
-        } => burn(deps, env, info, from, to, ids, amounts_to_burn),
+        } => burn(&mut deps, env, info, from, to, ids, amounts_to_burn),
         ExecuteMsg::CollectProtocolFees {} => collect_protocol_fees(deps, env, info),
         ExecuteMsg::IncreaseOracleLength { new_length } => {
             increase_oracle_length(deps, env, info, new_length)
