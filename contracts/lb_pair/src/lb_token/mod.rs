@@ -6,7 +6,7 @@ pub(crate) mod state;
 // Use this crate's custom Error type
 pub use liquidity_book::interfaces::lb_token2::LbTokenError as Error;
 
-/// Alias for Result<T, LbPairError>
+/// Alias for Result<T, LbTokenError>
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 use cosmwasm_std::{Deps, Env, Uint256};

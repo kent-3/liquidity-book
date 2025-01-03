@@ -143,6 +143,8 @@ pub fn _batch_transfer_from(
 
     Ok(Response::new().add_event(event))
 
+    // Original:
+    //
     // mapping(uint256 => uint256) storage fromBalances = _balances[from];
     // mapping(uint256 => uint256) storage toBalances = _balances[to];
     //

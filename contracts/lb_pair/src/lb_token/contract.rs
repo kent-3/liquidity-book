@@ -20,8 +20,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary> {
     match msg {
-        QueryMsg::Name => to_binary(&query_name(deps)?),
-        QueryMsg::Symbol => to_binary(&query_symbol(deps)?),
+        QueryMsg::Name => to_binary(&query_name()?),
+        QueryMsg::Symbol => to_binary(&query_symbol()?),
         QueryMsg::TotalSupply { id } => to_binary(&query_total_supply(deps, id)?),
         QueryMsg::BalanceOf { account, id } => to_binary(&query_balance_of(deps, account, id)?),
         QueryMsg::BalanceOfBatch { accounts, ids } => {
