@@ -1,10 +1,103 @@
-use super::{
-    check_approval, check_length, not_address_zero_or_this,
-    state::{BALANCES, SPENDER_APPROVALS, TOTAL_SUPPLIES},
-    Error, Result,
-};
-use cosmwasm_std::{Addr, DepsMut, Env, Event, MessageInfo, Response, Uint256};
+// Use this crate's custom Error type
+pub use liquidity_book::interfaces::lb_token2::LbTokenError as Error;
+
+/// Alias for Result<T, LbTokenError>
+pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, Uint256};
 use liquidity_book::interfaces::lb_token2::*;
+use secret_toolkit::storage::Keymap;
+
+// NOTE: use address as suffix to create nested Keymaps for BALANCES and SPENDER_APPROVALS.
+
+/// The mapping from account to token id to account balance.
+pub(crate) static BALANCES: Keymap<u32, Uint256> = Keymap::new(b"balances");
+
+/// The mapping from token id to total supply.
+pub(crate) static TOTAL_SUPPLIES: Keymap<u32, Uint256> = Keymap::new(b"total_supplies");
+
+/// Mapping from account to spender approvals.
+pub(crate) static SPENDER_APPROVALS: Keymap<String, bool> = Keymap::new(b"spender_approvals");
+
+/// Modifier to check if the spender is approved for all.
+pub fn check_approval(deps: Deps, from: String, spender: String) -> Result<()> {
+    if !_is_approved_for_all(deps, &from, &spender) {
+        Err(Error::SpenderNotApproved { from, spender })
+    } else {
+        Ok(())
+    }
+}
+
+// TODO: once again, what to do about address zero?
+/// Modifier to check if the address is not zero or the contract itself.
+pub fn not_address_zero_or_this(env: Env, account: String) -> Result<()> {
+    _not_address_zero_or_this(env, account)
+}
+
+/// Modifier to check if the length of the arrays are equal.
+pub fn check_length(length_a: usize, length_b: usize) -> Result<()> {
+    _check_length(length_a, length_b)
+}
+
+/// Returns the name of the token.
+pub fn name() -> Result<NameResponse> {
+    Ok(NameResponse {
+        name: "Liquidity Book Token".to_string(),
+    })
+}
+
+/// Returns the symbol of the token, usually a shorter version of the name.
+pub fn symbol() -> Result<SymbolResponse> {
+    Ok(SymbolResponse {
+        symbol: "LBT".to_string(),
+    })
+}
+
+/// Returns the total supply of token of type `id`.
+pub fn total_supply(deps: Deps, id: u32) -> Result<TotalSupplyResponse> {
+    Ok(TotalSupplyResponse {
+        total_supply: TOTAL_SUPPLIES.get(deps.storage, &id).unwrap_or_default(),
+    })
+}
+
+// TODO: viewing keys
+
+/// Returns the amount of tokens of type `id` owned by `account`.
+pub fn balance_of(deps: Deps, account: String, id: u32) -> Result<BalanceResponse> {
+    Ok(BalanceResponse {
+        balance: BALANCES
+            .add_suffix(account.as_bytes())
+            .get(deps.storage, &id)
+            .unwrap_or_default(),
+    })
+}
+
+/// Return the balance of multiple (account/id) pairs.
+pub fn balance_of_batch(
+    deps: Deps,
+    accounts: Vec<String>,
+    ids: Vec<u32>,
+) -> Result<BalanceBatchResponse> {
+    // Implement batch balance query logic
+    check_length(accounts.len(), ids.len())?;
+
+    let mut batch_balances = Vec::with_capacity(accounts.len());
+
+    for i in 0..accounts.len() {
+        batch_balances[i] = balance_of(deps, accounts[i].clone(), ids[i])?.balance
+    }
+
+    Ok(BalanceBatchResponse {
+        balances: batch_balances,
+    })
+}
+
+/// Returns true if `spender` is approved to transfer `owner`'s tokens or if `spender` is the `owner`.
+pub fn is_approved_for_all(deps: Deps, owner: String, spender: String) -> Result<ApprovalResponse> {
+    Ok(ApprovalResponse {
+        approved: _is_approved_for_all(deps, &owner, &spender),
+    })
+}
 
 /// Grants or revokes permission to `spender` to transfer the caller's tokens, according to `approved`.
 pub fn approve_for_all(
@@ -33,6 +126,16 @@ pub fn batch_transfer_from(
     let to = deps.api.addr_validate(&to)?;
 
     _batch_transfer_from(deps, env, info, from, to, ids, amounts)
+}
+
+pub(crate) fn _is_approved_for_all(deps: Deps, owner: &String, spender: &String) -> bool {
+    // return owner == spender || _spenderApprovals[owner][spender];
+
+    owner == spender
+        || SPENDER_APPROVALS
+            .add_suffix(owner.as_bytes())
+            .get(deps.storage, spender)
+            .unwrap_or_default()
 }
 
 /// Mint `amount` of `id` to `account`.
@@ -109,7 +212,7 @@ pub(crate) fn _burn(deps: &mut DepsMut, account: Addr, id: u32, amount: Uint256)
     // }
 }
 
-pub fn _batch_transfer_from(
+pub(crate) fn _batch_transfer_from(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -166,7 +269,7 @@ pub fn _batch_transfer_from(
     // emit TransferBatch(msg.sender, from, to, ids, amounts);
 }
 
-pub fn _approve_for_all(
+pub(crate) fn _approve_for_all(
     deps: DepsMut,
     owner: String,
     spender: String,
@@ -183,4 +286,20 @@ pub fn _approve_for_all(
     let event = Event::approval_for_all(owner, spender, approved);
 
     Ok(Response::new().add_event(event))
+}
+
+pub(crate) fn _not_address_zero_or_this(env: Env, account: String) -> Result<()> {
+    if account == "" || account == env.contract.address.to_string() {
+        Err(Error::AddressThisOrZero)
+    } else {
+        Ok(())
+    }
+}
+
+pub(crate) fn _check_length(length_a: usize, length_b: usize) -> Result<()> {
+    if length_a != length_b {
+        Err(Error::InvalidLength)
+    } else {
+        Ok(())
+    }
 }
