@@ -296,10 +296,6 @@ impl InstantiateCallback for InstantiateMsg {
     const BLOCK_SIZE: usize = 256;
 }
 
-// TODO: add these lb-token messages
-// ├ 󰆧 approveForAll
-// ├ 󰆧 batchTransferFrom
-
 #[cw_serde]
 pub enum ExecuteMsg {
     Swap {
@@ -347,6 +343,18 @@ pub enum ExecuteMsg {
         ids: Vec<u32>,
         amounts: Vec<Uint256>,
     },
+
+    // lb-token
+    ApproveForAll {
+        spender: String,
+        approved: bool,
+    },
+    // BatchTransferFrom {
+    //     from: String,
+    //     to: String,
+    //     ids: Vec<u32>,
+    //     amounts: Vec<Uint256>,
+    // },
 
     // not in joe-v2
     SetContractStatus {
@@ -446,14 +454,6 @@ pub enum QueryMsg {
         amount_in: Uint128,
         swap_for_y: bool,
     },
-
-    // TODO: add these lb-token messages
-    // ├ 󰆧 name
-    // ├ 󰆧 symbol
-    // ├ 󰆧 totalSupply
-    // ├ 󰆧 balanceOf
-    // ├ 󰆧 balanceOfBatch
-    // ├ 󰆧 isApprovedForAll
 
     // lb-token
     #[returns(String)]

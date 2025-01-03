@@ -2,7 +2,8 @@ use crate::{
     execute::*,
     helper::*,
     lb_token::{
-        balance_of, balance_of_batch, is_approved_for_all, name, symbol, total_supply, TOTAL_SUPPLY,
+        approve_for_all, balance_of, balance_of_batch, is_approved_for_all, name, symbol,
+        total_supply, TOTAL_SUPPLY,
     },
     query::*,
     state::*,
@@ -236,6 +237,11 @@ pub fn execute(
             ids,
             amounts,
         } => batch_transfer_from(deps, env, info, from, to, ids, amounts),
+
+        // lb-token
+        ExecuteMsg::ApproveForAll { spender, approved } => {
+            approve_for_all(deps, env, info, spender, approved).map_err(Error::from)
+        }
 
         // not in joe-v2
         ExecuteMsg::SetContractStatus { contract_status } => {
