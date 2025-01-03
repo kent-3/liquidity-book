@@ -14,7 +14,11 @@ use secret_toolkit::storage::{Item, Keymap};
 // This total supply would represent the "total liquidity" or the largest amount that can be swapped.
 
 // TODO: while we're at it, we could add even more state to track which bins each user has
-// liquidity in, and each user's total liquidity?
+// liquidity in, and each user's total liquidity (does that even mean anything)? Technically,
+// we have the ability to iterate over the Keymap, though we should probably disable that for gas savings.
+// I think we should keep it for Balances, disable it for total supplies. because each user's
+// balances map is likely much smaller than the total supplies map. And if we keep a separate tally
+// of total supply, we never need to iterate over total supplies.
 
 // TODO: U256 is serialized as a "0x" prefixed hex strings by default. Figure out how to make it
 // use bytes instead.
