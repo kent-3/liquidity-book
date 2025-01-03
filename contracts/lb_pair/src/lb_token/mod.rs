@@ -9,26 +9,33 @@ pub use liquidity_book::interfaces::lb_token2::LbTokenError as Error;
 /// Alias for Result<T, LbPairError>
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-// /**
-//  * @dev Modifier to check if the spender is approved for all.
-//  */
-// modifier checkApproval(address from, address spender) {
-//     if (!_isApprovedForAll(from, spender)) revert LBToken__SpenderNotApproved(from, spender);
-//     _;
-// }
-//
-// /**
-//  * @dev Modifier to check if the address is not zero or the contract itself.
-//  */
-// modifier notAddressZeroOrThis(address account) {
-//     _notAddressZeroOrThis(account);
-//     _;
-// }
-//
-// /**
-//  * @dev Modifier to check if the length of the arrays are equal.
-//  */
-// modifier checkLength(uint256 lengthA, uint256 lengthB) {
-//     _checkLength(lengthA, lengthB);
-//     _;
-// }
+use cosmwasm_std::{Deps, Env, Uint256};
+use query::_is_approved_for_all;
+
+/// Modifier to check if the spender is approved for all.
+pub fn check_approval(deps: Deps, from: String, spender: String) -> Result<()> {
+    if !_is_approved_for_all(deps, &from, &spender) {
+        Err(Error::SpenderNotApproved { from, spender })
+    } else {
+        Ok(())
+    }
+}
+
+// TODO: once again, what to do about address zero?
+/// Modifier to check if the address is not zero or the contract itself.
+pub fn not_address_zero_or_this(env: Env, account: String) -> Result<()> {
+    if account == "" || account == env.contract.address.to_string() {
+        Err(Error::AddressThisOrZero)
+    } else {
+        Ok(())
+    }
+}
+
+/// Modifier to check if the length of the arrays are equal.
+pub fn check_length(length_a: usize, length_b: usize) -> Result<()> {
+    if length_a != length_b {
+        Err(Error::InvalidLength)
+    } else {
+        Ok(())
+    }
+}

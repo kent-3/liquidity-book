@@ -1,4 +1,4 @@
-use super::{Error, Result};
+use super::{state::SPENDER_APPROVALS, Error, Result};
 use cosmwasm_std::{Deps, Uint256};
 use liquidity_book::interfaces::lb_token2::*;
 
@@ -48,4 +48,14 @@ pub fn query_is_approved_for_all(
 ) -> Result<ApprovalResponse> {
     // Implement approval query logic
     Ok(ApprovalResponse { approved: true })
+}
+
+pub fn _is_approved_for_all(deps: Deps, owner: &String, spender: &String) -> bool {
+    // return owner == spender || _spenderApprovals[owner][spender];
+
+    owner == spender
+        || SPENDER_APPROVALS
+            .add_suffix(owner.as_bytes())
+            .get(deps.storage, spender)
+            .unwrap_or_default()
 }

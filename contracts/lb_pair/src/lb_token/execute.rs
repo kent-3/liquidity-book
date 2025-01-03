@@ -1,20 +1,23 @@
-use crate::lb_token::state::{BALANCES, TOTAL_SUPPLIES};
-
-use super::{Error, Result};
-use cosmwasm_std::{Addr, DepsMut, Env, Event, MessageInfo, Response, StdResult, Uint256};
+use super::{
+    check_approval, check_length, not_address_zero_or_this,
+    state::{BALANCES, SPENDER_APPROVALS, TOTAL_SUPPLIES},
+    Error, Result,
+};
+use cosmwasm_std::{Addr, DepsMut, Env, Event, MessageInfo, Response, Uint256};
 use liquidity_book::interfaces::lb_token2::*;
 
+/// Grants or revokes permission to `spender` to transfer the caller's tokens, according to `approved`.
 pub fn approve_for_all(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     spender: String,
     approved: bool,
 ) -> Result<Response> {
-    // Implement logic for approve_for_all
-    Ok(Response::new().add_attribute("method", "approve_for_all"))
+    _approve_for_all(deps, info.sender.to_string(), spender, approved)
 }
 
+// NOTE: this is overridden by the function of the same name in crate::execute to include the hooks
 pub fn batch_transfer_from(
     deps: DepsMut,
     env: Env,
@@ -24,8 +27,7 @@ pub fn batch_transfer_from(
     ids: Vec<u32>,
     amounts: Vec<Uint256>,
 ) -> Result<Response> {
-    // TODO:
-    // checkApproval(from, msg.sender)
+    check_approval(deps.as_ref(), from.clone(), info.sender.to_string())?;
 
     let from = deps.api.addr_validate(&from)?;
     let to = deps.api.addr_validate(&to)?;
@@ -116,9 +118,8 @@ pub fn _batch_transfer_from(
     ids: Vec<u32>,
     amounts: Vec<Uint256>,
 ) -> Result<Response> {
-    // TODO:
-    // checkLength(ids.length, amounts.length)
-    // notAddressZeroOrThis(to)
+    check_length(ids.len(), amounts.len())?;
+    not_address_zero_or_this(env, to.to_string())?;
 
     let from_balances = BALANCES.add_suffix(from.as_bytes());
     let to_balances = BALANCES.add_suffix(to.as_bytes());
@@ -138,7 +139,7 @@ pub fn _batch_transfer_from(
         to_balances.insert(deps.storage, &id, &(to_balance + amount))?;
     }
 
-    let event = Event::transfer_batch(info.sender, from, to, ids, amounts);
+    let event = Event::transfer_batch(info.sender, from.to_string(), to.to_string(), ids, amounts);
 
     Ok(Response::new().add_event(event))
 
@@ -161,4 +162,23 @@ pub fn _batch_transfer_from(
     // }
     //
     // emit TransferBatch(msg.sender, from, to, ids, amounts);
+}
+
+pub fn _approve_for_all(
+    deps: DepsMut,
+    owner: String,
+    spender: String,
+    approved: bool,
+) -> Result<Response> {
+    if owner == spender {
+        return Err(Error::SelfApproval(owner));
+    }
+
+    SPENDER_APPROVALS
+        .add_suffix(owner.as_bytes())
+        .insert(deps.storage, &spender, &approved)?;
+
+    let event = Event::approval_for_all(owner, spender, approved);
+
+    Ok(Response::new().add_event(event))
 }

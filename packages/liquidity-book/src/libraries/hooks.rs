@@ -1,5 +1,6 @@
 use crate::{interfaces::lb_hooks::ExecuteMsg, Bytes32};
 use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Uint256;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CanonicalAddr, ContractInfo, Deps, Response, StdError, StdResult,
     WasmMsg,
@@ -340,6 +341,73 @@ pub fn after_swap(
         None => Ok(None),
     }
 }
+
+/// Helper function to call the beforeTransferFrom function on the hooks contract, only if the
+/// BEFORE_TRANSFER_FLAG is set in the hooksParameters
+pub fn before_transfer_from(
+    hooks_parameters: Option<HooksParameters>,
+    sender: &Addr,
+    from: &Addr,
+    to: &Addr,
+    ids: &Vec<u32>,
+    amounts: &Vec<Uint256>,
+) -> StdResult<Option<WasmMsg>> {
+    match hooks_parameters {
+        Some(hooks_parameters) => {
+            if hooks_parameters.flags & BEFORE_TRANSFER != 0 {
+                Ok(Some(WasmMsg::Execute {
+                    contract_addr: hooks_parameters.address,
+                    code_hash: hooks_parameters.code_hash,
+                    msg: to_binary(&ExecuteMsg::BeforeBatchTransferFrom {
+                        sender: sender.to_string(),
+                        from: from.to_string(),
+                        to: to.to_string(),
+                        ids: ids.clone(),
+                        amounts: amounts.clone(),
+                    })?,
+                    funds: vec![],
+                }))
+            } else {
+                Ok(None)
+            }
+        }
+        None => Ok(None),
+    }
+}
+
+/// Helper function to call the afterTransferFrom function on the hooks contract, only if the
+/// AFTER_TRANSFER_FLAG is set in the hooksParameters
+pub fn after_transfer_from(
+    hooks_parameters: Option<HooksParameters>,
+    sender: &Addr,
+    from: &Addr,
+    to: &Addr,
+    ids: &Vec<u32>,
+    amounts: &Vec<Uint256>,
+) -> StdResult<Option<WasmMsg>> {
+    match hooks_parameters {
+        Some(hooks_parameters) => {
+            if hooks_parameters.flags & AFTER_TRANSFER != 0 {
+                Ok(Some(WasmMsg::Execute {
+                    contract_addr: hooks_parameters.address,
+                    code_hash: hooks_parameters.code_hash,
+                    msg: to_binary(&ExecuteMsg::AfterBatchTransferFrom {
+                        sender: sender.to_string(),
+                        from: from.to_string(),
+                        to: to.to_string(),
+                        ids: ids.clone(),
+                        amounts: amounts.clone(),
+                    })?,
+                    funds: vec![],
+                }))
+            } else {
+                Ok(None)
+            }
+        }
+        None => Ok(None),
+    }
+}
+
 // TODO: all the rest of this module
 
 #[cfg(test)]

@@ -1084,26 +1084,37 @@ pub fn set_hooks_parameters(
 }
 
 // TODO:
-/**
- * @notice Overrides the batch transfer function to call the hooks before and after the transfer
- * @param from The address to transfer from
- * @param to The address to transfer to
- * @param ids The ids of the tokens to transfer
- * @param amounts The amounts of the tokens to transfer
- */
-#[allow(unused)]
+/// Overrides the batch transfer function to call the hooks before and after the transfer
 pub fn batch_transfer_from(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     from: String,
     to: String,
     ids: Vec<u32>,
     amounts: Vec<Uint256>,
 ) -> Result<Response> {
+    let from = deps.api.addr_validate(&from)?;
+    let to = deps.api.addr_validate(&to)?;
+
+    let mut response = Response::<Empty>::new();
+
     let hooks_parameters = HOOKS_PARAMETERS.load(deps.storage)?;
 
-    //     Hooks.beforeBatchTransferFrom(hooksParameters, msg.sender, from, to, ids, amounts);
+    if let Some(before_batch_transfer_from_hook) = hooks::before_transfer_from(
+        hooks_parameters.clone(),
+        &info.sender,
+        &from,
+        &to,
+        &ids,
+        &amounts,
+    )? {
+        response = response.add_message(before_batch_transfer_from_hook);
+    }
+
+    // TODO: interesting... this is supposed to call the internal LBToken batch_transfer_from
+    // instead of adding a message to an external token contract.
+    // crate::lb_token::execute::batch_transfer_from(deps, env, info, from, to, ids, amounts)?;
 
     let lb_token = LB_TOKEN.load(deps.storage)?;
     // TODO: will this allow a "BatchTransferFrom" type of message?
@@ -1113,11 +1124,18 @@ pub fn batch_transfer_from(
     }
     .to_cosmos_msg(lb_token.code_hash, lb_token.address.to_string(), None)?;
 
-    //     LBToken.batchTransferFrom(from, to, ids, amounts);
-    //
-    //     Hooks.afterBatchTransferFrom(hooksParameters, msg.sender, from, to, ids, amounts);
+    if let Some(after_batch_transfer_from_hook) = hooks::after_transfer_from(
+        hooks_parameters.clone(),
+        &info.sender,
+        &from,
+        &to,
+        &ids,
+        &amounts,
+    )? {
+        response = response.add_message(after_batch_transfer_from_hook);
+    }
 
-    Ok(Response::new().add_message(msg))
+    Ok(response.add_message(msg))
 }
 
 // TODO: can we get rid of this?

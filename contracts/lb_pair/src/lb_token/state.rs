@@ -10,4 +10,4 @@ pub(crate) static BALANCES: Keymap<u32, Uint256> = Keymap::new(b"balances");
 pub(crate) static TOTAL_SUPPLIES: Keymap<u32, Uint256> = Keymap::new(b"total_supplies");
 
 /// Mapping from account to spender approvals.
-pub(crate) static SPENDER_APPROVALS: Keymap<Addr, bool> = Keymap::new(b"spender_approvals");
+pub(crate) static SPENDER_APPROVALS: Keymap<String, bool> = Keymap::new(b"spender_approvals");

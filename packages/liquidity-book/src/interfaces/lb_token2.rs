@@ -8,9 +8,9 @@ pub enum LbTokenError {
     #[error("InvalidLength")]
     InvalidLength,
     #[error("SelfApproval: {0}")]
-    SelfApproval(Addr),
+    SelfApproval(String),
     #[error("SpenderNotApproved: from {from}, spender {spender}")]
-    SpenderNotApproved { from: Addr, spender: Addr },
+    SpenderNotApproved { from: String, spender: String },
     #[error("TransferExceedsBalance: from {from}, id {id}, amount {amount}")]
     TransferExceedsBalance {
         from: Addr,
@@ -31,8 +31,8 @@ pub enum LbTokenError {
 pub trait LbTokenEventExt {
     fn transfer_batch(
         sender: Addr,
-        from: Addr,
-        to: Addr,
+        from: String,
+        to: String,
         ids: Vec<u32>,
         amounts: Vec<Uint256>,
     ) -> Event {
@@ -44,7 +44,7 @@ pub trait LbTokenEventExt {
             .add_attribute_plaintext("amounts", format!("{:?}", amounts))
     }
 
-    fn approval_for_all(account: Addr, sender: Addr, approved: bool) -> Event {
+    fn approval_for_all(account: String, sender: String, approved: bool) -> Event {
         Event::new("approval_for_all")
             .add_attribute_plaintext("account", account)
             .add_attribute_plaintext("sender", sender)
