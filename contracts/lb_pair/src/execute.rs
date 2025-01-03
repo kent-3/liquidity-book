@@ -1,3 +1,4 @@
+use crate::lb_token::execute::_mint;
 use crate::{contract::FLASH_LOAN_REPLY_ID, helper::*, state::*, Error, Result};
 use cosmwasm_std::{
     to_binary, wasm_execute, Addr, Binary, ContractInfo, CosmosMsg, Deps, DepsMut, Empty, Env,
@@ -608,6 +609,9 @@ fn mint_bins(
         arrays.ids[i] = id;
         arrays.amounts[i] = amounts_in_to_bin;
         arrays.liquidity_minted[i] = shares;
+
+        // TODO: just a thought...
+        // _mint(deps, to.clone(), id, shares.u256_to_uint256())?;
 
         mint_tokens.push(TokenAmount {
             token_id: id.to_string(),

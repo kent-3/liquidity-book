@@ -17,9 +17,9 @@ pub enum LbTokenError {
         id: u32,
         amount: Uint256,
     },
-    #[error("BurnExceedsBalance: from {from}, id {id}, amount {amount}")]
+    #[error("BurnExceedsBalance: account {account}, id {id}, amount {amount}")]
     BurnExceedsBalance {
-        from: Addr,
+        account: Addr,
         id: u32,
         amount: Uint256,
     },

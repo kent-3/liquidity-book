@@ -1,7 +1,7 @@
+// TODO: this file might be useless...
+
 use super::{execute::*, query::*, Error, Result};
-use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use liquidity_book::interfaces::lb_token2::*;
 
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {

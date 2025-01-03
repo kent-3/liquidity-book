@@ -1,7 +1,7 @@
-mod contract;
-mod execute;
-mod query;
-mod state;
+pub(crate) mod contract;
+pub(crate) mod execute;
+pub(crate) mod query;
+pub(crate) mod state;
 
 // Use this crate's custom Error type
 pub use liquidity_book::interfaces::lb_token2::LbTokenError as Error;

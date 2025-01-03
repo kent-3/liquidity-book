@@ -94,6 +94,9 @@ pub enum LbPairError {
     StdError(#[from] cosmwasm_std::StdError),
     #[error(transparent)]
     ConversionOverflowError(#[from] cosmwasm_std::ConversionOverflowError),
+
+    #[error(transparent)]
+    LbTokenError(#[from] super::lb_token2::LbTokenError),
     #[error(transparent)]
     LbErr(#[from] crate::libraries::Error),
     #[error(transparent)]
