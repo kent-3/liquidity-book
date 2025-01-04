@@ -7,8 +7,6 @@ members = [
   "contracts/lb_quoter",
   "contracts/lb_router",
   "contracts/lb_token",
-  "contracts/lb_token2",
-  "contracts/snip20-reference-impl",
   "script/lb_deployer",
   "script/lb_schema",
   "script/lb_secretcli",
@@ -16,7 +14,6 @@ members = [
   "tests",
 ]
 default-members = [
-  "contracts/lb_base_hooks",
   "contracts/lb_factory",
   "contracts/lb_pair",
   "contracts/lb_quoter",
@@ -24,9 +21,6 @@ default-members = [
   "contracts/lb_token",
 ]
 resolver = "2"
-
-[workspace.lints.rust]
-unused = "allow" # TODO: turn this off
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
