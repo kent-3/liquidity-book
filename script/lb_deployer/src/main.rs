@@ -93,11 +93,11 @@ async fn main() -> Result<()> {
     let query_router_code_id = store_code(query_router, 1_700_000).await?;
     let snip20_code_id = store_code(snip20, 1_200_000).await?;
     let snip25_code_id = store_code(snip25, 2_900_000).await?;
-    let lb_factory_code_id = store_code(lb_factory, 2_100_000).await?;
+    let lb_factory_code_id = store_code(lb_factory, 2_200_000).await?;
     let lb_pair_code_id = store_code(lb_pair, 3_600_000).await?;
     let lb_token_code_id = store_code(lb_token, 2_600_000).await?;
-    let lb_router_code_id = store_code(lb_router, 2_500_000).await?;
-    let lb_quoter_code_id = store_code(lb_quoter, 1_000_000).await?;
+    let lb_router_code_id = store_code(lb_router, 2_400_000).await?;
+    let lb_quoter_code_id = store_code(lb_quoter, 2_000_000).await?;
 
     info!("Gas used to store codes: {}", check_gas());
 
@@ -323,8 +323,8 @@ async fn main() -> Result<()> {
     let pair_address = created_lb_pair.contract.address.as_str();
     let pair_code_hash = created_lb_pair.contract.code_hash.as_str();
 
-    // WARN: It's going to cost a lot to increase the oracle to full length (65535)!
-    let increase_length_msg = &lb_pair::ExecuteMsg::IncreaseOracleLength { new_length: 2500 };
+    // WARN: It's going to cost ~15 full blocks to increase the oracle to full length (65535)!
+    let increase_length_msg = &lb_pair::ExecuteMsg::IncreaseOracleLength { new_length: 4400 };
 
     info!("Increasing Oracle length...",);
     let response = execute(pair_address, pair_code_hash, increase_length_msg, 5_000_000).await?;
@@ -343,7 +343,7 @@ async fn main() -> Result<()> {
         created_lb_pair.token_x.address().as_str(),
         created_lb_pair.token_x.code_hash().as_str(),
         increase_allowance_msg,
-        5_000_000,
+        100_000,
     )
     .await?;
 
@@ -352,7 +352,7 @@ async fn main() -> Result<()> {
         created_lb_pair.token_y.address().as_str(),
         created_lb_pair.token_y.code_hash().as_str(),
         increase_allowance_msg,
-        5_000_000,
+        100_000,
     )
     .await?;
 
@@ -413,6 +413,8 @@ async fn main() -> Result<()> {
     )
     .await
     .inspect_err(|e| info!("{e}"));
+
+    // I don't want the whole deployment to fail if the tx errors
 
     if let Ok(ref response) = response {
         if let Ok(add_liquidity_response) = serde_json::from_slice::<AddLiquidityResponse>(response)

@@ -365,21 +365,21 @@ impl BinHelper for Bytes32 {
 
         max_amount_in += max_fee;
 
-        let mut amount_in128: u128 = amounts_in_left.decode_alt(swap_for_y);
-        let fee128: u128;
-        let mut amount_out128: u128;
+        let mut amount_in_128: u128 = amounts_in_left.decode_alt(swap_for_y);
+        let fee_128: u128;
+        let mut amount_out_128: u128;
 
-        if amount_in128 >= max_amount_in {
-            fee128 = max_fee;
+        if amount_in_128 >= max_amount_in {
+            fee_128 = max_fee;
 
-            amount_in128 = max_amount_in;
-            amount_out128 = bin_reserve_out;
+            amount_in_128 = max_amount_in;
+            amount_out_128 = bin_reserve_out;
         } else {
-            fee128 = amount_in128.get_fee_amount_from(total_fee)?;
+            fee_128 = amount_in_128.get_fee_amount_from(total_fee)?;
 
-            let amount_in = amount_in128 - fee128;
+            let amount_in = amount_in_128 - fee_128;
 
-            amount_out128 = if swap_for_y {
+            amount_out_128 = if swap_for_y {
                 U256::from(amount_in)
                     .mul_shift_round_down(price, SCALE_OFFSET)?
                     .as_u128()
@@ -389,22 +389,22 @@ impl BinHelper for Bytes32 {
                     .as_u128()
             };
 
-            if amount_out128 > bin_reserve_out {
-                amount_out128 = bin_reserve_out;
+            if amount_out_128 > bin_reserve_out {
+                amount_out_128 = bin_reserve_out;
             }
         };
 
         let (amounts_in_with_fees, amounts_out_of_bin, total_fees) = if swap_for_y {
             (
-                Bytes32::encode_first(amount_in128),
-                Bytes32::encode_second(amount_out128),
-                Bytes32::encode_first(fee128),
+                Bytes32::encode_first(amount_in_128),
+                Bytes32::encode_second(amount_out_128),
+                Bytes32::encode_first(fee_128),
             )
         } else {
             (
-                Bytes32::encode_second(amount_in128),
-                Bytes32::encode_first(amount_out128),
-                Bytes32::encode_second(fee128),
+                Bytes32::encode_second(amount_in_128),
+                Bytes32::encode_first(amount_out_128),
+                Bytes32::encode_second(fee_128),
             )
         };
 
