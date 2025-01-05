@@ -49,9 +49,9 @@ pub struct ExecuteMsg {}
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(FactoryV2_2Response)]
-    GetFactoryV2_2,
+    GetFactoryV2_2 {},
     #[returns(RouterV2_2Response)]
-    GetRouterV2_2,
+    GetRouterV2_2 {},
     #[returns(Quote)]
     FindBestPathFromAmountIn {
         route: Vec<TokenType>,

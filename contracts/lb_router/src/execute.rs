@@ -748,13 +748,13 @@ fn _get_pairs(
         token = token_next;
         token_next = token_path[i + 1].clone();
 
-        pairs[i] = ILbPair(_get_pair(
+        pairs.push(ILbPair(_get_pair(
             deps,
             token.clone(),
             token_next.clone(),
             pair_bin_steps[i],
             versions[i].clone(),
-        )?);
+        )?));
     }
 
     Ok(pairs)

@@ -3,12 +3,12 @@ use crate::{
     state::{FACTORY_V2_2, ROUTER_V2_2},
     Error, Result,
 };
-use cosmwasm_std::{Deps, Uint128};
+use cosmwasm_std::{Addr, ContractInfo, Deps, Uint128};
 use liquidity_book::interfaces::{
     lb_factory::{ILbFactory, LbPairInformation},
     lb_pair::ILbPair,
     lb_quoter::Quote,
-    lb_router::{self, ILbRouter},
+    lb_router::{self, ILbRouter, Version},
 };
 use shade_protocol::swap::core::TokenType;
 
@@ -21,16 +21,24 @@ pub fn find_best_path_from_amount_in(
         return Err(Error::InvalidLength);
     }
 
+    let lb_router = ILbRouter(ROUTER_V2_2.load(deps.storage)?.unwrap());
+
     let swap_length = route.len() - 1;
 
+    let empty_contract_info = ContractInfo {
+        address: Addr::unchecked(""),
+        code_hash: "".to_string(),
+    };
+
+    // vectors must be initialized with elements to allow direct index assignment
     let mut quote = Quote {
         route: route.clone(),
-        pairs: Vec::with_capacity(swap_length),
-        bin_steps: Vec::with_capacity(swap_length),
-        versions: Vec::with_capacity(swap_length),
-        fees: Vec::with_capacity(swap_length),
-        amounts: Vec::with_capacity(swap_length),
-        virtual_amounts_without_slippage: Vec::with_capacity(route.len()),
+        pairs: vec![empty_contract_info; swap_length],
+        bin_steps: vec![0u16; swap_length],
+        versions: vec![Version::V2_2; swap_length],
+        fees: vec![Uint128::zero(); swap_length],
+        amounts: vec![Uint128::zero(); swap_length],
+        virtual_amounts_without_slippage: vec![Uint128::zero(); route.len()],
     };
 
     quote.amounts[0] = amount_in;
@@ -56,7 +64,7 @@ pub fn find_best_path_from_amount_in(
                             amount_in_left,
                             amount_out: swap_amount_out,
                             fee: fees,
-                        } = ILbRouter(ROUTER_V2_2.load(deps.storage)?.unwrap()).get_swap_out(
+                        } = lb_router.get_swap_out(
                             deps.querier,
                             lb_pair.0.clone(),
                             quote.amounts[i],

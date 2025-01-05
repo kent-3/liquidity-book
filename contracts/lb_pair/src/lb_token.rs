@@ -145,7 +145,7 @@ pub fn balance_of_batch(deps: Deps, accounts: Vec<String>, ids: Vec<u32>) -> Res
     let mut batch_balances = Vec::with_capacity(accounts.len());
 
     for i in 0..accounts.len() {
-        batch_balances[i] = balance_of(deps, accounts[i].clone(), ids[i])
+        batch_balances.push(balance_of(deps, accounts[i].clone(), ids[i]))
     }
 
     // Ok(BalanceBatchResponse {
