@@ -37,7 +37,7 @@ pub fn find_best_path_from_amount_in(
         bin_steps: vec![0u16; swap_length],
         versions: vec![Version::V2_2; swap_length],
         fees: vec![Uint128::zero(); swap_length],
-        amounts: vec![Uint128::zero(); swap_length],
+        amounts: vec![Uint128::zero(); route.len()],
         virtual_amounts_without_slippage: vec![Uint128::zero(); route.len()],
     };
 
