@@ -261,9 +261,11 @@ pub fn create_lb_pair_part2(deps: DepsMut, _env: Env, reply_data: Binary) -> Res
 
     ALL_LB_PAIRS.push(deps.storage, &lb_pair)?;
 
-    let available_bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
+    let mut available_bin_steps = AVAILABLE_LB_PAIR_BIN_STEPS
         .get(deps.storage, &(token_a.unique_key(), token_b.unique_key()))
         .unwrap_or_default();
+
+    available_bin_steps.insert(bin_step);
 
     AVAILABLE_LB_PAIR_BIN_STEPS.insert(
         deps.storage,
