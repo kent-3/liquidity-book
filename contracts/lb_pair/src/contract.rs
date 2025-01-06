@@ -131,6 +131,7 @@ pub fn instantiate(
     PROTOCOL_FEES.save(deps.storage, &Bytes32::default())?;
 
     TOTAL_SUPPLY.save(deps.storage, &Uint256::zero())?;
+    HOOKS_PARAMETERS.save(deps.storage, &None)?;
 
     LB_TOKEN.save(
         deps.storage,

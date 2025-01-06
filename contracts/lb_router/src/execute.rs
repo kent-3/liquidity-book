@@ -203,6 +203,8 @@ pub fn swap_exact_tokens_for_tokens(
         path.token_path.clone(),
     )?;
 
+    // TODO: this will panic if `pairs` is empty
+
     // Transfer tokens from this router contract to the pair contract. They should have been
     // received via the SNIP20 receiver interface.
     let transfer_msg = _safe_transfer(&path.token_path[0], &pairs[0].address, amount_in)?
@@ -744,7 +746,7 @@ fn _get_pairs(
     let mut token: TokenType;
     let mut token_next = token_path[0].clone();
 
-    for i in 0..pairs.len() {
+    for i in 0..pair_bin_steps.len() {
         token = token_next;
         token_next = token_path[i + 1].clone();
 

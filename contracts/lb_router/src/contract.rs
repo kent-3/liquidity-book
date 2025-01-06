@@ -486,7 +486,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 position += 1;
 
-                if position == token_path.len() as u32 {
+                if position == token_path.len() as u32 - 1 {
                     let data = lb_router::SwapResponse { amount_out };
 
                     Ok(Response::new().set_data(to_binary(&data)?))
@@ -506,7 +506,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                         pairs,
                         versions,
                         token_path,
-                        position + 1,
+                        position,
                         token_next,
                         to,
                     )
@@ -552,7 +552,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
 
                 position += 1;
 
-                if position == token_path.len() as u32 {
+                if position == token_path.len() as u32 - 1 {
                     let data = lb_router::SwapResponse { amount_out };
 
                     Ok(Response::new().set_data(to_binary(&data)?))
@@ -572,7 +572,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response> {
                         versions,
                         token_path,
                         amounts_in,
-                        position + 1,
+                        position,
                         token_next,
                         to,
                     )
