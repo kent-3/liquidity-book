@@ -9,6 +9,7 @@ use color_eyre::{
     Result,
 };
 use cosmwasm_std::{Addr, ContractInfo};
+use nanorand::Rng;
 use prost::Message;
 use regex::Regex;
 use secretrs::{
@@ -320,7 +321,8 @@ pub async fn instantiate<T: Serialize>(
     let sender = public_key.account_id("secret")?;
     let address = sender.to_string();
 
-    let label = format!("{}-{}", &sender.to_string(), code_id);
+    let mut rng = nanorand::tls_rng();
+    let label = rng.generate::<u64>().to_string();
 
     let encrypted = secretrs.utils.encrypt(code_hash, &init_msg)?;
     let nonce = encrypted.nonce();

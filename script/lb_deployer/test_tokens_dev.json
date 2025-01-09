@@ -1,0 +1,52 @@
+[
+  {
+    "contract_address": "secret1qly0ea3cyvxqcm75a5du4u8rxvzx2uy89p6xda",
+    "code_hash": "af74387e276be8874f07bec3a87023ee49b0e7ebe08178c49d0a49c3c98ed60e",
+    "decimals": 6,
+    "name": "Secret Secret",
+    "symbol": "SSCRT",
+    "display_name": null,
+    "denom": null,
+    "version": null
+  },
+  {
+    "contract_address": "secret14e7k75zygtu80zwuavny5pgsjmzu65pyx4j6zj",
+    "code_hash": "9a00ca4ad505e9be7e6e6dddf8d939b7ec7e9ac8e109c8681f10db9cacb36d42",
+    "decimals": 6,
+    "name": "Amber",
+    "symbol": "AMBER",
+    "display_name": null,
+    "denom": null,
+    "version": null
+  },
+  {
+    "contract_address": "secret1mra2mxv43d4hh0vpt8zhv86kzt08022w8f3y03",
+    "code_hash": "9a00ca4ad505e9be7e6e6dddf8d939b7ec7e9ac8e109c8681f10db9cacb36d42",
+    "decimals": 8,
+    "name": "Shade",
+    "symbol": "SHD",
+    "display_name": null,
+    "denom": null,
+    "version": null
+  },
+  {
+    "contract_address": "secret1pypsr9t6g3kwz0lx75u2uglrp6su8hc0mv0ktz",
+    "code_hash": "9a00ca4ad505e9be7e6e6dddf8d939b7ec7e9ac8e109c8681f10db9cacb36d42",
+    "decimals": 6,
+    "name": "Secret Noble USDC",
+    "symbol": "SNOBLEUSDC",
+    "display_name": null,
+    "denom": null,
+    "version": null
+  },
+  {
+    "contract_address": "secret12fjqz35ymawpv2naqx8gfdzdax0zdpekw053da",
+    "code_hash": "9a00ca4ad505e9be7e6e6dddf8d939b7ec7e9ac8e109c8681f10db9cacb36d42",
+    "decimals": 6,
+    "name": "Shade SCRT staking derivative",
+    "symbol": "STKDSCRT",
+    "display_name": null,
+    "denom": null,
+    "version": null
+  }
+]
