@@ -210,6 +210,10 @@ async fn main() -> Result<()> {
             address: wallet_address.to_string(),
             amount: Uint128::new(34028236692093846346337460743176821145u128),
         },
+        snip20::InitialBalance {
+            address: "secret1qex6xez2jhk6epejmcl5tfj6vxx7ah2u9tue6j".to_string(),
+            amount: Uint128::new(34028236692093846346337460743176821145u128),
+        },
     ];
 
     info!("Instantiating snip20...",);
@@ -261,100 +265,99 @@ async fn main() -> Result<()> {
     };
 
     // Make several tokens to test with
-    if !std::fs::exists(concat!(env!("CARGO_MANIFEST_DIR"), "/test_tokens.json"))? {
-        {
-            info!("Instantiating test SHD...");
-            let snip25_init_msg = snip20::InstantiateMsg {
-                name: "Shade".to_string(),
-                admin: None,
-                symbol: "SHD".to_string(),
-                decimals: 8,
-                initial_balances: Some(balance_havers.clone()),
-                prng_seed: to_binary(&0)?,
-                config: None,
-                supported_denoms: None,
-            };
-            let test_shd =
-                instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
-            let test_shd_token = Token {
-                contract_address: test_shd.address.to_string(),
-                code_hash: test_shd.code_hash,
-                name: snip25_init_msg.name,
-                symbol: snip25_init_msg.symbol,
-                decimals: snip25_init_msg.decimals,
-                display_name: None,
-                denom: None,
-                version: None,
-            };
+    // if !std::fs::exists(concat!(env!("CARGO_MANIFEST_DIR"), "/test_tokens.json"))? {
+    {
+        info!("Instantiating test SHD...");
+        let snip25_init_msg = snip20::InstantiateMsg {
+            name: "Shade".to_string(),
+            admin: None,
+            symbol: "SHD".to_string(),
+            decimals: 8,
+            initial_balances: Some(balance_havers.clone()),
+            prng_seed: to_binary(&0)?,
+            config: None,
+            supported_denoms: None,
+        };
+        let test_shd =
+            instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+        let test_shd_token = Token {
+            contract_address: test_shd.address.to_string(),
+            code_hash: test_shd.code_hash,
+            name: snip25_init_msg.name,
+            symbol: snip25_init_msg.symbol,
+            decimals: snip25_init_msg.decimals,
+            display_name: None,
+            denom: None,
+            version: None,
+        };
 
-            info!("Instantiating test USDC...");
-            let snip25_init_msg = snip20::InstantiateMsg {
-                name: "Secret Noble USDC".to_string(),
-                admin: None,
-                symbol: "SNOBLEUSDC".to_string(),
-                decimals: 6,
-                initial_balances: Some(balance_havers.clone()),
-                prng_seed: to_binary(&0)?,
-                config: None,
-                supported_denoms: None,
-            };
-            let test_usdc =
-                instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
-            let test_usdc_token = Token {
-                contract_address: test_usdc.address.to_string(),
-                code_hash: test_usdc.code_hash,
-                name: snip25_init_msg.name,
-                symbol: snip25_init_msg.symbol,
-                decimals: snip25_init_msg.decimals,
-                display_name: None,
-                denom: None,
-                version: None,
-            };
+        info!("Instantiating test USDC...");
+        let snip25_init_msg = snip20::InstantiateMsg {
+            name: "Secret Noble USDC".to_string(),
+            admin: None,
+            symbol: "SNOBLEUSDC".to_string(),
+            decimals: 6,
+            initial_balances: Some(balance_havers.clone()),
+            prng_seed: to_binary(&0)?,
+            config: None,
+            supported_denoms: None,
+        };
+        let test_usdc =
+            instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+        let test_usdc_token = Token {
+            contract_address: test_usdc.address.to_string(),
+            code_hash: test_usdc.code_hash,
+            name: snip25_init_msg.name,
+            symbol: snip25_init_msg.symbol,
+            decimals: snip25_init_msg.decimals,
+            display_name: None,
+            denom: None,
+            version: None,
+        };
 
-            info!("Instantiating test stkd-SCRT...");
-            let snip25_init_msg = snip20::InstantiateMsg {
-                name: "Shade SCRT staking derivative".to_string(),
-                admin: None,
-                symbol: "STKDSCRT".to_string(),
-                decimals: 6,
-                initial_balances: Some(balance_havers.clone()),
-                prng_seed: to_binary(&0)?,
-                config: None,
-                supported_denoms: None,
-            };
-            let test_stkd_scrt =
-                instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
-            let test_stkd_scrt_token = Token {
-                contract_address: test_stkd_scrt.address.to_string(),
-                code_hash: test_stkd_scrt.code_hash,
-                name: snip25_init_msg.name,
-                symbol: snip25_init_msg.symbol,
-                decimals: snip25_init_msg.decimals,
-                display_name: None,
-                denom: None,
-                version: None,
-            };
+        info!("Instantiating test stkd-SCRT...");
+        let snip25_init_msg = snip20::InstantiateMsg {
+            name: "Shade SCRT staking derivative".to_string(),
+            admin: None,
+            symbol: "STKDSCRT".to_string(),
+            decimals: 6,
+            initial_balances: Some(balance_havers.clone()),
+            prng_seed: to_binary(&0)?,
+            config: None,
+            supported_denoms: None,
+        };
+        let test_stkd_scrt =
+            instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+        let test_stkd_scrt_token = Token {
+            contract_address: test_stkd_scrt.address.to_string(),
+            code_hash: test_stkd_scrt.code_hash,
+            name: snip25_init_msg.name,
+            symbol: snip25_init_msg.symbol,
+            decimals: snip25_init_msg.decimals,
+            display_name: None,
+            denom: None,
+            version: None,
+        };
 
-            let out_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-            let serialized = serde_json::to_string(&[
-                test_sscrt_token,
-                test_amber_token,
-                test_shd_token,
-                test_usdc_token,
-                test_stkd_scrt_token,
-            ])
-            .expect("Failed to serialize tokens");
+        let out_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        let serialized = serde_json::to_string(&[
+            test_sscrt_token,
+            test_amber_token,
+            test_shd_token,
+            test_usdc_token,
+            test_stkd_scrt_token,
+        ])
+        .expect("Failed to serialize tokens");
 
-            let map_file_path = match CHAIN_ID {
-                "secretdev-1" => out_dir.join("test_tokens_dev.json"),
-                "pulsar-3" => out_dir.join("test_tokens_pulsar.json"),
-                _ => panic!("Do not create test tokens on mainnet!"),
-            };
+        let map_file_path = match CHAIN_ID {
+            "secretdev-1" => out_dir.join("test_tokens_dev.json"),
+            "pulsar-3" => out_dir.join("test_tokens_pulsar.json"),
+            _ => panic!("Do not create test tokens on mainnet!"),
+        };
 
-            fs::write(&map_file_path, serialized).expect("Failed to write test tokens json file!");
+        fs::write(&map_file_path, serialized).expect("Failed to write test tokens json file!");
 
-            info!("Token details saved to {}", map_file_path.display());
-        }
+        info!("Token details saved to {}", map_file_path.display());
     }
 
     // Factory Setup

@@ -99,6 +99,16 @@ pub fn find_best_path_from_amount_in(
 
         // NOTE: Future versions of this router can add more blocks like this:
 
+        // if let Some(factory) = SHADE_SWAP_FACTORY.load(deps.storage)? {
+        //     // Fetch swaps for Shade Swap
+        //     todo!()
+        // }
+
+        // if let Some(factory) = SECRET_SWAP_FACTORY.load(deps.storage)? {
+        //     // Fetch swaps for Secret Swap
+        //     todo!()
+        // }
+
         // if let Some(factory) = FACTORY_V2_3.load(deps.storage)? {
         //     todo!()
         // }

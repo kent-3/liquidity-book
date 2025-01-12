@@ -42,6 +42,7 @@ impl PriceHelper {
         let base = Self::get_base(bin_step);
         let real_id = price.log2()? / base.log2()?;
 
+        // TODO:
         u32::safe24(
             (REAL_ID_SHIFT + real_id).as_u32(),
             U128x128MathError::IdShiftOverflow,
