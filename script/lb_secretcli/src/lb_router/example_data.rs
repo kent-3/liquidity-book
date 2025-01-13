@@ -1,14 +1,12 @@
 #![allow(unused)]
 
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
-use liquidity_book::interfaces::{
-    lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
-    lb_pair::LbPair,
-};
-use shade_protocol::{
-    snip20::Snip20ReceiveMsg,
-    swap::core::{TokenAmount, TokenType},
-    utils::asset::RawContract,
+use liquidity_book::{
+    core::{RawContract, TokenAmount, TokenType},
+    interfaces::{
+        lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
+        lb_pair::LbPair,
+    },
 };
 
 pub const BIN_STEP: u16 = 100u16;
@@ -133,14 +131,14 @@ impl ExampleData for LbPairInformation {
     }
 }
 
-impl ExampleData for Snip20ReceiveMsg {
-    fn example() -> Self {
-        Snip20ReceiveMsg {
-            sender: Addr::contract().to_string(),
-            from: Addr::sender().to_string(),
-            amount: Uint128::from(100u128),
-            memo: None,
-            msg: Some(to_binary(&"base64 encoded string").unwrap()),
-        }
-    }
-}
+// impl ExampleData for Snip20ReceiveMsg {
+//     fn example() -> Self {
+//         Snip20ReceiveMsg {
+//             sender: Addr::contract().to_string(),
+//             from: Addr::sender().to_string(),
+//             amount: Uint128::from(100u128),
+//             memo: None,
+//             msg: Some(to_binary(&"base64 encoded string").unwrap()),
+//         }
+//     }
+// }

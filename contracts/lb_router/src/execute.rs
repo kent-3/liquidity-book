@@ -4,6 +4,7 @@ use cosmwasm_std::{
     Response, StdResult, SubMsg, Uint128, Uint256, Uint64,
 };
 use liquidity_book::{
+    core::TokenType,
     interfaces::{
         lb_pair::ILbPair,
         lb_router::{LiquidityParameters, Path, Version},
@@ -11,7 +12,6 @@ use liquidity_book::{
     libraries::{math::u24::U24, LiquidityConfigurations},
 };
 use secret_toolkit::snip20;
-use shade_protocol::swap::core::TokenType;
 
 /// Create a liquidity bin LBPair for token_x and token_y using the factory.
 pub fn create_lb_pair(

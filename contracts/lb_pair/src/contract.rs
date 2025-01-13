@@ -15,14 +15,12 @@ use cosmwasm_std::{
     Uint256, WasmMsg,
 };
 use liquidity_book::{
+    core::TokenType,
     interfaces::{lb_pair::*, lb_token, lb_token::state_structs::LbPair},
     libraries::{constants, BinHelper, Bytes32, PackedUint128Math, PairParameters},
 };
 // TODO: get rid of admin stuff and shade_protocol dependency
-use shade_protocol::{
-    admin::helpers::{validate_admin, AdminPermissions},
-    swap::core::{TokenType, ViewingKey},
-};
+use shade_protocol::admin::helpers::{validate_admin, AdminPermissions};
 
 pub const INSTANTIATE_LB_TOKEN_REPLY_ID: u64 = 1u64;
 pub const FLASH_LOAN_REPLY_ID: u64 = 999u64;
@@ -54,6 +52,8 @@ pub fn instantiate(
         } => query_token_symbol(deps.as_ref(), token_code_hash, contract_addr)?,
         TokenType::NativeToken { denom } => denom,
     };
+
+    // TODO: stop instantiating this separate LbToken contract
 
     let instantiate_token_msg = lb_token::InstantiateMsg {
         has_admin: false,
@@ -104,7 +104,7 @@ pub fn instantiate(
 
     // RegisterReceiving Token
     let mut messages = vec![];
-    let viewing_key = ViewingKey::from(msg.viewing_key.as_str());
+    let viewing_key = msg.viewing_key;
     for token in [&msg.token_x, &msg.token_y] {
         if let TokenType::CustomToken { .. } = token {
             register_pair_token(&env, &mut messages, token, &viewing_key)?;
@@ -114,7 +114,7 @@ pub fn instantiate(
     let state = State {
         creator: info.sender,
         // viewing_key,
-        admin_auth: msg.admin_auth.into_valid(deps.api)?,
+        admin_auth: msg.admin_auth.validate(deps.api)?,
     };
 
     // TODO: rename?
@@ -251,7 +251,7 @@ pub fn execute(
                 &deps.querier,
                 AdminPermissions::ShadeSwapAdmin,
                 &info.sender,
-                &state.admin_auth,
+                &state.admin_auth.into(),
             )?;
             CONTRACT_STATUS.save(deps.storage, &contract_status)?;
 

@@ -1,19 +1,16 @@
-use crate::{lb_token::TOTAL_SUPPLIES, state::*, Error, Result};
+use crate::{state::*, Error, Result};
 use cosmwasm_std::{Addr, ContractInfo, CosmosMsg, Deps, Env, QuerierWrapper, StdResult};
 use ethnum::U256;
 use liquidity_book::{
-    interfaces::{lb_router::LiquidityParameters, lb_token},
+    core::TokenType,
+    interfaces::lb_token,
     libraries::{
-        math::{packed_u128_math::PackedUint128Math, u24::U24, uint256_to_u256::ConvertUint256},
+        math::{packed_u128_math::PackedUint128Math, uint256_to_u256::ConvertUint256},
         Bytes32,
     },
 };
-// TODO: sort out viewing key strategy
 use secret_toolkit::snip20::{register_receive_msg, set_viewing_key_msg};
-use shade_protocol::{
-    snip20,
-    swap::core::{TokenType, ViewingKey},
-};
+use shade_protocol::snip20;
 
 // TODO: make a 'bin' type with these methods?
 
@@ -153,7 +150,7 @@ pub fn register_pair_token(
     env: &Env,
     messages: &mut Vec<CosmosMsg>,
     token: &TokenType,
-    viewing_key: &ViewingKey,
+    viewing_key: &str,
 ) -> StdResult<()> {
     if let TokenType::CustomToken {
         contract_addr,

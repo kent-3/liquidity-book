@@ -4,14 +4,13 @@ use cosmwasm_std::{Addr, ContractInfo, Uint128, Uint256};
 use ethnum::U256;
 use example_data::*;
 use liquidity_book::{
+    core::{RawContract, TokenType},
     interfaces::{
         lb_factory::{Implementation, StaticFeeParameters},
         lb_pair::*,
     },
     libraries::{math::uint256_to_u256::ConvertU256, pair_parameter_helper::PairParameters},
 };
-// TODO: any chance we can do away with these dependencies?
-use shade_protocol::{swap::core::TokenType, utils::asset::RawContract};
 use std::{
     env,
     fs::{create_dir_all, File},

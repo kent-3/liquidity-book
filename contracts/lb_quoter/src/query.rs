@@ -4,13 +4,15 @@ use crate::{
     Error, Result,
 };
 use cosmwasm_std::{Addr, ContractInfo, Deps, Uint128};
-use liquidity_book::interfaces::{
-    lb_factory::{ILbFactory, LbPairInformation},
-    lb_pair::ILbPair,
-    lb_quoter::Quote,
-    lb_router::{self, ILbRouter, Version},
+use liquidity_book::{
+    core::TokenType,
+    interfaces::{
+        lb_factory::{ILbFactory, LbPairInformation},
+        lb_pair::ILbPair,
+        lb_quoter::Quote,
+        lb_router::{self, ILbRouter, Version},
+    },
 };
-use shade_protocol::swap::core::TokenType;
 
 pub fn find_best_path_from_amount_in(
     deps: Deps,

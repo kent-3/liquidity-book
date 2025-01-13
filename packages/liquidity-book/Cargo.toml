@@ -24,5 +24,5 @@ serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }
 
 # TODO: get rid of these
-shade-protocol = { workspace = true }
+# shade-protocol = { workspace = true }
 secret-storage-plus = { git = "https://github.com/securesecrets/secret-plus-utils" }

@@ -1,11 +1,9 @@
 use super::lb_pair::LbPair;
+use crate::core::{RawContract, TokenType};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     Addr, Binary, ContractInfo, QuerierWrapper, StdResult, Uint128, Uint256, Uint64,
 };
-// TODO: replace these dependencies
-use shade_protocol::contract_interfaces::swap::core::TokenType;
-use shade_protocol::utils::asset::RawContract;
 
 // TODO: decide on capitalization in errors...
 

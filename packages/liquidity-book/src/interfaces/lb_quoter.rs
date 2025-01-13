@@ -1,11 +1,7 @@
 use super::lb_router::Version;
+use crate::core::{RawContract, TokenType};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{ContractInfo, Uint128};
-// TODO: copy these instead of using shade_protocol as a dependency
-use shade_protocol::{
-    swap::core::TokenType,
-    utils::{asset::RawContract, Query},
-};
 
 use crate::libraries::math::{u128x128_math::U128x128MathError, u256x256_math::U256x256MathError};
 use cosmwasm_std::StdError;
@@ -64,9 +60,10 @@ pub enum QueryMsg {
     },
 }
 
-impl Query for QueryMsg {
-    const BLOCK_SIZE: usize = 256;
-}
+// TODO: may need this for multi-test
+// impl Query for QueryMsg {
+//     const BLOCK_SIZE: usize = 256;
+// }
 
 #[cw_serde]
 pub struct FactoryV2_2Response {

@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, StdResult, Storage};
 use ethnum::U256;
 use liquidity_book::{
+    core::TokenType,
     interfaces::{lb_factory::ILbFactory, lb_pair::ContractStatus},
     libraries::{
         hooks::HooksParameters,
@@ -13,16 +14,11 @@ use secret_toolkit::{
     serialization::{Bincode2, Json},
     storage::{Item, Keymap, KeymapBuilder, WithoutIter},
 };
-// TODO: sort out viewing key strategy
-use shade_protocol::{
-    swap::core::{TokenType, ViewingKey},
-    Contract,
-};
 
 pub static STATE: Item<State> = Item::new(b"state");
 
 pub static CONTRACT_STATUS: Item<ContractStatus, Json> = Item::new(b"contract_status");
-pub static VIEWING_KEY: Item<ViewingKey> = Item::new(b"contract_viewing_key");
+pub static VIEWING_KEY: Item<String> = Item::new(b"contract_viewing_key");
 
 pub static FACTORY: Item<ILbFactory> = Item::new(b"lb_factory");
 pub static LB_TOKEN: Item<ContractInfo> = Item::new(b"lb_token");
@@ -50,7 +46,7 @@ pub static EPHEMERAL_FLASH_LOAN: Item<EphemeralFlashLoan> = Item::new(b"ephemera
 #[cw_serde]
 pub struct State {
     pub creator: Addr,
-    pub admin_auth: Contract,
+    pub admin_auth: ContractInfo,
 }
 
 #[cw_serde]

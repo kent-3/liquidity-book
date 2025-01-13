@@ -1,3 +1,4 @@
+use crate::core::callback::{ExecuteCallback, InstantiateCallback, Query};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_binary, Addr, Binary, Coin, CosmosMsg, Event, StdResult, Uint128, Uint256, WasmMsg,
@@ -5,7 +6,6 @@ use cosmwasm_std::{
 use schemars::JsonSchema;
 use secret_toolkit::permit::Permit;
 use serde::{Deserialize, Serialize};
-use shade_protocol::utils::{ExecuteCallback, InstantiateCallback, Query};
 
 use self::{
     expiration::Expiration,

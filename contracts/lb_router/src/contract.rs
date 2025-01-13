@@ -6,6 +6,7 @@ use cosmwasm_std::{
     Reply, Response, StdResult, SubMsgResult, Uint128,
 };
 use liquidity_book::{
+    core::RawContract,
     interfaces::{
         lb_factory::ILbFactory,
         lb_pair,
@@ -14,7 +15,6 @@ use liquidity_book::{
     libraries::{math::packed_u128_math::PackedUint128Math, Bytes32},
 };
 use secret_toolkit::snip20;
-use shade_protocol::utils::asset::RawContract;
 
 // TODO: How are we going to register this router contract to be able to receive every supported snip20 token?
 // I guess we can add a new ExecuteMsg type for that purpose, but if we ever deploy a new router, we'll need to

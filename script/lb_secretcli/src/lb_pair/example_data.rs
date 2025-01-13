@@ -1,17 +1,12 @@
 #![allow(unused)]
 
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
-use liquidity_book::interfaces::{
-    lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
-    lb_pair::LbPair,
-};
-use shade_protocol::{
-    snip20::Snip20ReceiveMsg,
-    swap::{
-        amm_pair::SwapResult,
-        core::{TokenAmount, TokenPair, TokenType},
+use liquidity_book::{
+    core::{RawContract, TokenAmount, TokenType},
+    interfaces::{
+        lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
+        lb_pair::LbPair,
     },
-    utils::asset::RawContract,
 };
 
 pub const BIN_STEP: u16 = 100u16;
@@ -23,6 +18,7 @@ pub const DEFAULT_REDUCTION_FACTOR: u16 = 5_000;
 pub const DEFAULT_VARIABLE_FEE_CONTROL: u32 = 40_000;
 pub const DEFAULT_PROTOCOL_SHARE: u16 = 1_000;
 pub const DEFAULT_MAX_VOLATILITY_ACCUMULATOR: u32 = 350_000;
+
 pub trait VariousAddr {
     fn owner() -> Self;
     fn admin() -> Self;
@@ -141,20 +137,14 @@ impl ExampleData for LbPairInformation {
     }
 }
 
-impl ExampleData for Snip20ReceiveMsg {
-    fn example() -> Self {
-        Snip20ReceiveMsg {
-            sender: Addr::contract().to_string(),
-            from: Addr::sender().to_string(),
-            amount: Uint128::from(100u128),
-            memo: None,
-            msg: Some(to_binary(&"base64 encoded string").unwrap()),
-        }
-    }
-}
-
-impl ExampleData for TokenPair {
-    fn example() -> Self {
-        TokenPair(TokenType::example(), TokenType::example(), false)
-    }
-}
+// impl ExampleData for Snip20ReceiveMsg {
+//     fn example() -> Self {
+//         Snip20ReceiveMsg {
+//             sender: Addr::contract().to_string(),
+//             from: Addr::sender().to_string(),
+//             amount: Uint128::from(100u128),
+//             memo: None,
+//             msg: Some(to_binary(&"base64 encoded string").unwrap()),
+//         }
+//     }
+// }

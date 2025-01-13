@@ -29,7 +29,4 @@ liquidity-book = { workspace = true }
 secret-toolkit-snip20 = "0.10.2"
 ethnum = { workspace = true }
 
-[dependencies.shade-protocol]
-git = "https://github.com/securesecrets/shade"
-branch = "orderbook/library"
-features = ["swap", "snip20", "utils"]
+shade-protocol = { workspace = true, features = ["query_auth"] }

@@ -1,10 +1,10 @@
 use super::{LB_PAIRS_INFO, OFFSET_IS_PRESET_OPEN};
 use cosmwasm_std::Deps;
 use liquidity_book::{
+    core::TokenType,
     interfaces::lb_factory::LbPairInformation,
     libraries::{Bytes32, Encoded},
 };
-use shade_protocol::swap::core::TokenType;
 
 pub fn _is_preset_open(preset: Bytes32) -> bool {
     preset.decode_bool(OFFSET_IS_PRESET_OPEN)

@@ -17,12 +17,12 @@ pub fn instantiate(
 ) -> Result<Response> {
     let factory_v2_2 = msg
         .factory_v2_2
-        .map(|raw_contract| raw_contract.valid(deps.api))
+        .map(|raw_contract| raw_contract.validate(deps.api))
         .transpose()?;
 
     let router_v2_2 = msg
         .router_v2_2
-        .map(|raw_contract| raw_contract.valid(deps.api))
+        .map(|raw_contract| raw_contract.validate(deps.api))
         .transpose()?;
 
     FACTORY_V2_2.save(deps.storage, &factory_v2_2)?;

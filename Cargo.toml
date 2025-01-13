@@ -82,7 +82,7 @@ features = ["snip20", "storage", "viewing-key", "permit"]
 [workspace.dependencies.shade-protocol]
 git = "https://github.com/securesecrets/shade"
 branch = "orderbook/library"
-features = ["interface", "swap", "snip20", "utils", "liquidity-book"]
+features = ["admin"]
 
 [workspace.dependencies.shade-multi-test]
 git = "https://github.com/securesecrets/shade"

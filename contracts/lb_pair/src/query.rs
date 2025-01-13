@@ -1,5 +1,5 @@
 use crate::{helper::*, state::*, Result};
-use cosmwasm_std::{Addr, Deps, Env, Uint128, Uint256};
+use cosmwasm_std::{Deps, Env, Uint128, Uint256};
 use ethnum::U256;
 use liquidity_book::{
     interfaces::lb_pair::*,
@@ -13,70 +13,71 @@ use liquidity_book::{
         U256x256Math,
     },
 };
-// TODO: get rid of these dependencies
-use shade_protocol::{
-    swap::{
-        amm_pair::{
-            FeeInfo,
-            QueryMsgResponse::{self, GetPairInfo},
-        },
-        core::{Fee, TokenPair},
-    },
-    Contract,
-};
+
+// for the commented out function below
+// use shade_protocol::{
+//     swap::{
+//         amm_pair::{
+//             FeeInfo,
+//             QueryMsgResponse::{self, GetPairInfo},
+//         },
+//         core::{Fee, TokenPair},
+//     },
+//     Contract,
+// };
 
 // TODO: Revisit if this function is necessary. It seems like something that might belong in the
 //       lb-factory contract. It should at least have it's own interface and not use amm_pair's.
-pub fn get_pair_info(deps: Deps) -> Result<QueryMsgResponse> {
-    let factory = FACTORY.load(deps.storage)?;
-    let lb_token = LB_TOKEN.load(deps.storage)?;
-    let token_x = TOKEN_X.load(deps.storage)?;
-    let token_y = TOKEN_Y.load(deps.storage)?;
-
-    let bin_step = BIN_STEP.load(deps.storage)?;
-
-    let (reserve_x, reserve_y) = RESERVES.load(deps.storage)?.decode();
-    let parameters = PARAMETERS.load(deps.storage)?;
-
-    let response = GetPairInfo {
-        liquidity_token: Contract {
-            address: lb_token.address,
-            code_hash: lb_token.code_hash,
-        },
-        factory: Some(Contract {
-            address: factory.address.clone(),
-            code_hash: factory.code_hash.clone(),
-        }),
-        pair: TokenPair(token_x, token_y, false),
-        amount_0: Uint128::from(reserve_x),
-        amount_1: Uint128::from(reserve_y),
-        total_liquidity: Uint128::default(), // no global liquidity, liquidity is calculated on per bin basis
-        contract_version: 1, // TODO set this like const AMM_PAIR_CONTRACT_VERSION: u32 = 1;
-        fee_info: FeeInfo {
-            shade_dao_address: Addr::unchecked(""), // TODO set shade dao address
-            lp_fee: Fee {
-                // TODO set this
-                nom: parameters.get_base_fee(bin_step) as u64,
-                denom: 1_000_000_000_000_000_000,
-            },
-            shade_dao_fee: Fee {
-                nom: parameters.get_base_fee(bin_step) as u64,
-                denom: 1_000_000_000_000_000_000,
-            },
-            stable_lp_fee: Fee {
-                nom: parameters.get_base_fee(bin_step) as u64,
-                denom: 1_000_000_000_000_000_000,
-            },
-            stable_shade_dao_fee: Fee {
-                nom: parameters.get_base_fee(bin_step) as u64,
-                denom: 1_000_000_000_000_000_000,
-            },
-        },
-        stable_info: None,
-    };
-
-    Ok(response)
-}
+// pub fn get_pair_info(deps: Deps) -> Result<QueryMsgResponse> {
+//     let factory = FACTORY.load(deps.storage)?;
+//     let lb_token = LB_TOKEN.load(deps.storage)?;
+//     let token_x = TOKEN_X.load(deps.storage)?;
+//     let token_y = TOKEN_Y.load(deps.storage)?;
+//
+//     let bin_step = BIN_STEP.load(deps.storage)?;
+//
+//     let (reserve_x, reserve_y) = RESERVES.load(deps.storage)?.decode();
+//     let parameters = PARAMETERS.load(deps.storage)?;
+//
+//     let response = GetPairInfo {
+//         liquidity_token: Contract {
+//             address: lb_token.address,
+//             code_hash: lb_token.code_hash,
+//         },
+//         factory: Some(Contract {
+//             address: factory.address.clone(),
+//             code_hash: factory.code_hash.clone(),
+//         }),
+//         pair: TokenPair(token_x, token_y, false),
+//         amount_0: Uint128::from(reserve_x),
+//         amount_1: Uint128::from(reserve_y),
+//         total_liquidity: Uint128::default(), // no global liquidity, liquidity is calculated on per bin basis
+//         contract_version: 1, // TODO set this like const AMM_PAIR_CONTRACT_VERSION: u32 = 1;
+//         fee_info: FeeInfo {
+//             shade_dao_address: Addr::unchecked(""), // TODO set shade dao address
+//             lp_fee: Fee {
+//                 // TODO set this
+//                 nom: parameters.get_base_fee(bin_step) as u64,
+//                 denom: 1_000_000_000_000_000_000,
+//             },
+//             shade_dao_fee: Fee {
+//                 nom: parameters.get_base_fee(bin_step) as u64,
+//                 denom: 1_000_000_000_000_000_000,
+//             },
+//             stable_lp_fee: Fee {
+//                 nom: parameters.get_base_fee(bin_step) as u64,
+//                 denom: 1_000_000_000_000_000_000,
+//             },
+//             stable_shade_dao_fee: Fee {
+//                 nom: parameters.get_base_fee(bin_step) as u64,
+//                 denom: 1_000_000_000_000_000_000,
+//             },
+//         },
+//         stable_info: None,
+//     };
+//
+//     Ok(response)
+// }
 
 // TODO: should we return ContractInfo instead?
 /// Returns the Liquidity Book Factory.

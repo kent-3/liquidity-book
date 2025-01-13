@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Event, Uint128, Uint256};
+use cosmwasm_std::{Addr, Event, Uint256};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbTokenError {

@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, ContractInfo, Uint128};
 use liquidity_book::{
+    core::TokenType,
     interfaces::{
         lb_factory::{Implementation, LbPairInformation},
         lb_pair::LbPair,
@@ -11,7 +12,6 @@ use secret_toolkit::{
     serialization::Json,
     storage::{AppendStore, Item, Keymap, Keyset},
 };
-use shade_protocol::{swap::core::TokenType, Contract};
 use std::collections::HashSet;
 
 pub static STATE: Item<State> = Item::new(b"state");
@@ -67,8 +67,8 @@ pub struct State {
     pub contract_info: ContractInfo,
     pub owner: Addr,
     // TODO: change to ContractInfo, or maybe get rid of these auth contracts...
-    pub admin_auth: Contract,
-    pub query_auth: Contract,
+    pub admin_auth: ContractInfo,
+    pub query_auth: ContractInfo,
 }
 
 pub const EPHEMERAL_LB_PAIR: Item<EphemeralLbPair, Json> = Item::new(b"ephemeral_lb_pair");

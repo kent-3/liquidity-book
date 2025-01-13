@@ -17,6 +17,7 @@ use color_eyre::{owo_colors::OwoColorize, Result};
 use cosmwasm_std::{to_binary, Addr, Binary, ContractInfo, Uint128, Uint64};
 use ethnum::U256;
 use liquidity_book::{
+    core::{RawContract, TokenType},
     interfaces::{
         lb_factory, lb_pair, lb_quoter,
         lb_router::{self, AddLiquidityResponse, CreateLbPairResponse},
@@ -30,7 +31,8 @@ use secretrs::{
     utils::EnigmaUtils,
 };
 use serde::{Deserialize, Serialize};
-use shade_protocol::{swap::core::TokenType, utils::asset::RawContract, Contract};
+use shade_protocol::Contract;
+
 use std::{
     env, fs,
     path::{Path, PathBuf},

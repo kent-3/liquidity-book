@@ -5,8 +5,9 @@ use super::{
 };
 use crate::{Error, Result};
 use cosmwasm_std::{Deps, StdResult};
-use liquidity_book::{interfaces::lb_factory::*, libraries::math::encoded::Encoded};
-use shade_protocol::swap::core::TokenType;
+use liquidity_book::{
+    core::TokenType, interfaces::lb_factory::*, libraries::math::encoded::Encoded,
+};
 
 /// Get the minimum bin step a pair can have.
 pub fn get_min_bin_step(_deps: Deps) -> Result<MinBinStepResponse> {

@@ -2,8 +2,10 @@ mod example_data;
 
 use cosmwasm_std::{Addr, ContractInfo};
 use example_data::{ExampleData, VariousAddr, ACTIVE_ID, BIN_STEP};
-use liquidity_book::interfaces::{lb_factory::*, lb_pair::LbPair};
-use shade_protocol::{swap::core::TokenType, utils::asset::RawContract};
+use liquidity_book::{
+    core::{RawContract, TokenType},
+    interfaces::{lb_factory::*, lb_pair::LbPair},
+};
 use std::{
     env,
     fs::{create_dir_all, File},

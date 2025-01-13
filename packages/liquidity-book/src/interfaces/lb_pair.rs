@@ -1,14 +1,14 @@
 use super::lb_factory::{Implementation, StaticFeeParameters};
+use crate::core::{
+    callback::{ExecuteCallback, InstantiateCallback, Query},
+    RawContract, TokenType,
+};
 use crate::libraries::{hooks::HooksParameters, Bytes32, LiquidityConfigurations};
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     to_binary, Addr, Binary, ContractInfo, Event, QuerierWrapper, StdResult, Uint128, Uint256,
     WasmMsg,
-};
-use shade_protocol::{
-    swap::core::TokenType,
-    utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
 };
 use std::fmt::{Debug, Display};
 use std::ops::Deref;
@@ -292,9 +292,9 @@ pub struct InstantiateMsg {
     pub query_auth: RawContract,
 }
 
-impl InstantiateCallback for InstantiateMsg {
-    const BLOCK_SIZE: usize = 256;
-}
+// impl InstantiateCallback for InstantiateMsg {
+//     const BLOCK_SIZE: usize = 256;
+// }
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -387,9 +387,9 @@ pub enum InvokeMsg {
     Swap { swap_for_y: bool, to: String },
 }
 
-impl ExecuteCallback for InvokeMsg {
-    const BLOCK_SIZE: usize = 256;
-}
+// impl ExecuteCallback for InvokeMsg {
+//     const BLOCK_SIZE: usize = 256;
+// }
 
 // TODO: this could instead return just the Bytes32, since it's mainly used by lb-router
 #[cw_serde]

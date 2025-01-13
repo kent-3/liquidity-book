@@ -43,8 +43,8 @@ pub fn instantiate(
             code_hash: env.contract.code_hash,
         },
         owner: msg.owner.unwrap_or_else(|| info.sender.clone()),
-        admin_auth: msg.admin_auth.into_valid(deps.api)?,
-        query_auth: msg.query_auth.into_valid(deps.api)?,
+        admin_auth: msg.admin_auth.validate(deps.api)?,
+        query_auth: msg.query_auth.validate(deps.api)?,
     };
 
     STATE.save(deps.storage, &config)?;

@@ -1,4 +1,8 @@
 use super::lb_pair::LbPair;
+use crate::core::{
+    callback::{ExecuteCallback, InstantiateCallback, Query},
+    RawContract, TokenType,
+};
 use crate::libraries::{
     bin_helper::BinError,
     fee_helper::FeeError,
@@ -16,10 +20,6 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use serde::{Deserialize, Serialize};
-use shade_protocol::{
-    swap::core::TokenType,
-    utils::{asset::RawContract, ExecuteCallback, InstantiateCallback, Query},
-};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LbFactoryError {

@@ -1,8 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
-use liquidity_book::interfaces::{lb_factory::ILbFactory, lb_pair::ILbPair, lb_router::Version};
+use liquidity_book::{
+    core::TokenType,
+    interfaces::{lb_factory::ILbFactory, lb_pair::ILbPair, lb_router::Version},
+};
 use secret_toolkit::{serialization::Json, storage::Item};
-use shade_protocol::contract_interfaces::swap::core::TokenType;
 
 pub const FACTORY_V2_2: Item<ILbFactory> = Item::new(b"factory_v2_2");
 

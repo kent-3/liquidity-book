@@ -9,6 +9,7 @@ use cosmwasm_std::{
     SubMsg, Uint128, WasmMsg,
 };
 use liquidity_book::{
+    core::{RawContract, TokenType},
     interfaces::{
         lb_factory::*,
         lb_pair::{
@@ -20,11 +21,10 @@ use liquidity_book::{
         price_helper::PriceHelper,
     },
 };
-use shade_protocol::{
-    admin::helpers::{validate_admin, AdminPermissions},
-    swap::core::TokenType,
-    utils::callback::ExecuteCallback,
-};
+// use secret_toolkit::utils::HandleCallback as ExecuteCallback;
+// NOTE: I decided to copy this from shade because I think I will need it for multi-test
+use liquidity_book::core::callback::ExecuteCallback;
+use shade_protocol::admin::helpers::{validate_admin, AdminPermissions};
 
 /// Set the LbPair implementation details.
 ///
@@ -40,7 +40,7 @@ pub fn set_lb_pair_implementation(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
 
     let old_lb_pair_implementation = LB_PAIR_IMPLEMENTATION.load(deps.storage)?;
@@ -74,7 +74,7 @@ pub fn set_lb_token_implementation(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
 
     let old_lb_token_implementation = LB_TOKEN_IMPLEMENTATION.load(deps.storage)?;
@@ -310,7 +310,7 @@ pub fn set_lb_pair_ignored(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
 
     let (token_a, token_b) = _sort_tokens(token_x.clone(), token_y.clone());
@@ -383,7 +383,7 @@ pub fn set_preset(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &state.admin_auth,
+        &state.admin_auth.clone().into(),
     )?;
     if bin_step < MIN_BIN_STEP as u16 {
         return Err(Error::BinStepTooLow { bin_step });
@@ -438,7 +438,7 @@ pub fn set_preset_open_state(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &state.admin_auth,
+        &state.admin_auth.into(),
     )?;
 
     let Some(mut preset) = PRESETS.get(deps.storage, &bin_step) else {
@@ -471,7 +471,7 @@ pub fn remove_preset(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &state.admin_auth,
+        &state.admin_auth.into(),
     )?;
 
     if !PRESETS.contains(deps.storage, &bin_step) {
@@ -521,7 +521,7 @@ pub fn set_fee_parameters_on_pair(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &state.admin_auth,
+        &state.admin_auth.into(),
     )?;
     let (token_a, token_b) = _sort_tokens(token_x, token_y);
     let lb_pair = LB_PAIRS_INFO
@@ -621,7 +621,7 @@ pub fn set_fee_recipient(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
 
     let old_fee_recipient = FEE_RECIPIENT.load(deps.storage)?;
@@ -683,7 +683,7 @@ pub fn add_quote_asset(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
     if QUOTE_ASSET_WHITELIST
         .iter(deps.storage)?
@@ -716,7 +716,7 @@ pub fn remove_quote_asset(
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
     // TODO: there has to be a better way to write this
     let found_asset = QUOTE_ASSET_WHITELIST
@@ -747,7 +747,7 @@ pub fn force_decay(deps: DepsMut, _env: Env, info: MessageInfo, pair: LbPair) ->
         &deps.querier,
         AdminPermissions::LiquidityBookAdmin,
         info.sender.to_string(),
-        &config.admin_auth,
+        &config.admin_auth.into(),
     )?;
 
     let (token_a, token_b) = _sort_tokens(pair.token_x, pair.token_y);
