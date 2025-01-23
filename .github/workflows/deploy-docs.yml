@@ -12,20 +12,13 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install mdBook
-        run: |
-          cargo install mdbook
-
-      - name: Build mdBook Documentation
-        run: |
-          mdbook build docs
-
-      - name: Deploy Docs to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
         with:
-          branch: gh-pages
-          folder: docs/book  # Deploy docs output
-          target-folder: docs/  # Ensures it appears at /docs
+          toolchain: stable
+      - run: (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.4" mdbook)
+      - run: mdbook build docs && mdbook test docs
+      - uses: JamesIves/github-pages-deploy-action@4.1.7
+        with:
+          branch: gh-pages   # The branch the action should deploy to.
+          folder: docs/book  # The folder the action should deploy.
