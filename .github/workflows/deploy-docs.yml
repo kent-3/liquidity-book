@@ -27,5 +27,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: docs/  # Deploy docs output
+          folder: docs/book  # Deploy docs output
           target-folder: docs/  # Ensures it appears at /docs
