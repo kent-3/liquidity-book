@@ -7,7 +7,8 @@ on:
       - 'docs/**'
       - '.github/workflows/deploy-docs.yml'
 permissions:
-  contents: write
+  contents: write       # To push a branch
+  pull-requests: write  # To create a PR from that branch
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -22,3 +23,4 @@ jobs:
         with:
           branch: gh-pages   # The branch the action should deploy to.
           folder: docs/book  # The folder the action should deploy.
+          target-folder: docs/
