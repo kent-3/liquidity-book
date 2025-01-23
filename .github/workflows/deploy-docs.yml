@@ -5,7 +5,7 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'book.toml'
+      - '.github/workflows/deploy-docs.yml'
 permissions:
   contents: write
 jobs:
