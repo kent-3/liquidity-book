@@ -37,8 +37,8 @@ incremental = false
 overflow-checks = true
 
 [patch.crates-io]
-secret-sdk-proto = { git = "https://github.com/kent-3/secret-rust", branch = "sdk-upgrade" }
-secretrs = { git = "https://github.com/kent-3/secret-rust", branch = "sdk-upgrade" }
+secret-sdk-proto = { git = "https://github.com/kent-3/secret-rust", branch = "main" }
+secretrs = { git = "https://github.com/kent-3/secret-rust", branch = "main" }
 
 [workspace.dependencies]
 liquidity-book = { path = "packages/liquidity-book" }
