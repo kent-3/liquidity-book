@@ -1,6 +1,6 @@
 # Liquidity Book
 
-A direct-as-possible port of [Joe-V2: Liquidity Book](https://github.com/traderjoe-xyz/joe-v2) to CosmWasm (specifically Secret). 
+A direct-as-possible port of [Joe-V2: Liquidity Book](https://github.com/traderjoe-xyz/joe-v2) to CosmWasm (specifically Secret).
 
 This repository contains the Liquidity Book contracts, as well as tests and deploy scripts.
 
