@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Authentication","Extension","MediaFile","Metadata","Trait"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EPHEMERAL_ADD_LIQUIDITY","EPHEMERAL_REMOVE_LIQUIDITY","EPHEMERAL_SWAP","EPHEMERAL_SWAP_FOR_EXACT","FACTORY_V2_2"],"struct":["EphemeralAddLiquidity","EphemeralRemoveLiquidity","EphemeralSwap","EphemeralSwapForExact"]};

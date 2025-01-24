@@ -1,0 +1,213 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `PackedUint128Math` trait in crate `liquidity_book`."><title>PackedUint128Math in liquidity_book::libraries::math::packed_u128_math - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="liquidity_book" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0 (9fc6b4312 2025-01-07)" data-channel="1.84.0" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../../liquidity_book/index.html">liquidity_<wbr>book</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Packed<wbr>Uint128<wbr>Math</a></h2><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.add" title="add">add</a></li><li><a href="#method.add_alt" title="add_alt">add_alt</a></li><li><a href="#method.decode" title="decode">decode</a></li><li><a href="#method.decode_alt" title="decode_alt">decode_alt</a></li><li><a href="#method.decode_x" title="decode_x">decode_x</a></li><li><a href="#method.decode_y" title="decode_y">decode_y</a></li><li><a href="#method.encode" title="encode">encode</a></li><li><a href="#method.encode_alt" title="encode_alt">encode_alt</a></li><li><a href="#method.encode_first" title="encode_first">encode_first</a></li><li><a href="#method.encode_second" title="encode_second">encode_second</a></li><li><a href="#method.gt" title="gt">gt</a></li><li><a href="#method.lt" title="lt">lt</a></li><li><a href="#method.max" title="max">max</a></li><li><a href="#method.min" title="min">min</a></li><li><a href="#method.scalar_mul_div_basis_point_round_down" title="scalar_mul_div_basis_point_round_down">scalar_mul_div_basis_point_round_down</a></li><li><a href="#method.sub" title="sub">sub</a></li><li><a href="#method.sub_alt" title="sub_alt">sub_alt</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In liquidity_<wbr>book::<wbr>libraries::<wbr>math::<wbr>packed_<wbr>u128_<wbr>math</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><span class="rustdoc-breadcrumbs"><a href="../../../index.html">liquidity_book</a>::<wbr><a href="../../index.html">libraries</a>::<wbr><a href="../index.html">math</a>::<wbr><a href="index.html">packed_u128_math</a></span><h1>Trait <span class="trait">PackedUint128Math</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#25-358">Source</a> </span></div><pre class="rust item-decl"><code>pub trait PackedUint128Math: <a class="trait" href="https://doc.rust-lang.org/1.84.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.array.html">32</a>]&gt; + <a class="trait" href="https://doc.rust-lang.org/1.84.0/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u8.html">u8</a>]&gt; {
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 17 methods</span></summary>    // Provided methods
+    fn <a href="#method.min" class="fn">min</a>() -&gt; Self { ... }
+<span class="item-spacer"></span>    fn <a href="#method.max" class="fn">max</a>() -&gt; Self { ... }
+<span class="item-spacer"></span>    fn <a href="#method.encode" class="fn">encode</a>(x1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, x2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; Self { ... }
+<span class="item-spacer"></span>    fn <a href="#method.encode_alt" class="fn">encode_alt</a>(x: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, first: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a>) -&gt; Self { ... }
+<span class="item-spacer"></span>    fn <a href="#method.encode_first" class="fn">encode_first</a>(x1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.encode_second" class="fn">encode_second</a>(x2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.decode" class="fn">decode</a>(&amp;self) -&gt; (<a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.decode_alt" class="fn">decode_alt</a>(&amp;self, first: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.decode_x" class="fn">decode_x</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.decode_y" class="fn">decode_y</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.add" class="fn">add</a>(&amp;self, y: <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.add_alt" class="fn">add_alt</a>(
+        &amp;self,
+        y1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
+        y2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.sub" class="fn">sub</a>(&amp;self, y: Self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.sub_alt" class="fn">sub_alt</a>(
+        &amp;self,
+        y1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
+        y2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.lt" class="fn">lt</a>(&amp;self, y: Self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.gt" class="fn">gt</a>(&amp;self, y: Self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.scalar_mul_div_basis_point_round_down" class="fn">scalar_mul_div_basis_point_round_down</a>(
+        &amp;self,
+        multiplier: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="../../error/enum.Error.html" title="enum liquidity_book::libraries::error::Error">Error</a>&gt; { ... }
+</details>}</code></pre><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><section id="method.min" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#26-28">Source</a><h4 class="code-header">fn <a href="#method.min" class="fn">min</a>() -&gt; Self</h4></section><section id="method.max" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#30-32">Source</a><h4 class="code-header">fn <a href="#method.max" class="fn">max</a>() -&gt; Self</h4></section><details class="toggle method-toggle" open><summary><section id="method.encode" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#47-56">Source</a><h4 class="code-header">fn <a href="#method.encode" class="fn">encode</a>(x1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, x2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; Self</h4></section></summary><div class="docblock"><p>Encodes two <code>u128</code> values into a single <code>Bytes32</code> value, with the first <code>u128</code>
+value stored in the first 128 bits of the <code>Bytes32</code> value and the second <code>u128</code>
+value stored in the last 128 bits.</p>
+<h5 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h5>
+<ul>
+<li><code>x1</code> - The first <code>u128</code> value to encode.</li>
+<li><code>x2</code> - The second <code>u128</code> value to encode.</li>
+</ul>
+<h5 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h5>
+<p>The encoded <code>Bytes32</code> value, with <code>x1</code> stored in the first 128 bits and <code>x2</code>
+stored in the last 128 bits.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.encode_alt" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#70-76">Source</a><h4 class="code-header">fn <a href="#method.encode_alt" class="fn">encode_alt</a>(x: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, first: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a>) -&gt; Self</h4></section></summary><div class="docblock"><p>Encodes a <code>u128</code> value into a single <code>Bytes32</code> value, with the <code>u128</code> value stored
+in either the first or last 128 bits of the <code>Bytes32</code> value. The remaining 128 bits are set to zero.</p>
+<h5 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - The <code>u128</code> value to encode.</li>
+<li><code>first</code> - Whether to encode as the first or second u128.</li>
+</ul>
+<h5 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h5>
+<p>The encoded <code>Bytes32</code> value, with the <code>u128</code> value stored in either the first
+or last 128 bits of the <code>Bytes32</code> value. The remaining 128 bits are set to zero.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.encode_first" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#89-95">Source</a><h4 class="code-header">fn <a href="#method.encode_first" class="fn">encode_first</a>(x1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a></h4></section></summary><div class="docblock"><p>Encodes a <code>u128</code> value into a single <code>Bytes32</code> value, with the <code>u128</code> value stored
+in the first 128 bits of the <code>Bytes32</code> value and the last 128 bits set to zero.</p>
+<h5 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h5>
+<ul>
+<li><code>x1</code> - The <code>u128</code> value to encode.</li>
+</ul>
+<h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
+<p>The encoded <code>Bytes32</code> value, with <code>x1</code> stored in the first 128 bits and the last
+128 bits set to zero.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.encode_second" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#108-114">Source</a><h4 class="code-header">fn <a href="#method.encode_second" class="fn">encode_second</a>(x2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a></h4></section></summary><div class="docblock"><p>Encodes a <code>u128</code> value into a single <code>Bytes32</code> value, with the <code>u128</code> value stored
+in the last 128 bits of the <code>Bytes32</code> value and the first 128 bits set to zero.</p>
+<h5 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h5>
+<ul>
+<li><code>x2</code> - The <code>u128</code> value to encode.</li>
+</ul>
+<h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
+<p>The encoded <code>Bytes32</code> value, with <code>x2</code> stored in the last 128 bits and the first
+128 bits set to zero.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.decode" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#123-133">Source</a><h4 class="code-header">fn <a href="#method.decode" class="fn">decode</a>(&amp;self) -&gt; (<a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>)</h4></section></summary><div class="docblock"><p>Decodes a <code>Bytes32</code> value into two <code>u128</code> values as follows:</p>
+<ul>
+<li>[0 - 128[: x1</li>
+<li>[128 - 256[: x2</li>
+</ul>
+<h5 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h5>
+<p>A tuple of two <code>u128</code> values representing the decoded <code>x1</code> and <code>x2</code> values.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.decode_alt" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#144-150">Source</a><h4 class="code-header">fn <a href="#method.decode_alt" class="fn">decode_alt</a>(&amp;self, first: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a></h4></section></summary><div class="docblock"><p>Decodes a <code>Bytes32</code> value into a <code>u128</code> value as the first or second <code>u128</code>.</p>
+<h5 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h5>
+<ul>
+<li><code>first</code> - A boolean value indicating whether to decode the first chunk (<code>true</code>) or the second chunk (<code>false</code>)</li>
+</ul>
+<h5 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h5>
+<p>A <code>u128</code> value representing the decoded <code>x1</code> or <code>x2</code> value, depending on the value of <code>first</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.decode_x" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#157-162">Source</a><h4 class="code-header">fn <a href="#method.decode_x" class="fn">decode_x</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a></h4></section></summary><div class="docblock"><p>Decodes a <code>Bytes32</code> value into a <code>u128</code> value as the first chunk.</p>
+<h5 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h5>
+<p>A <code>u128</code> value representing the decoded <code>x1</code> value.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.decode_y" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#169-174">Source</a><h4 class="code-header">fn <a href="#method.decode_y" class="fn">decode_y</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a></h4></section></summary><div class="docblock"><p>Decodes a <code>Bytes32</code> value into a <code>u128</code> value as the second chunk.</p>
+<h5 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h5>
+<p>A <code>u128</code> value representing the decoded <code>x2</code> value.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#192-204">Source</a><h4 class="code-header">fn <a href="#method.add" class="fn">add</a>(&amp;self, y: <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt;</h4></section></summary><div class="docblock"><p>Adds two <code>Bytes32</code> values encoded as follows:</p>
+<ul>
+<li>[0 - 128[: x1</li>
+<li>[128 - 256[: x2</li>
+<li>[0 - 128[: y1</li>
+<li>[128 - 256[: y2</li>
+</ul>
+<h5 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - The first <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array</li>
+<li><code>y</code> - The second <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array</li>
+</ul>
+<h5 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h5>
+<p>A <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array, encoding the sum of <code>x</code> and <code>y</code> as follows:</p>
+<ul>
+<li>[0 - 128[: x1 + y1</li>
+<li>[128 - 256[: x2 + y2</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_alt" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#222-225">Source</a><h4 class="code-header">fn <a href="#method.add_alt" class="fn">add_alt</a>(&amp;self, y1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, y2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt;</h4></section></summary><div class="docblock"><p>Adds a <code>Bytes32</code> value encoded as follows:</p>
+<ul>
+<li>[0 - 128[: x1</li>
+<li>[128 - 256[: x2</li>
+<li>and two <code>u128</code> values <code>y1</code> and <code>y2</code>.</li>
+</ul>
+<h5 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - The <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array</li>
+<li><code>y1</code> - The first <code>u128</code> value</li>
+<li><code>y2</code> - The second <code>u128</code> value</li>
+</ul>
+<h5 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h5>
+<p>A <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array, encoding the sum of <code>x</code> and <code>(y1, y2)</code> as follows:</p>
+<ul>
+<li>[0 - 128[: x1 + y1</li>
+<li>[128 - 256[: x2 + y2</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sub" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#243-256">Source</a><h4 class="code-header">fn <a href="#method.sub" class="fn">sub</a>(&amp;self, y: Self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt;</h4></section></summary><div class="docblock"><p>Subtracts two <code>Bytes32</code> values encoded as follows:</p>
+<ul>
+<li>[0 - 128[: x1</li>
+<li>[128 - 256[: x2</li>
+<li>[0 - 128[: y1</li>
+<li>[128 - 256[: y2</li>
+</ul>
+<h5 id="arguments-7"><a class="doc-anchor" href="#arguments-7">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - The first <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array</li>
+<li><code>y</code> - The second <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array</li>
+</ul>
+<h5 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h5>
+<p>A <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array, encoding the difference between <code>x</code> and <code>y</code> as follows:</p>
+<ul>
+<li>[0 - 128[: x1 - y1</li>
+<li>[128 - 256[: x2 - y2</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sub_alt" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#274-277">Source</a><h4 class="code-header">fn <a href="#method.sub_alt" class="fn">sub_alt</a>(&amp;self, y1: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>, y2: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="enum.PackedUint128MathError.html" title="enum liquidity_book::libraries::math::packed_u128_math::PackedUint128MathError">PackedUint128MathError</a>&gt;</h4></section></summary><div class="docblock"><p>Subtracts a <code>Bytes32</code> value encoded as follows:</p>
+<ul>
+<li>[0 - 128[: x1</li>
+<li>[128 - 256[: x2</li>
+<li>and two <code>u128</code> values <code>y1</code> and <code>y2</code>.</li>
+</ul>
+<h5 id="arguments-8"><a class="doc-anchor" href="#arguments-8">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - The <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array</li>
+<li><code>y1</code> - The first <code>u128</code> value</li>
+<li><code>y2</code> - The second <code>u128</code> value</li>
+</ul>
+<h5 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h5>
+<p>A <code>Bytes32</code> value represented as a <code>[u8; 32]</code> array, encoding the difference between <code>x</code> and <code>(y1, y2)</code> as follows:</p>
+<ul>
+<li>[0 - 128[: x1 - y1</li>
+<li>[128 - 256[: x2 - y2</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.lt" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#293-298">Source</a><h4 class="code-header">fn <a href="#method.lt" class="fn">lt</a>(&amp;self, y: Self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns whether any of the u128 of x is strictly less than the corresponding u128 of y.</p>
+<p><code>x</code> and <code>y</code> are both encoded as <code>Bytes32</code> with the following structure:</p>
+<ul>
+<li><code>[0-15]</code>: first <code>u128</code> value</li>
+<li><code>[16-31]</code>: second <code>u128</code> value</li>
+</ul>
+<h5 id="arguments-9"><a class="doc-anchor" href="#arguments-9">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - A <code>Bytes32</code> encoding a pair of <code>u128</code> values.</li>
+<li><code>y</code> - A <code>Bytes32</code> encoding a pair of <code>u128</code> values.</li>
+</ul>
+<h5 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h5>
+<ul>
+<li><code>true</code> if <code>x</code> is less than <code>y</code>, and <code>false</code> otherwise.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.gt" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#314-319">Source</a><h4 class="code-header">fn <a href="#method.gt" class="fn">gt</a>(&amp;self, y: Self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns whether any of the u128 of x is strictly greater than the corresponding u128 of y.</p>
+<p><code>x</code> and <code>y</code> are both encoded as <code>Bytes32</code> with the following structure:</p>
+<ul>
+<li><code>[0-15]</code>: first <code>u128</code> value</li>
+<li><code>[16-31]</code>: second <code>u128</code> value</li>
+</ul>
+<h5 id="arguments-10"><a class="doc-anchor" href="#arguments-10">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - A <code>Bytes32</code> encoding a pair of <code>u128</code> values.</li>
+<li><code>y</code> - A <code>Bytes32</code> encoding a pair of <code>u128</code> values.</li>
+</ul>
+<h5 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h5>
+<ul>
+<li><code>true</code> if <code>x</code> is greater than <code>y</code>, and <code>false</code> otherwise.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.scalar_mul_div_basis_point_round_down" class="method"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#337-357">Source</a><h4 class="code-header">fn <a href="#method.scalar_mul_div_basis_point_round_down" class="fn">scalar_mul_div_basis_point_round_down</a>(
+    &amp;self,
+    multiplier: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="enum" href="../../error/enum.Error.html" title="enum liquidity_book::libraries::error::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Multiplies an encoded Bytes32 by a u128 then divides the result by 10_000, rounding down.</p>
+<p>The result can’t overflow as the multiplier needs to be smaller or equal to 10_000.</p>
+<h5 id="arguments-11"><a class="doc-anchor" href="#arguments-11">§</a>Arguments</h5>
+<ul>
+<li><code>x</code> - The Bytes32 encoded as follows:
+<ul>
+<li><code>[0 - 128[</code> : x1</li>
+<li><code>[128 - 256[</code> : x2</li>
+</ul>
+</li>
+<li><code>multiplier</code> - The u128 to multiply by (must be smaller or equal to 10_000).</li>
+</ul>
+<h5 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h5>
+<p>Returns the product of x and multiplier encoded as follows:</p>
+<ul>
+<li><code>[0 - 128[</code> : floor((x1 * multiplier) / 10_000)</li>
+<li><code>[128 - 256[</code> : floor((x2 * multiplier) / 10_000)</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.84.0/reference/items/traits.html#object-safety">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-PackedUint128Math-for-%5Bu8;+32%5D" class="impl"><a class="src rightside" href="../../../../src/liquidity_book/libraries/math/packed_u128_math.rs.html#23">Source</a><a href="#impl-PackedUint128Math-for-%5Bu8;+32%5D" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.PackedUint128Math.html" title="trait liquidity_book::libraries::math::packed_u128_math::PackedUint128Math">PackedUint128Math</a> for <a class="type" href="../../type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a></h3></section></div><script src="../../../../trait.impl/liquidity_book/libraries/math/packed_u128_math/trait.PackedUint128Math.js" async></script></section></div></main></body></html>

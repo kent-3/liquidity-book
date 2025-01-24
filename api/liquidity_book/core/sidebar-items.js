@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["assets","callback","padding","token_amount","token_type"]};
