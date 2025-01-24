@@ -9,23 +9,35 @@ on:
 permissions:
   contents: write # To push a branch
   pull-requests: write # To create a PR from that branch
+env:
+  CARGO_TERM_COLOR: "always"
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+  RUSTDOCFLAGS: "--default-theme=ayu"
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - run: (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.4" mdbook)
-      - run: (test -x $HOME/.cargo/bin/mdbook-tabs || cargo install --vers "^0.2" mdbook-tabs)
-      - run: (test -x $HOME/.cargo/bin/mdbook-admonish || cargo install --vers "^1.18" mdbook-admonish)
+      - run: cargo install mdbook mdbook-tabs mdbook-admonish
       - run: mdbook build docs && mdbook test docs
       - name: Build Cargo Docs for Workspace
         run: |
           cargo doc --workspace --no-deps --document-private-items
           mkdir -p docs/api
           mv target/doc/* docs/api/
+      - name: Set Default Dark Theme to 'ayu'
+        run: |
+          SETTINGS_FILE=$(find target/doc/static.files -name 'settings-*.js')
+          if [ -f "$SETTINGS_FILE" ]; then
+            sed -i 's/"js_name":"preferred-dark-theme","default":"dark"/"js_name":"preferred-dark-theme","default":"ayu"/' "$SETTINGS_FILE"
+          else
+            echo "Warning: settings-*.js file not found!"
+          fi
       - name: Merge All Docs into a Single Directory
         run: |
           mkdir -p docs-deploy
@@ -35,3 +47,4 @@ jobs:
         with:
           branch: gh-pages # Deploy to GitHub Pages branch
           folder: docs-deploy # Deploy everything
+          target-folder: docs/
