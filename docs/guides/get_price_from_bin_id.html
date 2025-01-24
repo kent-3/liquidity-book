@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Liquidity Book</title>
+        <title>Price From Bin Id - Liquidity Book</title>
 
 
         <!-- Custom HTML head -->
@@ -12,35 +12,35 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/tabs.css">
+        <link rel="stylesheet" href="../theme/tabs.css">
 
         <!-- MathJax -->
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -92,7 +92,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -126,13 +126,13 @@
                     <h1 class="menu-title">Liquidity Book</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                         <a href="https://github.com/kent-3/liquidity-book" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/kent-3/liquidity-book/edit/main/docs/src/introduction.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/kent-3/liquidity-book/edit/main/docs/src/guides/get_price_from_bin_id.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -161,14 +161,75 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+                        <h1 id="get-price-from-bin-id"><a class="header" href="#get-price-from-bin-id">Get Price From Bin Id</a></h1>
+<p>Each bin holds the liquidity of the pair for a specific price range. Thus, it is possible to link a certain bin to a price by using the id of the underlying bin. We provide examples to get the price from a binId.</p>
+<h3 id="conversion-functions"><a class="header" href="#conversion-functions">Conversion Functions</a></h3>
+<p>In order to link a bin_id to a price it is necessary to know the bin_step of the underlying pair. Here is the conversion logic.</p>
+<p>{{#tabs }}
+{{#tab name="JavaScript" }}</p>
+<pre><code class="language-js">function getPriceFromId(binId: number, binStep: number): number {
+  /**
+   * Convert a binId to the underlying price.
+   *
+   * @param binId - Bin Id.
+   * @param binStep - binStep of the pair.
+   * @return Price of the bin.
+   */
+
+  return (1 + binStep / 10_000) ** (binId - 8388608);
+}
+</code></pre>
+<p>{{#endtab }}
+{{#tab name="Python" }}</p>
+<pre><code class="language-py">def getPriceFromId(binId: int, binStep: int) -&gt; float:
+    """
+    Convert a binId to the underlying price.
+
+    :param binId: Bin Id.
+    :param binStep: BinStep of the pair.
+    :return: Price of the bin.
+    """
+
+    return (1 + binStep / 10_000) ** (binId - 8388608)
+</code></pre>
+<p>{{#endtab }}
+{{#tab name="Rust" }}</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// TODO: write a version using only the standard library
+
+// /// Calculates the price as a 128.128-binary fixed-point number
+// pub fn get_price_from_id(id: u32, bin_step: u16) -&gt; Result&lt;U256, U128x128MathError&gt; {
+//     let base = Self::get_base(bin_step);
+//     let exponent = Self::get_exponent(id);
+//
+//     U128x128Math::pow(&amp;base, exponent)
+// }
+<span class="boring">}</span></code></pre></pre>
+<p>{{#endtab }}
+{{#endtabs }}</p>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<p>Here is an example to illustrate the conversion function with the sAVAX/AVAX pair which has a binStep of 5. We choose here a binId equal to 8388755. Price returned doesn't need to be adjusted, as both tokens have 18 decimals.</p>
+<pre><code class="language-py">getPriceFromId(8388755, 5)
+&gt;&gt;&gt; 1.0762487670087693
+</code></pre>
+<p>For second example, let's take BTC.b/USDC pair which has a binStep of 10. We choose binId equal to 8394314.</p>
+<pre><code class="language-py">getPriceFromId(8394314, 10)
+&gt;&gt;&gt; 299.80998797504674
+</code></pre>
+<br>
+<p>\[ priceAdjusted = price \cdot 10^{(decimalsX - decimalsY)} \]</p>
+<p>\[ priceAdjusted = 299.80 \cdot 10^{(8 - 6)} = 29800 \]</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../guides.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
-                            <a rel="next prefetch" href="key-changes.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../concepts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -178,8 +239,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../guides.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
-                    <a rel="next prefetch" href="key-changes.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../concepts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -194,16 +258,16 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/tabs.js"></script>
+        <script src="../theme/tabs.js"></script>
 
 
     </div>
