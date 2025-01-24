@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LbQuoterError","QueryMsg"],"struct":["ExecuteMsg","FactoryV2_2Response","InstantiateMsg","Quote","RouterV2_2Response"]};

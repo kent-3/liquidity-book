@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["append_permission_for_addr","list_owner_permission_keys","may_load_any_permission","new_permission","update_permission"],"static":["PERMISSION_ID_STORE"]};

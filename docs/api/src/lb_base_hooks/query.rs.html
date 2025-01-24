@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `contracts/lb_base_hooks/src/query.rs`."><title>query.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-42caa33d.css"><script id="default-settings" 
+data-use_system_theme="false"
+data-theme="ayu"></script><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lb_base_hooks" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.0 (9fc6b4312 2025-01-07)" data-channel="1.84.0" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">lb_base_hooks/</div>query.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::state::LB_PAIR;
+<span class="kw">use </span>cosmwasm_std::{Deps, Env, StdResult};
+<span class="kw">use </span>liquidity_book::interfaces::lb_hooks::<span class="kw-2">*</span>;
+
+<span class="comment">// TODO: is it alright to use StdResult instead of crate::Result? there's really no need for a
+// custom error type here, but it's breaking convention
+
+</span><span class="doccomment">/// Returns the LBPair contract.
+</span><span class="kw">pub fn </span>get_lb_pair(deps: Deps) -&gt; StdResult&lt;GetLbPairResponse&gt; {
+    <span class="comment">// let lb_pair = LB_PAIR.load(deps.storage)?.map(|lb_pair| lb_pair.0);
+    </span><span class="kw">let </span>lb_pair = LB_PAIR.load(deps.storage)<span class="question-mark">?</span>;
+
+    <span class="comment">// TODO: let's see what happens when ILbPair gets serialized
+    </span><span class="prelude-val">Ok</span>(GetLbPairResponse { lb_pair })
+}
+
+<span class="doccomment">/// Checks if the contract is linked to the pair.
+</span><span class="kw">pub fn </span>is_linked(deps: Deps, env: Env) -&gt; StdResult&lt;IsLinkedResponse&gt; {
+    <span class="kw">let </span>is_linked = <span class="kw">if let </span><span class="prelude-val">Some</span>(lb_pair) = LB_PAIR.load(deps.storage)<span class="question-mark">? </span>{
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(hooks) = lb_pair.get_lb_hooks_parameters(deps.querier)<span class="question-mark">? </span>{
+            hooks.address == env.contract.address
+        } <span class="kw">else </span>{
+            <span class="bool-val">false
+        </span>}
+    } <span class="kw">else </span>{
+        <span class="bool-val">false
+    </span>};
+
+    <span class="prelude-val">Ok</span>(IsLinkedResponse { is_linked })
+}
+</code></pre></div></section></main></body></html>
