@@ -7,35 +7,6 @@
 
 
         <!-- Custom HTML head -->
-        <script>
-          document.addEventListener("DOMContentLoaded", function () {
-            let sidebar = document.querySelector(".sidebar");
-            if (!sidebar) return;
-        
-            // Create a dedicated logo container
-            let logoContainer = document.createElement("div");
-            logoContainer.classList.add("logo-container");
-        
-            // Create the logo link
-            let logoLink = document.createElement("a");
-            logoLink.href = "/fake";  // Change to your desired link (e.g., GitHub repo or homepage)
-            logoLink.classList.add("sidebar-logo-link");
-        
-            // Create the logo image
-            let logo = document.createElement("img");
-            logo.src = "images/amber.svg";  // Adjust path as needed
-            logo.alt = "Logo";
-            logo.classList.add("sidebar-logo");
-        
-            // Append the image inside the link, then the link inside the container
-            logoLink.appendChild(logo);
-            logoContainer.appendChild(logoLink);
-        
-            // Insert the logo container at the beginning of the sidebar
-            sidebar.insertBefore(logoContainer, sidebar.firstChild);
-          });
-        </script>
-        
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -59,7 +30,6 @@
 
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="theme/tabs.css">
-        <link rel="stylesheet" href="theme/custom.css">
 
         <!-- MathJax -->
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
