@@ -15,6 +15,35 @@
         <meta charset="UTF-8">
         <meta name="robots" content="noindex">
         <!-- Custom HTML head -->
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            let sidebar = document.querySelector(".sidebar");
+            if (!sidebar) return;
+        
+            // Create a dedicated logo container
+            let logoContainer = document.createElement("div");
+            logoContainer.classList.add("logo-container");
+        
+            // Create the logo link
+            let logoLink = document.createElement("a");
+            logoLink.href = "/fake";  // Change to your desired link (e.g., GitHub repo or homepage)
+            logoLink.classList.add("sidebar-logo-link");
+        
+            // Create the logo image
+            let logo = document.createElement("img");
+            logo.src = "images/amber.svg";  // Adjust path as needed
+            logo.alt = "Logo";
+            logo.classList.add("sidebar-logo");
+        
+            // Append the image inside the link, then the link inside the container
+            logoLink.appendChild(logo);
+            logoContainer.appendChild(logoLink);
+        
+            // Insert the logo container at the beginning of the sidebar
+            sidebar.insertBefore(logoContainer, sidebar.firstChild);
+          });
+        </script>
+        
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
         <link rel="stylesheet" href="css/variables.css">
@@ -26,8 +55,9 @@
         <link rel="stylesheet" href="fonts/fonts.css">
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="theme/tabs.css">
+        <link rel="stylesheet" href="theme/custom.css">
     </head>
     <body class="sidebar-iframe-inner">
-        <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html" target="_parent">Introduction</a></li><li class="chapter-item expanded affix "><a href="key-changes.html" target="_parent">Key Changes</a></li><li class="chapter-item expanded "><a href="guides.html" target="_parent">Guides</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><div>Swap Tokens</div></li><li class="chapter-item "><div>Add/Remove Liquidity</div></li><li class="chapter-item "><div>Tracking Volume</div></li><li class="chapter-item "><div>Tracking Pool Balances</div></li><li class="chapter-item "><div>Finding the Best Quote</div></li><li class="chapter-item "><div>Bytes32 Decoding</div></li><li class="chapter-item "><a href="guides/get_price_from_bin_id.html" target="_parent">Price From Bin Id</a></li><li class="chapter-item "><div>Bin Id From Price</div></li><li class="chapter-item "><div>Finding Liquidity Depth</div></li><li class="chapter-item "><div>User Balances</div></li></ol></li><li class="chapter-item expanded "><a href="concepts.html" target="_parent">Concepts</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><div>Concentrated Liquidity</div></li><li class="chapter-item "><div>Bin Math</div></li><li class="chapter-item "><div>Bin Liquidity</div></li><li class="chapter-item "><div>Swaps</div></li><li class="chapter-item "><div>Fees</div></li><li class="chapter-item "><div>Oracle</div></li></ol></li><li class="chapter-item expanded "><a href="contracts.html" target="_parent">Contracts</a></li><li class="chapter-item expanded "><a href="deployments.html" target="_parent">Deployments</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><div>Secret Mainner</div></li><li class="chapter-item "><a href="deployments/pulsar.html" target="_parent">Pulsar Testnet</a></li></ol></li><li class="chapter-item expanded "><div>SDK</div></li></ol>
+        <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html" target="_parent">Introduction</a></li><li class="chapter-item expanded affix "><a href="key-changes.html" target="_parent">Key Changes</a></li><li class="chapter-item expanded "><a href="guides.html" target="_parent">Guides</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><div>Swap Tokens</div></li><li class="chapter-item "><div>Add/Remove Liquidity</div></li><li class="chapter-item "><div>Tracking Volume</div></li><li class="chapter-item "><div>Tracking Pool Balances</div></li><li class="chapter-item "><div>Finding the Best Quote</div></li><li class="chapter-item "><div>Bytes32 Decoding</div></li><li class="chapter-item "><a href="guides/price_from_id.html" target="_parent">Price From Bin Id</a></li><li class="chapter-item "><div>Bin Id From Price</div></li><li class="chapter-item "><div>Finding Liquidity Depth</div></li><li class="chapter-item "><div>User Balances</div></li></ol></li><li class="chapter-item expanded "><a href="concepts.html" target="_parent">Concepts</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><div>Concentrated Liquidity</div></li><li class="chapter-item "><div>Bin Math</div></li><li class="chapter-item "><div>Bin Liquidity</div></li><li class="chapter-item "><div>Swaps</div></li><li class="chapter-item "><div>Fees</div></li><li class="chapter-item "><div>Oracle</div></li></ol></li><li class="chapter-item expanded "><a href="contracts.html" target="_parent">Contracts</a></li><li class="chapter-item expanded "><a href="deployments.html" target="_parent">Deployments</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><div>Secret Mainner</div></li><li class="chapter-item "><a href="deployments/pulsar.html" target="_parent">Pulsar Testnet</a></li></ol></li><li class="chapter-item expanded "><div>SDK</div></li></ol>
     </body>
 </html>
