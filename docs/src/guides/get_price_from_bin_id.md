@@ -45,7 +45,7 @@ def getPriceFromId(binId: int, binStep: int) -> float:
 ```rust
 // TODO: write a version using only the standard library
 
-/// Calculates the price as a 128.128-binary fixed-point number
+// /// Calculates the price as a 128.128-binary fixed-point number
 // pub fn get_price_from_id(id: u32, bin_step: u16) -> Result<U256, U128x128MathError> {
 //     let base = Self::get_base(bin_step);
 //     let exponent = Self::get_exponent(id);
