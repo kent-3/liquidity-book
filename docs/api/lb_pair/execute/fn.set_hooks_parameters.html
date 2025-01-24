@@ -2,7 +2,7 @@
     deps: DepsMut&lt;'_&gt;,
     env: Env,
     info: MessageInfo,
-    hooks_parameters: <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../../liquidity_book/libraries/hooks/struct.HooksParameters.html" title="struct liquidity_book::libraries::hooks::HooksParameters">HooksParameters</a>&gt;,
+    hooks_parameters: <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;HooksParameters&gt;,
     on_hooks_set_data: <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Binary&gt;,
 ) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;Response&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>@notice Sets the hooks parameter of the pool
 @dev Can only be called by the factory

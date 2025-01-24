@@ -6,9 +6,9 @@
     bin_step: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u16.html">u16</a>,
     active_id: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u32.html">u32</a>,
     id: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u32.html">u32</a>,
-    amounts_in: <a class="type" href="../../liquidity_book/libraries/type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>,
-    parameters: <a class="struct" href="../../liquidity_book/libraries/pair_parameter_helper/struct.PairParameters.html" title="struct liquidity_book::libraries::pair_parameter_helper::PairParameters">PairParameters</a>,
-) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;(U256, <a class="type" href="../../liquidity_book/libraries/type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>, <a class="type" href="../../liquidity_book/libraries/type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>)&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Helper function to update a bin during minting.</p>
+    amounts_in: Bytes32,
+    parameters: PairParameters,
+) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;(U256, Bytes32, Bytes32)&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Helper function to update a bin during minting.</p>
 <h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
 <ul>
 <li><code>bin_step</code> - The bin step of the pair</li>

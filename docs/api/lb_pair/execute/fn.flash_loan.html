@@ -3,7 +3,7 @@
     _env: Env,
     info: MessageInfo,
     receiver: ContractInfo,
-    amounts: <a class="type" href="../../liquidity_book/libraries/type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>,
+    amounts: Bytes32,
     data: <a class="enum" href="https://doc.rust-lang.org/1.84.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Binary&gt;,
 ) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;Response&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Flash loan tokens from the pool to a receiver contract and execute a callback function.
 The receiver contract is expected to return the tokens plus a fee to this contract.

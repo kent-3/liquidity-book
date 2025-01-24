@@ -3,7 +3,7 @@
     env: Env,
     amount_in: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.u128.html">u128</a>,
     swap_for_y: <a class="primitive" href="https://doc.rust-lang.org/1.84.0/std/primitive.bool.html">bool</a>,
-) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;<a class="struct" href="../../liquidity_book/interfaces/lb_pair/struct.SwapOutResponse.html" title="struct liquidity_book::interfaces::lb_pair::SwapOutResponse">SwapOutResponse</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Simulates a swap out.</p>
+) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;SwapOutResponse&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Simulates a swap out.</p>
 <h2 id="note"><a class="doc-anchor" href="#note">§</a>Note</h2>
 <p>If amount_in_left is greater than zero, the swap out is not possible,
 and the maximum amount that can be swapped is <code>amount_in - amount_in_left</code> for <code>amount_out</code>.</p>
