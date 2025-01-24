@@ -32,7 +32,7 @@ jobs:
           mv target/doc/* docs/api/
       - name: Set Default Dark Theme to 'ayu'
         run: |
-          SETTINGS_FILE=$(find target/doc/static.files -name 'settings-*.js')
+          SETTINGS_FILE=$(find docs/api/static.files -name 'settings-*.js')
           if [ -f "$SETTINGS_FILE" ]; then
             sed -i 's/"js_name":"preferred-dark-theme","default":"dark"/"js_name":"preferred-dark-theme","default":"ayu"/' "$SETTINGS_FILE"
           else
