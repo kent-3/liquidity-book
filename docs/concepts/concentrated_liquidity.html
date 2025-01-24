@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Concepts - Liquidity Book</title>
+        <title>Concentrated Liquidity - Liquidity Book</title>
 
 
         <!-- Custom HTML head -->
@@ -12,35 +12,35 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/tabs.css">
-        <link rel="stylesheet" href="./mdbook-admonish.css">
+        <link rel="stylesheet" href="../theme/tabs.css">
+        <link rel="stylesheet" href=".././mdbook-admonish.css">
 
         <!-- MathJax -->
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -92,7 +92,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -129,7 +129,7 @@
                         <a href="https://github.com/kent-3/liquidity-book" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/kent-3/liquidity-book/edit/main/docs/src/concepts.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/kent-3/liquidity-book/edit/main/docs/src/concepts/concentrated_liquidity.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -158,17 +158,35 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
+                        <h1 id="concentrated-liquidity"><a class="header" href="#concentrated-liquidity">Concentrated Liquidity</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>In a traditional AMM like Uniswap V2, liquidity is spread evenly across the entire price range from 0 to ∞. This means a lot of liquidity remains unused, especially for pairs that consistently trade within a narrow range.</p>
+<p>For example, USDC/USDT mostly trades between $0.99 and $1.01. Liquidity outside this range is rarely utilized and could be put to better use elsewhere.</p>
+<p>With Liquidity Book (LB), liquidity providers (LPs) can allocate liquidity within a specific price range—this is called concentrated liquidity. Using USDC/USDT as an example, an LP providing liquidity between $0.99 and $1.01 earns trading fees as long as the price stays within that range.</p>
+<h2 id="bin-pricing"><a class="header" href="#bin-pricing">Bin Pricing</a></h2>
+<p>Liquidity Book structures liquidity into discrete bins with a fixed price width. Within each bin, trades execute at a fixed price. The difference between two consecutive bins is called the bin step.</p>
+<p>For instance, if the current USDC/USDT price is $1 and the bin step is 1 basis point (0.01%), the next bin up is:
+\[ 1×1.0001=1.0001 \]</p>
+<p>and the next after that:
+\[ 1.0001×1.0001=1.00020001 \]</p>
+<p>This forms a geometric sequence of price levels: \( 1.0001^n \)</p>
+<p>Bin steps are set by the pool creator, allowing multiple markets for the same pair with different bin steps. A Liquidity Book pool is uniquely identified by the tuple (X, Y, s), where X and Y are the pooled assets, and s is the bin step.</p>
+<h2 id="liquidity-book-vs-uniswap-v3"><a class="header" href="#liquidity-book-vs-uniswap-v3">Liquidity Book vs Uniswap V3</a></h2>
+<ul>
+<li>Uniswap V3 concentrates liquidity within a fixed range, following a continuous X * Y = k curve.</li>
+<li>Liquidity Book breaks liquidity into fixed-width bins, where price follows a X + Y = k rule within each bin.</li>
+<li>TL;DR: Uniswap V3 uses a constant product formula between ticks, while Liquidity Book applies a constant sum formula within bins.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="guides/price_from_id.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../concepts.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="concepts/concentrated_liquidity.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../contracts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -178,11 +196,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="guides/price_from_id.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../concepts.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="concepts/concentrated_liquidity.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../contracts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -197,16 +215,16 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/tabs.js"></script>
+        <script src="../theme/tabs.js"></script>
 
 
     </div>
