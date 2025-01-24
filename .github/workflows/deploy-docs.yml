@@ -26,8 +26,12 @@ jobs:
           cargo doc --workspace --no-deps --document-private-items
           mkdir -p docs/api
           mv target/doc/* docs/api/
+      - name: Merge All Docs into a Single Directory
+        run: |
+          mkdir -p docs-deploy
+          cp -r docs/book/* docs-deploy/   # Copy mdBook output
+          cp -r docs/api docs-deploy/      # Copy Cargo Docs
       - uses: JamesIves/github-pages-deploy-action@4.1.7
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: docs/book # The folder the action should deploy.
-          target-folder: docs/
+          branch: gh-pages # Deploy to GitHub Pages branch
+          folder: docs-deploy # Deploy everything
