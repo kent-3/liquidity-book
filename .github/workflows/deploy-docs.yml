@@ -4,11 +4,11 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
-      - '.github/workflows/deploy-docs.yml'
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
 permissions:
-  contents: write       # To push a branch
-  pull-requests: write  # To create a PR from that branch
+  contents: write # To push a branch
+  pull-requests: write # To create a PR from that branch
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -18,9 +18,10 @@ jobs:
         with:
           toolchain: stable
       - run: (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.4" mdbook)
+      - run: (test -x $HOME/.cargo/bin/mdbook-tabs || cargo install --vers "^0.2" mdbook-tabs)
       - run: mdbook build docs && mdbook test docs
       - uses: JamesIves/github-pages-deploy-action@4.1.7
         with:
-          branch: gh-pages   # The branch the action should deploy to.
-          folder: docs/book  # The folder the action should deploy.
+          branch: gh-pages # The branch the action should deploy to.
+          folder: docs/book # The folder the action should deploy.
           target-folder: docs/
