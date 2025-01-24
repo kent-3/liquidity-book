@@ -10,7 +10,7 @@
   - [Tracking Pool Balances]()
   - [Finding the Best Quote]()
   - [Bytes32 Decoding]()
-  - [Price From Bin Id]()
+  - [Price From Bin Id](./guides/get_price_from_bin_id.md)
   - [Bin Id From Price]()
   - [Finding Liquidity Depth]()
   - [User Balances]()
