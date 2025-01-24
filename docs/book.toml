@@ -5,11 +5,16 @@ multilingual = false
 src = "src"
 title = "Liquidity Book"
 
+[preprocessor.tabs]
+
 [output.html]
 preferred-dark-theme = "ayu"
 git-repository-url = "https://github.com/kent-3/liquidity-book"
 edit-url-template = "https://github.com/kent-3/liquidity-book/edit/main/docs/{path}"
 no-section-label = true
+additional-css = ["theme/tabs.css"]
+additional-js = ["theme/tabs.js"]
+mathjax-support = true
 
 [output.html.fold]
 enable = true # whether or not to enable section folding
