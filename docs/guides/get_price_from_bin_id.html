@@ -165,8 +165,13 @@
 <p>Each bin holds the liquidity of the pair for a specific price range. Thus, it is possible to link a certain bin to a price by using the id of the underlying bin. We provide examples to get the price from a binId.</p>
 <h3 id="conversion-functions"><a class="header" href="#conversion-functions">Conversion Functions</a></h3>
 <p>In order to link a bin_id to a price it is necessary to know the bin_step of the underlying pair. Here is the conversion logic.</p>
-<p>{{#tabs }}
-{{#tab name="JavaScript" }}</p>
+<div class="mdbook-tabs-container">
+<nav class="mdbook-tabs">
+<button class="mdbook-tab active" data-tabname="JavaScript">JavaScript</button>
+<button class="mdbook-tab" data-tabname="Python">Python</button>
+<button class="mdbook-tab" data-tabname="Rust">Rust</button>
+</nav>
+<div class="mdbook-tab-content" data-tabname="JavaScript">
 <pre><code class="language-js">function getPriceFromId(binId: number, binStep: number): number {
   /**
    * Convert a binId to the underlying price.
@@ -179,8 +184,8 @@
   return (1 + binStep / 10_000) ** (binId - 8388608);
 }
 </code></pre>
-<p>{{#endtab }}
-{{#tab name="Python" }}</p>
+</div>
+<div class="mdbook-tab-content hidden" data-tabname="Python">
 <pre><code class="language-py">def getPriceFromId(binId: int, binStep: int) -&gt; float:
     """
     Convert a binId to the underlying price.
@@ -192,8 +197,8 @@
 
     return (1 + binStep / 10_000) ** (binId - 8388608)
 </code></pre>
-<p>{{#endtab }}
-{{#tab name="Rust" }}</p>
+</div>
+<div class="mdbook-tab-content hidden" data-tabname="Rust">
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// TODO: write a version using only the standard library
@@ -206,8 +211,8 @@
 //     U128x128Math::pow(&amp;base, exponent)
 // }
 <span class="boring">}</span></code></pre></pre>
-<p>{{#endtab }}
-{{#endtabs }}</p>
+</div>
+</div>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <p>Here is an example to illustrate the conversion function with the sAVAX/AVAX pair which has a binStep of 5. We choose here a binId equal to 8388755. Price returned doesn't need to be adjusted, as both tokens have 18 decimals.</p>
 <pre><code class="language-py">getPriceFromId(8388755, 5)
