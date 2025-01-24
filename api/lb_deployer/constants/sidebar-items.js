@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["get_config"],"static":["CHAIN_ID","GAS_PRICE","GRPC_URL","MNEMONIC"],"struct":["Config"]};

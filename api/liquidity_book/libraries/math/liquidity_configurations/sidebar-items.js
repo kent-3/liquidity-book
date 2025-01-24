@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["OFFSET_DISTRIBUTION_X","OFFSET_DISTRIBUTION_Y","OFFSET_ID","PRECISION"],"enum":["LiquidityConfigurationsError"],"struct":["LiquidityConfigurations"]};

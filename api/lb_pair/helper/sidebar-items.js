@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["_balance_of","_get_next_non_empty_bin","_get_total_supply","bin_transfer","bin_transfer_x","bin_transfer_y","only_factory","only_protocol_fee_recipient","query_token_symbol","register_pair_token"]};

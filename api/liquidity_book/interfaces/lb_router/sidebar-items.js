@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ExecuteMsg","LbRouterError","QueryMsg","Version"],"struct":["AddLiquidityResponse","CreateLbPairResponse","GetFactoryResponse","GetIdFromPriceResponse","GetPriceFromIdResponse","GetSwapInResponse","GetSwapOutResponse","ILbRouter","InstantiateMsg","LiquidityParameters","Path","RemoveLiquidityResponse","SwapResponse"]};

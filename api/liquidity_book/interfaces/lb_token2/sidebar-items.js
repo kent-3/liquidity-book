@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ExecuteMsg","LbTokenError","QueryMsg"],"struct":["ApprovalResponse","BalanceBatchResponse","BalanceResponse","InstantiateMsg","NameResponse","SymbolResponse","TotalSupplyResponse"],"trait":["LbTokenEventExt"]};

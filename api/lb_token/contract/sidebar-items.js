@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["execute","instantiate","permit_queries","query","viewing_keys_queries"]};

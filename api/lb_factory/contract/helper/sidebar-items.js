@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["_get_lb_pair_information","_is_preset_open","_sort_tokens"]};

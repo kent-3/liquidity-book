@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["query_all_balances","query_all_permissions","query_balance","query_contract_info","query_id_balance","query_permission","query_registered_code_hash","query_token_id_private_info","query_token_id_public_info","query_transactions"]};

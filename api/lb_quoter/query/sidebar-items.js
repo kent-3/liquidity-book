@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["find_best_path_from_amount_in","find_best_path_from_amount_out"]};

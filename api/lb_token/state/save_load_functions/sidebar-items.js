@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["json_load","json_save"]};

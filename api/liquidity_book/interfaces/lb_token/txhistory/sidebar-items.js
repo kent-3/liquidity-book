@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["StoredTxAction","TxAction"],"struct":["StoredTx","Tx"]};

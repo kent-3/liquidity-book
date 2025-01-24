@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["_get_flash_loan_fees","approx_div","batch_transfer_from","burn","collect_protocol_fees","flash_loan","force_decay","increase_oracle_length","mint","mint_bins","set_hooks_parameters","set_static_fee_parameters","swap","update_bin"],"static":["MAX_TOTAL_FEE"],"struct":["MintArrays"]};

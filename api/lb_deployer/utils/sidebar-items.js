@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["block_height","check_gas","code_hash_by_code_id","execute","extract_code_id","instantiate","process_gas","process_tx","process_tx_error","query_account","sha256","store_code","update_gas"],"static":["GAS_METER"]};

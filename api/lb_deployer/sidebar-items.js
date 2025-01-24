@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["main","setup_client"],"mod":["account","constants","support","utils"],"static":["SECRET"],"struct":["DeployedContractInfo","DeployedContracts","Secret","Token"]};

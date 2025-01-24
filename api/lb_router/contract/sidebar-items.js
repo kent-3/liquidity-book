@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["BURN_REPLY_ID","CREATE_LB_PAIR_REPLY_ID","MINT_REPLY_ID","PUBLIC_VIEWING_KEY","SWAP_FOR_EXACT_REPLY_ID","SWAP_REPLY_ID"],"fn":["ensure","execute","instantiate","only_factory_owner","query","receive","register","register_batch","reply","verify_path_validity"]};

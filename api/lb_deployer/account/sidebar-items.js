@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"static":["A_MNEMONIC","B_MNEMONIC","C_MNEMONIC","D_MNEMONIC"],"struct":["Account"]};

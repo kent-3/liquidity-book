@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["TokenType"],"struct":["StableTokenData","StableTokenType"]};
