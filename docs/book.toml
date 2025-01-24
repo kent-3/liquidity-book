@@ -12,7 +12,7 @@ preferred-dark-theme = "ayu"
 git-repository-url = "https://github.com/kent-3/liquidity-book"
 edit-url-template = "https://github.com/kent-3/liquidity-book/edit/main/docs/{path}"
 no-section-label = true
-additional-css = ["theme/tabs.css", "theme/custom.css"]
+additional-css = ["theme/tabs.css"]
 additional-js = ["theme/tabs.js"]
 mathjax-support = true
 
