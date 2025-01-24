@@ -13,7 +13,7 @@ env:
   CARGO_TERM_COLOR: "always"
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
-  RUSTDOCFLAGS: "--default-theme=ayu"
+  # RUSTDOCFLAGS: "--default-theme=ayu"
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
