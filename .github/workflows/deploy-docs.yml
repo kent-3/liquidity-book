@@ -19,9 +19,14 @@ jobs:
           toolchain: stable
       - run: (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.4" mdbook)
       - run: (test -x $HOME/.cargo/bin/mdbook-tabs || cargo install --vers "^0.2" mdbook-tabs)
+      - run: (test -x $HOME/.cargo/bin/mdbook-admonish || cargo install --vers "^1.18" mdbook-admonish)
       - run: mdbook build docs && mdbook test docs
+      - name: Build Cargo Docs for Workspace
+        run: |
+          cargo doc --workspace --no-deps --document-private-items
+          mkdir -p docs/api
+          mv target/doc/* docs/api/
       - uses: JamesIves/github-pages-deploy-action@4.1.7
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: docs/book # The folder the action should deploy.
-          target-folder: docs/
+          folder: docs # The folder the action should deploy.
