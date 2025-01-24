@@ -43,14 +43,15 @@ def getPriceFromId(binId: int, binStep: int) -> float:
 {{#tab name="Rust" }}
 
 ```rust
-// TODO: express this with floating point math instead?
-/// Calculates the price as a 128.128-binary fixed-point number
-pub fn get_price_from_id(id: u32, bin_step: u16) -> Result<U256, U128x128MathError> {
-    let base = Self::get_base(bin_step);
-    let exponent = Self::get_exponent(id);
+// TODO: write a version using only the standard library
 
-    U128x128Math::pow(&base, exponent)
-}
+/// Calculates the price as a 128.128-binary fixed-point number
+// pub fn get_price_from_id(id: u32, bin_step: u16) -> Result<U256, U128x128MathError> {
+//     let base = Self::get_base(bin_step);
+//     let exponent = Self::get_exponent(id);
+//
+//     U128x128Math::pow(&base, exponent)
+// }
 ```
 
 {{#endtab }}
