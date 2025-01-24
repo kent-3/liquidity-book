@@ -6,7 +6,7 @@
 
 **[ILBFactory](/liquidity-book/docs/api/liquidity_book/interfaces/lb_factory/index.html)**
 
-**[ILBHooks](/liquidity-book/docs/api/liquidity_book/interfaces/lb_base_hooks/index.html)**
+**[ILBHooks](/liquidity-book/docs/api/liquidity_book/interfaces/lb_hooks/index.html)**
 
 **[ILBPair](/liquidity-book/docs/api/liquidity_book/interfaces/lb_pair/index.html)**
 
