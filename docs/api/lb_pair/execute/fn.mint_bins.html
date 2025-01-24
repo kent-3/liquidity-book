@@ -4,11 +4,11 @@
     info: &amp;MessageInfo,
     messages: &amp;mut <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;CosmosMsg&gt;,
     events: &amp;mut <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Event&gt;,
-    liquidity_configs: <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;LiquidityConfigurations&gt;,
-    amounts_received: Bytes32,
+    liquidity_configs: <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../liquidity_book/libraries/math/liquidity_configurations/struct.LiquidityConfigurations.html" title="struct liquidity_book::libraries::math::liquidity_configurations::LiquidityConfigurations">LiquidityConfigurations</a>&gt;,
+    amounts_received: <a class="type" href="../../liquidity_book/libraries/type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>,
     to: Addr,
     arrays: &amp;mut <a class="struct" href="struct.MintArrays.html" title="struct lb_pair::execute::MintArrays">MintArrays</a>,
-) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;Bytes32&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Helper function to mint liquidity in each bin in the liquidity configurations.</p>
+) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;<a class="type" href="../../liquidity_book/libraries/type.Bytes32.html" title="type liquidity_book::libraries::Bytes32">Bytes32</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Helper function to mint liquidity in each bin in the liquidity configurations.</p>
 <h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>
 <ul>
 <li><code>liquidity_configs</code> - The liquidity configurations.</li>

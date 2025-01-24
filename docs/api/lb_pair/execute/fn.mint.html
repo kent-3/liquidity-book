@@ -3,7 +3,7 @@
     env: Env,
     info: MessageInfo,
     to: <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-    liquidity_configs: <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;LiquidityConfigurations&gt;,
+    liquidity_configs: <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../liquidity_book/libraries/math/liquidity_configurations/struct.LiquidityConfigurations.html" title="struct liquidity_book::libraries::math::liquidity_configurations::LiquidityConfigurations">LiquidityConfigurations</a>&gt;,
     refund_to: <a class="struct" href="https://doc.rust-lang.org/1.84.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
 ) -&gt; <a class="type" href="../type.Result.html" title="type lb_pair::Result">Result</a>&lt;Response&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Mint liquidity tokens by depositing tokens into the pool.</p>
 <p>It will mint Liquidity Book (LB) tokens for each bin where the user adds liquidity.
