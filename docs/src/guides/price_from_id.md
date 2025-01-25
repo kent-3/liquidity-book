@@ -1,24 +1,21 @@
 # Get Price From Bin Id
 
-Each bin holds the liquidity of the pair for a specific price range. Thus, it is possible to link a certain bin to a price by using the id of the underlying bin. We provide examples to get the price from a binId.
+Every bin id corresponds a specific price, which varies depending on the bin step. Here are some examples to get the price from a given `bin_id`.
 
 ### Conversion Functions
-
-In order to link a bin_id to a price it is necessary to know the bin_step of the underlying pair. Here is the conversion logic.
 
 {{#tabs }}
 {{#tab name="JavaScript" }}
 
 ```js
+/**
+* Convert a binId to the underlying price.
+*
+* @param binId - Bin Id.
+* @param binStep - Bin step of the pair in basis points.
+* @return Price of the bin.
+*/
 function getPriceFromId(binId: number, binStep: number): number {
-  /**
-   * Convert a binId to the underlying price.
-   *
-   * @param binId - Bin Id.
-   * @param binStep - binStep of the pair.
-   * @return Price of the bin.
-   */
-
   return (1 + binStep / 10_000) ** (binId - 8388608);
 }
 ```
@@ -27,12 +24,12 @@ function getPriceFromId(binId: number, binStep: number): number {
 {{#tab name="Python" }}
 
 ```py
-def getPriceFromId(binId: int, binStep: int) -> float:
+def getPriceFromId(bin_id: int, bin_step: int) -> float:
     """
-    Convert a binId to the underlying price.
+    Convert a bin_id to the underlying price.
 
-    :param binId: Bin Id.
-    :param binStep: BinStep of the pair.
+    :param bin_id: Bin Id.
+    :param bin_step: Bin step of the pair in basis points.
     :return: Price of the bin.
     """
 
@@ -59,14 +56,14 @@ def getPriceFromId(binId: int, binStep: int) -> float:
 
 ### Example
 
-Here is an example to illustrate the conversion function with the sAVAX/AVAX pair which has a binStep of 5. We choose here a binId equal to 8388755. Price returned doesn't need to be adjusted, as both tokens have 18 decimals.
+Here is an example to illustrate the conversion function with the sSCRT/SCRT pair which has a binStep of 5. We choose here a bin_id equal to 8388755. Price returned doesn't need to be adjusted, as both tokens have 6 decimals.
 
 ```py
 getPriceFromId(8388755, 5)
 >>> 1.0762487670087693
 ```
 
-For second example, let's take BTC.b/USDC pair which has a binStep of 10. We choose binId equal to 8394314.
+For second example, let's take SHD/SCRT pair which has a binStep of 10. We choose bin_id equal to 8394314.
 
 ```py
 getPriceFromId(8394314, 10)

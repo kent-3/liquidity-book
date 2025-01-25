@@ -1,7 +1,7 @@
 # Summary
 
 [Introduction](./introduction.md)
-[Key Changes](./key-changes.md)
+[Key Changes](./key_changes.md)
 
 - [Guides](./guides.md)
   - [Swap Tokens](./guides/swap_tokens.md)
