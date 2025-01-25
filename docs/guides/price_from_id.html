@@ -159,9 +159,8 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="get-price-from-bin-id"><a class="header" href="#get-price-from-bin-id">Get Price From Bin Id</a></h1>
-<p>Each bin holds the liquidity of the pair for a specific price range. Thus, it is possible to link a certain bin to a price by using the id of the underlying bin. We provide examples to get the price from a binId.</p>
+<p>Every bin id corresponds a specific price, which varies depending on the bin step. Here are some examples to get the price from a given <code>bin_id</code>.</p>
 <h3 id="conversion-functions"><a class="header" href="#conversion-functions">Conversion Functions</a></h3>
-<p>In order to link a bin_id to a price it is necessary to know the bin_step of the underlying pair. Here is the conversion logic.</p>
 <div class="mdbook-tabs-container">
 <nav class="mdbook-tabs">
 <button class="mdbook-tab active" data-tabname="JavaScript">JavaScript</button>
@@ -169,26 +168,25 @@
 <button class="mdbook-tab" data-tabname="Rust">Rust</button>
 </nav>
 <div class="mdbook-tab-content" data-tabname="JavaScript">
-<pre><code class="language-js">function getPriceFromId(binId: number, binStep: number): number {
-  /**
-   * Convert a binId to the underlying price.
-   *
-   * @param binId - Bin Id.
-   * @param binStep - binStep of the pair.
-   * @return Price of the bin.
-   */
-
+<pre><code class="language-js">/**
+* Convert a binId to the underlying price.
+*
+* @param binId - Bin Id.
+* @param binStep - Bin step of the pair in basis points.
+* @return Price of the bin.
+*/
+function getPriceFromId(binId: number, binStep: number): number {
   return (1 + binStep / 10_000) ** (binId - 8388608);
 }
 </code></pre>
 </div>
 <div class="mdbook-tab-content hidden" data-tabname="Python">
-<pre><code class="language-py">def getPriceFromId(binId: int, binStep: int) -&gt; float:
+<pre><code class="language-py">def getPriceFromId(bin_id: int, bin_step: int) -&gt; float:
     """
-    Convert a binId to the underlying price.
+    Convert a bin_id to the underlying price.
 
-    :param binId: Bin Id.
-    :param binStep: BinStep of the pair.
+    :param bin_id: Bin Id.
+    :param bin_step: Bin step of the pair in basis points.
     :return: Price of the bin.
     """
 
@@ -211,11 +209,11 @@
 </div>
 </div>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
-<p>Here is an example to illustrate the conversion function with the sAVAX/AVAX pair which has a binStep of 5. We choose here a binId equal to 8388755. Price returned doesn't need to be adjusted, as both tokens have 18 decimals.</p>
+<p>Here is an example to illustrate the conversion function with the sSCRT/SCRT pair which has a binStep of 5. We choose here a bin_id equal to 8388755. Price returned doesn't need to be adjusted, as both tokens have 6 decimals.</p>
 <pre><code class="language-py">getPriceFromId(8388755, 5)
 &gt;&gt;&gt; 1.0762487670087693
 </code></pre>
-<p>For second example, let's take BTC.b/USDC pair which has a binStep of 10. We choose binId equal to 8394314.</p>
+<p>For second example, let's take SHD/SCRT pair which has a binStep of 10. We choose bin_id equal to 8394314.</p>
 <pre><code class="language-py">getPriceFromId(8394314, 10)
 &gt;&gt;&gt; 299.80998797504674
 </code></pre>
