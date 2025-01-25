@@ -268,99 +268,97 @@ async fn main() -> Result<()> {
 
     // Make several tokens to test with
     // if !std::fs::exists(concat!(env!("CARGO_MANIFEST_DIR"), "/test_tokens.json"))? {
-    {
-        info!("Instantiating test SHD...");
-        let snip25_init_msg = snip20::InstantiateMsg {
-            name: "Shade".to_string(),
-            admin: None,
-            symbol: "SHD".to_string(),
-            decimals: 8,
-            initial_balances: Some(balance_havers.clone()),
-            prng_seed: to_binary(&0)?,
-            config: None,
-            supported_denoms: None,
-        };
-        let test_shd =
-            instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
-        let test_shd_token = Token {
-            contract_address: test_shd.address.to_string(),
-            code_hash: test_shd.code_hash,
-            name: snip25_init_msg.name,
-            symbol: snip25_init_msg.symbol,
-            decimals: snip25_init_msg.decimals,
-            display_name: None,
-            denom: None,
-            version: None,
-        };
+    info!("Instantiating test SHD...");
+    let snip25_init_msg = snip20::InstantiateMsg {
+        name: "Shade".to_string(),
+        admin: None,
+        symbol: "SHD".to_string(),
+        decimals: 8,
+        initial_balances: Some(balance_havers.clone()),
+        prng_seed: to_binary(&0)?,
+        config: None,
+        supported_denoms: None,
+    };
+    let test_shd =
+        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+    let test_shd_token = Token {
+        contract_address: test_shd.address.to_string(),
+        code_hash: test_shd.code_hash.clone(),
+        name: snip25_init_msg.name,
+        symbol: snip25_init_msg.symbol,
+        decimals: snip25_init_msg.decimals,
+        display_name: None,
+        denom: None,
+        version: None,
+    };
 
-        info!("Instantiating test USDC...");
-        let snip25_init_msg = snip20::InstantiateMsg {
-            name: "Secret Noble USDC".to_string(),
-            admin: None,
-            symbol: "SNOBLEUSDC".to_string(),
-            decimals: 6,
-            initial_balances: Some(balance_havers.clone()),
-            prng_seed: to_binary(&0)?,
-            config: None,
-            supported_denoms: None,
-        };
-        let test_usdc =
-            instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
-        let test_usdc_token = Token {
-            contract_address: test_usdc.address.to_string(),
-            code_hash: test_usdc.code_hash,
-            name: snip25_init_msg.name,
-            symbol: snip25_init_msg.symbol,
-            decimals: snip25_init_msg.decimals,
-            display_name: None,
-            denom: None,
-            version: None,
-        };
+    info!("Instantiating test USDC...");
+    let snip25_init_msg = snip20::InstantiateMsg {
+        name: "Secret Noble USDC".to_string(),
+        admin: None,
+        symbol: "SNOBLEUSDC".to_string(),
+        decimals: 6,
+        initial_balances: Some(balance_havers.clone()),
+        prng_seed: to_binary(&0)?,
+        config: None,
+        supported_denoms: None,
+    };
+    let test_usdc =
+        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+    let test_usdc_token = Token {
+        contract_address: test_usdc.address.to_string(),
+        code_hash: test_usdc.code_hash.clone(),
+        name: snip25_init_msg.name,
+        symbol: snip25_init_msg.symbol,
+        decimals: snip25_init_msg.decimals,
+        display_name: None,
+        denom: None,
+        version: None,
+    };
 
-        info!("Instantiating test stkd-SCRT...");
-        let snip25_init_msg = snip20::InstantiateMsg {
-            name: "Shade SCRT staking derivative".to_string(),
-            admin: None,
-            symbol: "STKDSCRT".to_string(),
-            decimals: 6,
-            initial_balances: Some(balance_havers.clone()),
-            prng_seed: to_binary(&0)?,
-            config: None,
-            supported_denoms: None,
-        };
-        let test_stkd_scrt =
-            instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
-        let test_stkd_scrt_token = Token {
-            contract_address: test_stkd_scrt.address.to_string(),
-            code_hash: test_stkd_scrt.code_hash,
-            name: snip25_init_msg.name,
-            symbol: snip25_init_msg.symbol,
-            decimals: snip25_init_msg.decimals,
-            display_name: None,
-            denom: None,
-            version: None,
-        };
+    info!("Instantiating test stkd-SCRT...");
+    let snip25_init_msg = snip20::InstantiateMsg {
+        name: "Shade SCRT staking derivative".to_string(),
+        admin: None,
+        symbol: "STKDSCRT".to_string(),
+        decimals: 6,
+        initial_balances: Some(balance_havers.clone()),
+        prng_seed: to_binary(&0)?,
+        config: None,
+        supported_denoms: None,
+    };
+    let test_stkd_scrt =
+        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+    let test_stkd_scrt_token = Token {
+        contract_address: test_stkd_scrt.address.to_string(),
+        code_hash: test_stkd_scrt.code_hash.clone(),
+        name: snip25_init_msg.name,
+        symbol: snip25_init_msg.symbol,
+        decimals: snip25_init_msg.decimals,
+        display_name: None,
+        denom: None,
+        version: None,
+    };
 
-        let out_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-        let serialized = serde_json::to_string(&[
-            test_sscrt_token,
-            test_amber_token,
-            test_shd_token,
-            test_usdc_token,
-            test_stkd_scrt_token,
-        ])
-        .expect("Failed to serialize tokens");
+    let out_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let serialized = serde_json::to_string(&[
+        test_sscrt_token,
+        test_amber_token,
+        test_shd_token,
+        test_usdc_token,
+        test_stkd_scrt_token,
+    ])
+    .expect("Failed to serialize tokens");
 
-        let map_file_path = match CHAIN_ID {
-            "secretdev-1" => out_dir.join("test_tokens_dev.json"),
-            "pulsar-3" => out_dir.join("test_tokens_pulsar.json"),
-            _ => panic!("Do not create test tokens on mainnet!"),
-        };
+    let map_file_path = match CHAIN_ID {
+        "secretdev-1" => out_dir.join("test_tokens_dev.json"),
+        "pulsar-3" => out_dir.join("test_tokens_pulsar.json"),
+        _ => panic!("Do not create test tokens on mainnet!"),
+    };
 
-        fs::write(&map_file_path, serialized).expect("Failed to write test tokens json file!");
+    fs::write(&map_file_path, serialized).expect("Failed to write test tokens json file!");
 
-        info!("Token details saved to {}", map_file_path.display());
-    }
+    info!("Token details saved to {}", map_file_path.display());
 
     // Factory Setup
 
@@ -390,17 +388,61 @@ async fn main() -> Result<()> {
     // TODO: determine sensible values
     let set_pair_preset_msg = &lb_factory::ExecuteMsg::SetPreset {
         bin_step: 100,
-        base_factor: 5_000,
+        base_factor: 1_000,
         filter_period: 30,
         decay_period: 600,
         reduction_factor: 5_000,
         variable_fee_control: 5_000,
-        protocol_share: 0,
+        protocol_share: 50,
         max_volatility_accumulator: 350_000,
-        // sample_lifetime: 120,
         is_open: true,
     };
     info!("Setting pair presets for bin_step = 100...",);
+    execute(address, code_hash, set_pair_preset_msg, 100_000).await?;
+
+    // TODO: determine sensible values
+    let set_pair_preset_msg = &lb_factory::ExecuteMsg::SetPreset {
+        bin_step: 20,
+        base_factor: 1_500,
+        filter_period: 30,
+        decay_period: 600,
+        reduction_factor: 5_000,
+        variable_fee_control: 5_000,
+        protocol_share: 10,
+        max_volatility_accumulator: 350_000,
+        is_open: true,
+    };
+    info!("Setting pair presets for bin_step = 20...",);
+    execute(address, code_hash, set_pair_preset_msg, 100_000).await?;
+
+    // TODO: determine sensible values
+    let set_pair_preset_msg = &lb_factory::ExecuteMsg::SetPreset {
+        bin_step: 10,
+        base_factor: 3_000,
+        filter_period: 30,
+        decay_period: 600,
+        reduction_factor: 5_000,
+        variable_fee_control: 5_000,
+        protocol_share: 10,
+        max_volatility_accumulator: 350_000,
+        is_open: true,
+    };
+    info!("Setting pair presets for bin_step = 10...",);
+    execute(address, code_hash, set_pair_preset_msg, 100_000).await?;
+
+    // TODO: determine sensible values
+    let set_pair_preset_msg = &lb_factory::ExecuteMsg::SetPreset {
+        bin_step: 1,
+        base_factor: 10_000,
+        filter_period: 30,
+        decay_period: 600,
+        reduction_factor: 5_000,
+        variable_fee_control: 5_000,
+        protocol_share: 5,
+        max_volatility_accumulator: 200_000,
+        is_open: true,
+    };
+    info!("Setting pair presets for bin_step = 1...",);
     execute(address, code_hash, set_pair_preset_msg, 100_000).await?;
 
     let add_quote_asset_msg = &lb_factory::ExecuteMsg::AddQuoteAsset {
@@ -410,6 +452,24 @@ async fn main() -> Result<()> {
         },
     };
     info!("Adding sSCRT as a quote asset...",);
+    execute(address, code_hash, add_quote_asset_msg, 100_000).await?;
+
+    let add_quote_asset_msg = &lb_factory::ExecuteMsg::AddQuoteAsset {
+        asset: TokenType::CustomToken {
+            contract_addr: Addr::unchecked(test_usdc.address.as_str()),
+            token_code_hash: test_usdc.code_hash.to_string(),
+        },
+    };
+    info!("Adding USDC as a quote asset...",);
+    execute(address, code_hash, add_quote_asset_msg, 100_000).await?;
+
+    let add_quote_asset_msg = &lb_factory::ExecuteMsg::AddQuoteAsset {
+        asset: TokenType::CustomToken {
+            contract_addr: Addr::unchecked(test_stkd_scrt.address.as_str()),
+            token_code_hash: test_stkd_scrt.code_hash.to_string(),
+        },
+    };
+    info!("Adding stkd-SCRT as a quote asset...",);
     execute(address, code_hash, add_quote_asset_msg, 100_000).await?;
 
     // Use the router to create a pair
