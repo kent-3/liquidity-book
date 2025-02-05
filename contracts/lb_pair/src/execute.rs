@@ -862,7 +862,8 @@ pub fn burn(
         Event::transfer_batch(
             &info.sender,
             &from,
-            &Addr::unchecked(""), // TODO: what address to represent address(0) from solidity?
+            // FIXME: this can't be empty
+            &Addr::unchecked("0"), // TODO: what address to represent address(0) from solidity?
             &ids,
             &amounts_to_burn,
         ),
