@@ -329,6 +329,31 @@
     {
       "type": "object",
       "required": [
+        "approve_for_all"
+      ],
+      "properties": {
+        "approve_for_all": {
+          "type": "object",
+          "required": [
+            "approved",
+            "spender"
+          ],
+          "properties": {
+            "approved": {
+              "type": "boolean"
+            },
+            "spender": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "set_contract_status"
       ],
       "properties": {

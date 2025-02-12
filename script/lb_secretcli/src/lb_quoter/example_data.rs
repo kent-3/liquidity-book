@@ -6,6 +6,8 @@ use liquidity_book::{
     interfaces::{
         lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
         lb_pair::LbPair,
+        lb_quoter::Quote,
+        lb_router::Version,
     },
 };
 
@@ -142,3 +144,17 @@ impl ExampleData for LbPairInformation {
 //         }
 //     }
 // }
+
+impl ExampleData for Quote {
+    fn example() -> Self {
+        Quote {
+            route: vec![TokenType::example(), TokenType::example()],
+            pairs: vec![ContractInfo::example()],
+            bin_steps: vec![100],
+            versions: vec![Version::V2_2],
+            amounts: vec![Uint128::new(1_000_000), Uint128::new(980_000)],
+            virtual_amounts_without_slippage: vec![Uint128::new(1_000_000), Uint128::new(999_000)],
+            fees: vec![Uint128::new(1000000000000000)],
+        }
+    }
+}

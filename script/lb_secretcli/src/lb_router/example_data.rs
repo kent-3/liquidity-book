@@ -1,11 +1,14 @@
 #![allow(unused)]
 
+use std::time::UNIX_EPOCH;
+
 use cosmwasm_std::{to_binary, Addr, ContractInfo, Uint128, Uint256, Uint64};
 use liquidity_book::{
     core::{RawContract, TokenAmount, TokenType},
     interfaces::{
         lb_factory::{Implementation, LbPairInformation, StaticFeeParameters},
         lb_pair::LbPair,
+        lb_router::{LiquidityParameters, Path, Version},
     },
 };
 
@@ -142,3 +145,49 @@ impl ExampleData for LbPairInformation {
 //         }
 //     }
 // }
+
+pub const PRECISION: u64 = 1_000_000_000_000_000_000; // 1e18
+
+impl ExampleData for LiquidityParameters {
+    fn example() -> Self {
+        LiquidityParameters {
+            token_x: TokenType::example(),
+            token_y: TokenType::example(),
+            bin_step: 100u16,
+            amount_x: Uint128::new(1_000_000),
+            amount_y: Uint128::new(1_000_000),
+            amount_x_min: Uint128::new(950_000),
+            amount_y_min: Uint128::new(950_000),
+            active_id_desired: 8_388_608,
+            id_slippage: 10,
+            delta_ids: vec![-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            distribution_x: vec![
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.090909, 0.181818, 0.181818, 0.181818, 0.181818, 0.181818,
+            ]
+            .iter()
+            .map(|el| (el * PRECISION as f64).trunc() as u64)
+            .map(Uint64::new)
+            .collect::<Vec<Uint64>>(),
+            distribution_y: vec![
+                0.181818, 0.181818, 0.181818, 0.181818, 0.181818, 0.090909, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ]
+            .iter()
+            .map(|el| (el * PRECISION as f64).trunc() as u64)
+            .map(Uint64::new)
+            .collect::<Vec<Uint64>>(),
+            to: Addr::recipient().to_string(),
+            refund_to: Addr::sender().to_string(),
+            deadline: Uint64::new(1739306006),
+        }
+    }
+}
+
+impl ExampleData for Path {
+    fn example() -> Self {
+        Path {
+            pair_bin_steps: vec![100u16],
+            versions: vec![Version::V2_2],
+            token_path: vec![TokenType::example(), TokenType::example()],
+        }
+    }
+}

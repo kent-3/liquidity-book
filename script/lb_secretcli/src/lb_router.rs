@@ -1,13 +1,13 @@
 mod example_data;
 
-use cosmwasm_std::{Addr, ContractInfo};
+use cosmwasm_std::{Addr, ContractInfo, Uint128, Uint256, Uint64};
 use example_data::{ExampleData, VariousAddr, ACTIVE_ID, BIN_STEP};
 use liquidity_book::{
     core::{RawContract, TokenType},
     interfaces::{
         lb_factory,
         lb_pair::{self, FactoryResponse},
-        lb_router::*,
+        lb_router::{self, *},
     },
 };
 use std::{
@@ -91,21 +91,56 @@ pub fn main() -> io::Result<()> {
         bin_step: BIN_STEP,
     };
 
-    writeln!(file, "## Execute Messages\n")?;
-    print_execute_messages!(file, create_lb_pair,);
+    let add_liquidity = ExecuteMsg::AddLiquidity {
+        liquidity_parameters: LiquidityParameters::example(),
+    };
 
-    // -- Query Messages
+    let swap_exact_tokens_for_tokens = ExecuteMsg::SwapExactTokensForTokens {
+        amount_in: Uint128::new(1_000_000),
+        amount_out_min: Uint128::new(950_000),
+        path: lb_router::Path::example(),
+        to: Addr::sender().to_string(),
+        deadline: Uint64::new(1739317404),
+    };
+
+    writeln!(file, "## Execute Messages\n")?;
+    print_execute_messages!(
+        file,
+        create_lb_pair,
+        add_liquidity,
+        swap_exact_tokens_for_tokens
+    );
+
+    // -- Query Messages with Responses
 
     let get_factory = QueryMsg::GetFactory {};
-
-    // responses
-
     let get_factory_response = FactoryResponse {
         factory: Addr::contract(),
     };
 
+    let get_id_from_price = QueryMsg::GetIdFromPrice {
+        lb_pair: ContractInfo::example(),
+        price: Uint256::from(1_000_000_000_000_000_000u128),
+    };
+    let get_id_from_price_response = GetIdFromPriceResponse { id: 8_388_608u32 };
+
+    let get_price_from_id = QueryMsg::GetPriceFromId {
+        lb_pair: ContractInfo::example(),
+        id: 8_388_608u32,
+    };
+    // NOTE: Price will be some monstrously large number
+    // because it's actually a fixed point 128x128 number
+    let get_price_from_id_response = GetPriceFromIdResponse {
+        price: Uint256::from(1_000_000_000_000_000_000u128),
+    };
+
     writeln!(file, "## Query Messages with responses\n")?;
-    print_query_messages_with_responses!(file, (get_factory, get_factory_response),);
+    print_query_messages_with_responses!(
+        file,
+        (get_factory, get_factory_response),
+        (get_id_from_price, get_id_from_price_response),
+        (get_price_from_id, get_price_from_id_response)
+    );
 
     println!("Created {}", file_path.display());
 

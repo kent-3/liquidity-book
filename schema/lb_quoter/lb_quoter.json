@@ -60,11 +60,30 @@
     "title": "QueryMsg",
     "oneOf": [
       {
-        "type": "string",
-        "enum": [
-          "get_factory_v2_2",
+        "type": "object",
+        "required": [
+          "get_factory_v2_2"
+        ],
+        "properties": {
+          "get_factory_v2_2": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
           "get_router_v2_2"
-        ]
+        ],
+        "properties": {
+          "get_router_v2_2": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       },
       {
         "type": "object",

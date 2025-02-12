@@ -1,3 +1,3 @@
-# lb-schema
+# lb-secretcli
 
-Run this with `cargo run -p lb-schema` from the root directory.
+Run this with `cargo run -p lb-secretcli` from the root directory.
