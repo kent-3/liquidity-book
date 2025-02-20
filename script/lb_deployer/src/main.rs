@@ -32,6 +32,8 @@ use secretrs::{
 };
 use serde::{Deserialize, Serialize};
 use shade_protocol::Contract;
+use tonic::transport::Certificate;
+use tonic::transport::ClientTlsConfig;
 
 use std::{
     env, fs,
@@ -71,8 +73,11 @@ async fn main() -> Result<()> {
         .with_target(false)
         .init();
 
+    let tls = ClientTlsConfig::new().with_webpki_roots();
+
     let channel = Channel::builder(GRPC_URL.parse()?)
         .timeout(Duration::from_secs(60))
+        .tls_config(tls)?
         .connect()
         .await?;
     let secretrs = setup_client(channel).await?;
@@ -214,7 +219,7 @@ async fn main() -> Result<()> {
         },
         snip20::InitialBalance {
             address: "secret1qex6xez2jhk6epejmcl5tfj6vxx7ah2u9tue6j".to_string(),
-            amount: Uint128::new(34028236692093846346337460743176821145u128),
+            amount: Uint128::new(1_000_000_000_000u128),
         },
     ];
 
@@ -229,7 +234,7 @@ async fn main() -> Result<()> {
         config: None,
         supported_denoms: Some(vec!["uscrt".to_string()]),
     };
-    let snip20 = instantiate(snip20_code_id, &snip20_code_hash, &snip20_init_msg, 100_000).await?;
+    let snip20 = instantiate(snip20_code_id, &snip20_code_hash, &snip20_init_msg, 200_000).await?;
 
     let test_sscrt_token = Token {
         contract_address: snip20.address.to_string(),
@@ -253,7 +258,7 @@ async fn main() -> Result<()> {
         config: None,
         supported_denoms: None,
     };
-    let snip25 = instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+    let snip25 = instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 200_000).await?;
 
     let test_amber_token = Token {
         contract_address: snip25.address.to_string(),
@@ -280,7 +285,7 @@ async fn main() -> Result<()> {
         supported_denoms: None,
     };
     let test_shd =
-        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 200_000).await?;
     let test_shd_token = Token {
         contract_address: test_shd.address.to_string(),
         code_hash: test_shd.code_hash.clone(),
@@ -304,7 +309,7 @@ async fn main() -> Result<()> {
         supported_denoms: None,
     };
     let test_usdc =
-        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 200_000).await?;
     let test_usdc_token = Token {
         contract_address: test_usdc.address.to_string(),
         code_hash: test_usdc.code_hash.clone(),
@@ -328,7 +333,7 @@ async fn main() -> Result<()> {
         supported_denoms: None,
     };
     let test_stkd_scrt =
-        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 100_000).await?;
+        instantiate(snip25_code_id, &snip25_code_hash, &snip25_init_msg, 200_000).await?;
     let test_stkd_scrt_token = Token {
         contract_address: test_stkd_scrt.address.to_string(),
         code_hash: test_stkd_scrt.code_hash.clone(),
