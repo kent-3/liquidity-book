@@ -217,6 +217,8 @@ impl BinHelper for Bytes32 {
 
         let mut liquidity = U256::ZERO;
 
+        // TODO: this seems potentially inefficient. try using checked_mul instead
+
         if x > U256::ZERO {
             liquidity = price.wrapping_mul(x); // Trying to make sure that if the liq > 2^256 don't overflow instead doing it through the check
 
