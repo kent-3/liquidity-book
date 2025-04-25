@@ -218,7 +218,7 @@ impl TokenType {
     }
 
     pub fn transfer(&self, amount: Uint128, recipient: Addr) -> Option<CosmosMsg> {
-        if amount.gt(&Uint128::zero()) {
+        if !amount.gt(&Uint128::zero()) {
             return None;
         }
 
@@ -253,7 +253,7 @@ impl TokenType {
         owner: Addr,
         recipient: Addr,
     ) -> Option<CosmosMsg> {
-        if amount.gt(&Uint128::zero()) {
+        if !amount.gt(&Uint128::zero()) {
             return None;
         }
 
