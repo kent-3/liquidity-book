@@ -499,11 +499,6 @@ pub fn mint(
         liquidity_minted: vec![U256::ZERO; liquidity_configs.len()],
     };
 
-    // TODO:
-    deps.api.debug("gonna mint some bins");
-    let gas = deps.api.check_gas()?;
-    deps.api.debug(&gas.to_string());
-
     let amounts_left = mint_bins(
         &mut deps,
         &env,
