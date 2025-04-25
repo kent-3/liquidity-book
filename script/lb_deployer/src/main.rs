@@ -215,7 +215,19 @@ async fn main() -> Result<()> {
     let balance_havers = vec![
         snip20::InitialBalance {
             address: wallet_address.to_string(),
-            amount: Uint128::new(34028236692093846346337460743176821145u128),
+            amount: Uint128::new(1_000_000_000_000_000u128),
+        },
+        snip20::InitialBalance {
+            address: "secret1wg9a9unmhe7qpw6fphp02st70qqzaaja0ttl3s".to_string(),
+            amount: Uint128::new(1_000_000_000_000u128),
+        },
+        snip20::InitialBalance {
+            address: "secret1hxj5ylp7kh6m9fhxmszjycm8gvyrvfqtswz03p".to_string(),
+            amount: Uint128::new(1_000_000_000_000u128),
+        },
+        snip20::InitialBalance {
+            address: "secret1cdj8ww4e27c4psna0tf29prtuul0845s9metkj".to_string(),
+            amount: Uint128::new(1_000_000_000_000u128),
         },
         snip20::InitialBalance {
             address: "secret1qex6xez2jhk6epejmcl5tfj6vxx7ah2u9tue6j".to_string(),
@@ -523,7 +535,7 @@ async fn main() -> Result<()> {
 
     let increase_allowance_msg = &secret_toolkit_snip20::HandleMsg::IncreaseAllowance {
         spender: router_address.to_owned(),
-        amount: Uint128::MAX,
+        amount: Uint128::from(1000000u128),
         expiration: None,
         padding: None,
     };
